@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.manage.mapper.InventoryMapper">
+    <resultMap id="InventoryVOResult" type="com.ruoyi.manage.domain.vo.InventoryVO">
+        <id     property="id"        column="id"       />
+        <result property="materialId" column="material_id" />
+        <result property="materialName" column="material_name" />
+        <result property="materialCategory" column="material_category" />
+        <result property="materialSubcategory" column="material_subcategory" />
+        <result property="currentQuantity" column="current_quantity" />
+        <result property="warehouseArea" column="warehouse_area" />
+        <result property="status" column="status" />
+        <result property="operator" column="operator" />
+        <result property="firstInboundTime" column="first_inbound_time" />
+        <result property="lastInboundTime" column="last_inbound_time" />
+        <result property="lastOutboundTime" column="last_outbound_time" />
+        <result property="inboundType" column="inbound_type" />
+    </resultMap>
+
+    <select id="selectInventoryVOList" parameterType="com.ruoyi.manage.domain.dto.InventoryDTO" resultMap="InventoryVOResult">
+        <include refid="selectInventoryVo"/>
+        <where>
+            <if test="materialId != null and materialId != ''">
+                AND i.material_id LIKE CONCAT('%', #{materialId}, '%')
+            </if>
+            <if test="materialName != null and materialName != ''">
+                AND i.material_name LIKE CONCAT('%', #{materialName}, '%')
+            </if>
+            <if test="materialCategory != null and materialCategory != ''">
+                AND i.material_category = #{materialCategory}
+            </if>
+            <if test="materialSubcategory != null and materialSubcategory != ''">
+                AND i.material_subcategory = #{materialSubcategory}
+            </if>
+            <if test="warehouseArea != null and warehouseArea != ''">
+                AND i.warehouse_area = #{warehouseArea}
+            </if>
+            <if test="operator != null  and operator != ''">
+             and operator = #{operator}
+             </if>
+            <if test="inboundType != null and inboundType != ''">
+                AND (
+                    SELECT s.inbound_type
+                    FROM stock_in s
+                    WHERE s.material_id = i.material_id
+                    ORDER BY s.inbound_time DESC
+                    LIMIT 1
+                ) = #{inboundType}
+            </if>
+            <if test="firstInboundTime != null">
+                AND DATE(i.first_inbound_time) = #{firstInboundTime}
+            </if>
+
+            <if test="lastInboundTime != null">
+                AND DATE(i.last_inbound_time) = #{lastInboundTime}
+            </if>
+        </where>
+        ORDER BY i.create_time DESC
+    </select>
+    <!-- 下面是原版 -->
+    <resultMap type="com.ruoyi.manage.domain.Inventory" id="InventoryResult">
+        <result property="id"    column="id"    />
+        <result property="materialId"    column="material_id"    />
+        <result property="materialName"    column="material_name"    />
+        <result property="materialCategory"    column="material_category"    />
+        <result property="materialSubcategory"    column="material_subcategory"    />
+        <result property="currentQuantity"    column="current_quantity"    />
+        <result property="warehouseArea"    column="warehouse_area"    />
+        <result property="status"    column="status"    />
+        <result property="operator" column="operator" />
+        <result property="firstInboundTime"    column="first_inbound_time"    />
+        <result property="lastInboundTime"    column="last_inbound_time"    />
+        <result property="lastOutboundTime"    column="last_outbound_time"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectInventoryVo">
+        select
+            i.id,
+            i.material_id,
+            i.material_name,
+            i.material_category,
+            i.material_subcategory,
+            i.current_quantity,
+            i.warehouse_area,
+            i.status,
+            i.operator,
+            i.first_inbound_time,
+            i.last_inbound_time,
+            i.last_outbound_time,
+            i.create_time,
+            i.update_time,
+            (
+                select s.inbound_type
+                from stock_in s
+                where s.material_id = i.material_id
+                order by s.inbound_time desc
+                limit 1
+            ) as inbound_type
+        from inventory i
+    </sql>
+
+    <select id="selectInventoryList" parameterType="com.ruoyi.manage.domain.Inventory" resultMap="InventoryResult">
+        <include refid="selectInventoryVo"/>
+        <where>  
+            <if test="materialId != null  and materialId != ''"> and material_id like concat('%', #{materialId}, '%')</if>
+            <if test="materialName != null  and materialName != ''"> and material_name like concat('%', #{materialName}, '%')</if>
+            <if test="materialCategory != null  and materialCategory != ''"> and material_category = #{materialCategory}</if>
+            <if test="materialSubcategory != null  and materialSubcategory != ''"> and material_subcategory = #{materialSubcategory}</if>
+            <if test="warehouseArea != null  and warehouseArea != ''"> and warehouse_area = #{warehouseArea}</if>
+            <if test="status != null  and status != ''"> and status = #{status}</if>
+            <if test="operator != null  and operator != ''"> and operator = #{operator}</if>
+            <if test="firstInboundTime != null "> and first_inbound_time = #{firstInboundTime}</if>
+            <if test="lastInboundTime != null "> and last_inbound_time = #{lastInboundTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectInventoryById" parameterType="java.lang.Long" resultMap="InventoryResult">
+        <include refid="selectInventoryVo"/>
+        where id = #{id}
+    </select>
+    <select id="findMaxCodeByPrefix" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT MAX(material_id)
+        FROM inventory -- 你的物料表名
+        WHERE material_id LIKE CONCAT(#{prefix}, '%')
+    </select>
+
+
+    <insert id="insertInventory" parameterType="com.ruoyi.manage.domain.Inventory" useGeneratedKeys="true" keyProperty="id">
+        insert into inventory
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="materialId != null and materialId != ''">material_id,</if>
+            <if test="materialName != null and materialName != ''">material_name,</if>
+            <if test="materialCategory != null and materialCategory != ''">material_category,</if>
+            <if test="materialSubcategory != null and materialSubcategory != ''">material_subcategory,</if>
+            <if test="currentQuantity != null">current_quantity,</if>
+            <if test="warehouseArea != null and warehouseArea != ''">warehouse_area,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="operator != null">operator,</if>
+            <if test="firstInboundTime != null">first_inbound_time,</if>
+            <if test="lastInboundTime != null">last_inbound_time,</if>
+            <if test="lastOutboundTime != null">last_outbound_time,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="materialId != null and materialId != ''">#{materialId},</if>
+            <if test="materialName != null and materialName != ''">#{materialName},</if>
+            <if test="materialCategory != null and materialCategory != ''">#{materialCategory},</if>
+            <if test="materialSubcategory != null and materialSubcategory != ''">#{materialSubcategory},</if>
+            <if test="currentQuantity != null">#{currentQuantity},</if>
+            <if test="warehouseArea != null and warehouseArea != ''">#{warehouseArea},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="operator != null">#{operator},</if>
+            <if test="firstInboundTime != null">#{firstInboundTime},</if>
+            <if test="lastInboundTime != null">#{lastInboundTime},</if>
+            <if test="lastOutboundTime != null">#{lastOutboundTime},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateInventory" parameterType="com.ruoyi.manage.domain.Inventory">
+        update inventory
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="materialId != null and materialId != ''">material_id = #{materialId},</if>
+            <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
+            <if test="materialCategory != null and materialCategory != ''">material_category = #{materialCategory},</if>
+            <if test="materialSubcategory != null and materialSubcategory != ''">material_subcategory = #{materialSubcategory},</if>
+            <if test="currentQuantity != null">current_quantity = #{currentQuantity},</if>
+            <if test="warehouseArea != null and warehouseArea != ''">warehouse_area = #{warehouseArea},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="operator != null and operator != ''">operator = #{operator},</if>
+            <if test="firstInboundTime != null">first_inbound_time = #{firstInboundTime},</if>
+            <if test="lastInboundTime != null">last_inbound_time = #{lastInboundTime},</if>
+            <if test="lastOutboundTime != null">last_outbound_time = #{lastOutboundTime},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+
+    <delete id="deleteInventoryById" parameterType="java.lang.Long">
+        delete from inventory where id = #{id}
+    </delete>
+
+    <delete id="deleteInventoryByIds" parameterType="java.lang.String">
+        delete from inventory where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

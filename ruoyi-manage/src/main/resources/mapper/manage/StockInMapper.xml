@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.manage.mapper.StockInMapper">
+    
+    <resultMap type="com.ruoyi.manage.domain.StockIn" id="StockInResult">
+        <result property="id"    column="id"    />
+        <result property="materialId"    column="material_id"    />
+        <result property="materialName"    column="material_name"    />
+        <result property="inboundType"    column="inbound_type"    />
+        <result property="quantity"    column="quantity"    />
+        <result property="warehouseArea"    column="warehouse_area"    />
+        <result property="inboundTime"    column="inbound_time"    />
+        <result property="operator"    column="operator"    />
+        <result property="createTime"    column="create_time"    />
+    </resultMap>
+
+    <sql id="selectStockInVo">
+        select id, material_id, material_name,inbound_type, quantity, warehouse_area, inbound_time, operator, create_time from stock_in
+    </sql>
+
+    <select id="selectStockInList" parameterType="com.ruoyi.manage.domain.StockIn" resultMap="StockInResult">
+        <include refid="selectStockInVo"/>
+        <where>  
+            <if test="materialId != null  and materialId != ''"> and material_id = #{materialId}</if>
+            <if test="materialName != null  and materialName != ''"> and material_name like concat('%', #{materialName}, '%')</if>
+            <if test="inboundType != null  and inboundType != ''"> and inbound_type = #{inboundType}</if>
+            <if test="warehouseArea != null  and warehouseArea != ''"> and warehouse_area = #{warehouseArea}</if>
+            <if test="inboundTime != null "> and DATE(inbound_time) = #{inboundTime}</if>
+            <if test="operator != null  and operator != ''"> and operator = #{operator}</if>
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectStockInById" parameterType="java.lang.Long" resultMap="StockInResult">
+        <include refid="selectStockInVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertStockIn" parameterType="com.ruoyi.manage.domain.StockIn" useGeneratedKeys="true" keyProperty="id">
+        insert into stock_in
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="materialId != null and materialId != ''">material_id,</if>
+            <if test="materialName != null and materialName != ''">material_name,</if>
+            <if test="inboundType != null and inboundType != ''">inbound_type,</if>
+            <if test="quantity != null">quantity,</if>
+            <if test="warehouseArea != null and warehouseArea != ''">warehouse_area,</if>
+            <if test="inboundTime != null">inbound_time,</if>
+            <if test="operator != null">operator,</if>
+            <if test="createTime != null">create_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="materialId != null and materialId != ''">#{materialId},</if>
+            <if test="materialName != null and materialName != ''">#{materialName},</if>
+            <if test="inboundType != null and inboundType != ''">#{inboundType},</if>
+            <if test="quantity != null">#{quantity},</if>
+            <if test="warehouseArea != null and warehouseArea != ''">#{warehouseArea},</if>
+            <if test="inboundTime != null">#{inboundTime},</if>
+            <if test="operator != null">#{operator},</if>
+            <if test="createTime != null">#{createTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStockIn" parameterType="com.ruoyi.manage.domain.StockIn">
+        update stock_in
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="materialId != null and materialId != ''">material_id = #{materialId},</if>
+            <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
+            <if test="inboundType != null and inboundType != ''">inbound_type = #{inboundType},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="warehouseArea != null and warehouseArea != ''">warehouse_area = #{warehouseArea},</if>
+            <if test="inboundTime != null">inbound_time = #{inboundTime},</if>
+            <if test="operator != null">operator = #{operator},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStockInById" parameterType="java.lang.Long">
+        delete from stock_in where id = #{id}
+    </delete>
+
+    <delete id="deleteStockInByIds" parameterType="java.lang.String">
+        delete from stock_in where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
