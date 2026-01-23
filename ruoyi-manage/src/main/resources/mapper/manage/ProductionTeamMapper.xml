@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.manage.mapper.ProductionTeamMapper">
+    
+    <resultMap type="ProductionTeam" id="ProductionTeamResult">
+        <result property="id"    column="id"    />
+        <result property="teamName"    column="team_name"    />
+        <result property="leaderName"    column="leader_name"    />
+        <result property="leaderId"    column="leader_id"    />
+        <result property="teamStatus"    column="team_status"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <resultMap type="SysUser" id="SysUserResult">
+        <id     property="userId"       column="user_id"      />
+        <result property="nickName"     column="nick_name"    />
+        <result property="userName"     column="user_name"    />
+        <result property="email"        column="email"        />
+        <result property="phonenumber"  column="phonenumber"  />
+        <result property="roleNames"    column="role_names" />
+        <association property="dept"    javaType="SysDept">
+            <result property="deptName" column="dept_name"   />
+        </association>
+    </resultMap>
+
+    <select id="selectUserListForTeam" parameterType="SysUser" resultMap="SysUserResult">
+        select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.phonenumber,
+        d.dept_name,
+        (SELECT GROUP_CONCAT(r.role_name SEPARATOR ',') 
+         FROM sys_role r 
+         LEFT JOIN sys_user_role ur ON r.role_id = ur.role_id 
+         WHERE ur.user_id = u.user_id) as role_names
+        from sys_user u
+        left join sys_dept d on u.dept_id = d.dept_id
+        where u.del_flag = '0'
+        <if test="userName != null and userName != ''">
+            AND u.nick_name like concat('%', #{userName}, '%')
+        </if>
+        <if test="deptId != null and deptId != 0">
+            AND (u.dept_id = #{deptId} OR u.dept_id IN ( SELECT t.dept_id FROM sys_dept t WHERE find_in_set(#{deptId}, ancestors) ))
+        </if>
+        <if test="roleId != null and roleId != 0">
+            AND u.user_id IN (SELECT ur.user_id FROM sys_user_role ur WHERE ur.role_id = #{roleId})
+        </if>
+        <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+            AND date_format(u.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+        </if>
+        <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+            AND date_format(u.create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+        </if>
+    </select>
+
+    <sql id="selectProductionTeamVo">
+        select id, team_name, leader_name, leader_id, team_status, create_by, create_time, update_by, update_time, remark from production_team
+    </sql>
+
+    <select id="selectProductionTeamList" parameterType="ProductionTeam" resultMap="ProductionTeamResult">
+        <include refid="selectProductionTeamVo"/>
+        <where>  
+            <if test="teamName != null  and teamName != ''"> and team_name like concat('%', #{teamName}, '%')</if>
+            <if test="leaderName != null  and leaderName != ''"> and leader_name like concat('%', #{leaderName}, '%')</if>
+            <if test="teamStatus != null  and teamStatus != ''"> and team_status = #{teamStatus}</if>
+        </where>
+    </select>
+    
+    <select id="selectProductionTeamById" parameterType="Long" resultMap="ProductionTeamResult">
+        <include refid="selectProductionTeamVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectUserListByTeamId" parameterType="Long" resultMap="SysUserResult">
+        select u.user_id, u.dept_id, u.nick_name, u.user_name, u.phonenumber, d.dept_name,
+        (SELECT GROUP_CONCAT(r.role_name SEPARATOR ',') 
+         FROM sys_role r 
+         LEFT JOIN sys_user_role ur ON r.role_id = ur.role_id 
+         WHERE ur.user_id = u.user_id) as role_names
+        from sys_user u
+        left join sys_dept d on u.dept_id = d.dept_id
+        left join production_team_user tu on u.user_id = tu.user_id
+        where tu.team_id = #{teamId}
+    </select>
+
+    <insert id="insertProductionTeam" parameterType="ProductionTeam" useGeneratedKeys="true" keyProperty="id">
+        insert into production_team
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="teamName != null and teamName != ''">team_name,</if>
+            <if test="leaderName != null and leaderName != ''">leader_name,</if>
+            <if test="leaderId != null">leader_id,</if>
+            <if test="teamStatus != null and teamStatus != ''">team_status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="teamName != null and teamName != ''">#{teamName},</if>
+            <if test="leaderName != null and leaderName != ''">#{leaderName},</if>
+            <if test="leaderId != null">#{leaderId},</if>
+            <if test="teamStatus != null and teamStatus != ''">#{teamStatus},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateProductionTeam" parameterType="ProductionTeam">
+        update production_team
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="teamName != null and teamName != ''">team_name = #{teamName},</if>
+            <if test="leaderName != null and leaderName != ''">leader_name = #{leaderName},</if>
+            <if test="leaderId != null">leader_id = #{leaderId},</if>
+            <if test="teamStatus != null and teamStatus != ''">team_status = #{teamStatus},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteProductionTeamById" parameterType="Long">
+        delete from production_team where id = #{id}
+    </delete>
+
+    <delete id="deleteProductionTeamByIds" parameterType="String">
+        delete from production_team where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteProductionTeamUserByTeamId" parameterType="Long">
+        delete from production_team_user where team_id = #{teamId}
+    </delete>
+
+    <delete id="deleteProductionTeamUserByTeamIds" parameterType="String">
+        delete from production_team_user where team_id in 
+        <foreach item="teamId" collection="array" open="(" separator="," close=")">
+            #{teamId}
+        </foreach>
+    </delete>
+
+    <insert id="batchProductionTeamUser">
+        insert into production_team_user(team_id, user_id) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{item.teamId}, #{item.userId})
+        </foreach>
+    </insert>
+</mapper>
