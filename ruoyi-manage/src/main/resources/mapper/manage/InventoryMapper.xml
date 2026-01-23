@@ -75,6 +75,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="lastOutboundTime"    column="last_outbound_time"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
+        <result property="inboundType"    column="inbound_type"    />
     </resultMap>
 
     <sql id="selectInventoryVo">
@@ -115,6 +116,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="operator != null  and operator != ''"> and operator = #{operator}</if>
             <if test="firstInboundTime != null "> and first_inbound_time = #{firstInboundTime}</if>
             <if test="lastInboundTime != null "> and last_inbound_time = #{lastInboundTime}</if>
+            <if test="inboundType != null and inboundType != ''">
+                AND (
+                SELECT s.inbound_type
+                FROM stock_in s
+                WHERE s.material_id = i.material_id
+                ORDER BY s.inbound_time DESC
+                LIMIT 1
+                ) = #{inboundType}
+            </if>
         </where>
     </select>
     

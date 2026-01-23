@@ -35,6 +35,15 @@ export function stockOutInventory(data) {
   })
 }
 
+// 扫码入库
+export function scanInbound(data) {
+  return request({
+    url: '/manage/inventory/scan-inbound',
+    method: 'post',
+    data: data
+  })
+}
+
 // 修改库存信息
 export function updateInventory(data) {
   return request({

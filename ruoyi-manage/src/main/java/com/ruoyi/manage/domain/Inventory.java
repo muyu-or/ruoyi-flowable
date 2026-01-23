@@ -26,7 +26,7 @@ public class Inventory extends BaseEntity {
     /**
      * 物料ID/唯一标识码
      */
-    @Excel(name = "物料ID/唯一标识码")
+    @Excel(name = "物料ID/唯一标识码", type = Excel.Type.EXPORT)
     private String materialId;
 
     /**
@@ -38,50 +38,58 @@ public class Inventory extends BaseEntity {
     /**
      * 物料大类
      */
-    @Excel(name = "物料大类")
+    @Excel(name = "物料大类", dictType = "material_category")
     private String materialCategory;
 
     /**
      * 物料子类
      */
-    @Excel(name = "物料子类")
+    @Excel(name = "物料子类", dictType = "material_subcategory")
     private String materialSubcategory;
 
     /**
      * 当前库存数量
      */
+    @Excel(name = "库存数量")
     private Long currentQuantity;
 
     /**
      * 库区
      */
-    @Excel(name = "库区")
+    @Excel(name = "库区", dictType = "warehouse_area")
     private String warehouseArea;
+    
+    /**
+     * 入库类型 (注意：数据库表中可能没有此字段，如果是DTO属性可以不用加到Entity，但为了导入方便，如果是必填项建议加上)
+     * 这里假设是 transient 属性或者 Entity 中确实需要这个字段来接收Excel数据
+     */
+    @Excel(name = "入库类型", dictType = "inbound_type")
+    private String inboundType;
 
     /**
      * 库存状态
      */
-    @Excel(name = "库存状态")
+    @Excel(name = "库存状态", dictType = "inventory_status", type = Excel.Type.EXPORT)
     private String status;
 
     /**
      * 操作人员
      */
-    @Excel(name = "操作人员")
+    @Excel(name = "操作人员", type = Excel.Type.EXPORT)
     private String operator;
 
     /**
      * 首次入库时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "首次入库时间", width = 30, dateFormat = "yyyy-MM-dd")
+    @Excel(name = "首次入库时间", width = 30, dateFormat = "yyyy-MM-dd", type = Excel.Type.EXPORT)
     private Date firstInboundTime;
 
     /**
      * 上次入库时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "上次入库时间", width = 30, dateFormat = "yyyy-MM-dd")
+    @Excel(name = "上次入库时间", width = 30, dateFormat = "yyyy-MM-dd", type = Excel.Type.EXPORT)
     private Date lastInboundTime;
 
     /**
@@ -183,6 +191,14 @@ public class Inventory extends BaseEntity {
 
     public Date getLastOutboundTime() {
         return lastOutboundTime;
+    }
+
+    public void setInboundType(String inboundType) {
+        this.inboundType = inboundType;
+    }
+
+    public String getInboundType() {
+        return inboundType;
     }
 
     @Override

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
@@ -112,5 +113,41 @@ public class InventoryController extends BaseController
     public AjaxResult remove(@PathVariable Long[] ids)
     {
         return toAjax(inventoryService.deleteInventoryByIds(ids));
+    }
+
+    /**
+     * 导入库存信息列表
+     */
+    @PreAuthorize("@ss.hasPermi('manage:inventory:import')")
+    @Log(title = "库存信息", businessType = BusinessType.IMPORT)
+    @PostMapping("/importData")
+    public AjaxResult importData(MultipartFile file, boolean updateSupport) throws Exception
+    {
+        ExcelUtil<Inventory> util = new ExcelUtil<Inventory>(Inventory.class);
+        List<Inventory> inventoryList = util.importExcel(file.getInputStream());
+        String operName = getUsername();
+        String message = inventoryService.importInventory(inventoryList, updateSupport, operName);
+        return AjaxResult.success(message);
+    }
+
+    /**
+     * 下载导入模板
+     */
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response)
+    {
+        ExcelUtil<Inventory> util = new ExcelUtil<Inventory>(Inventory.class);
+        util.importTemplateExcel(response, "库存数据");
+    }
+
+    /**
+     * 扫码入库
+     */
+    @PreAuthorize("@ss.hasPermi('manage:inventory:add')")
+    @Log(title = "库存信息", businessType = BusinessType.UPDATE)
+    @PostMapping("/scan-inbound")
+    public AjaxResult scanInbound(@RequestBody InventoryDTO inventoryDTO)
+    {
+        return success(inventoryService.scanInbound(inventoryDTO));
     }
 }

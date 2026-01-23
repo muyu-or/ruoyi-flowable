@@ -5,6 +5,7 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.manage.domain.Inventory;
 import com.ruoyi.manage.domain.StockIn;
 import com.ruoyi.manage.domain.StockOut;
@@ -14,6 +15,7 @@ import com.ruoyi.manage.mapper.InventoryMapper;
 import com.ruoyi.manage.mapper.StockInMapper;
 import com.ruoyi.manage.mapper.StockOutMapper;
 import com.ruoyi.manage.service.IInventoryService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ import java.util.List;
  * @author xgh
  * @date 2025-11-04
  */
+@Slf4j
 @Service
 public class InventoryServiceImpl implements IInventoryService
 {
@@ -210,6 +213,123 @@ public class InventoryServiceImpl implements IInventoryService
         return inventoryMapper.selectInventoryVOList(inventoryDTO);
     }
 
+    /**
+     * 导入库存数据
+     *
+     * @param inventoryList 库存数据列表
+     * @param isUpdateSupport 是否更新支持，vc如果已存在，则进行更新数据
+     * @param operName 操作用户
+     * @return 结果
+     */
+    @Override
+    public String importInventory(List<Inventory> inventoryList, Boolean isUpdateSupport, String operName)
+    {
+        if (StringUtils.isNull(inventoryList) || inventoryList.size() == 0)
+        {
+            throw new ServiceException("导入库存数据不能为空！");
+        }
+        int successNum = 0;
+        int failureNum = 0;
+        StringBuilder successMsg = new StringBuilder();
+        StringBuilder failureMsg = new StringBuilder();
+        for (Inventory inventory : inventoryList)
+        {
+            try
+            {
+                // 验证是否存在这个库存
+                Inventory existingInventory = null;
+                if (StringUtils.isNotEmpty(inventory.getMaterialId())) {
+                    existingInventory = inventoryMapper.selectInventoryBymaterialId(inventory.getMaterialId());
+                }
+
+                if (existingInventory == null)
+                {
+                    // 必须有分类才能生成ID
+                    if (StringUtils.isEmpty(inventory.getMaterialId())) {
+                        if (StringUtils.isEmpty(inventory.getMaterialCategory()) || StringUtils.isEmpty(inventory.getMaterialSubcategory())) {
+                            failureNum++;
+                            failureMsg.append("<br/>" + failureNum + "、物料 " + inventory.getMaterialName() + " 导入失败：缺少分类信息，无法生成编码");
+                            continue;
+                        }
+                        String code = generateMaterialCode(inventory.getMaterialCategory(), inventory.getMaterialSubcategory());
+                        inventory.setMaterialId(code);
+                    }
+
+                    inventory.setCreateTime(DateUtils.getNowDate());
+                    inventory.setUpdateTime(DateUtils.getNowDate());
+                    inventory.setOperator(operName);
+                    // 默认状态
+                    if (StringUtils.isEmpty(inventory.getStatus())) {
+                        inventory.setStatus("1");
+                    }
+                    // 时间
+                    if (inventory.getFirstInboundTime() == null) inventory.setFirstInboundTime(DateUtils.getNowDate());
+                    if (inventory.getLastInboundTime() == null) inventory.setLastInboundTime(DateUtils.getNowDate());
+
+                    inventoryMapper.insertInventory(inventory);
+
+                    // 记录入库
+                    StockIn stockIn = new StockIn();
+                    BeanUtils.copyProperties(inventory, stockIn);
+                    stockIn.setInboundTime(inventory.getLastInboundTime());
+                    stockIn.setQuantity(inventory.getCurrentQuantity()); // 假设导入的数量就是当前数量
+                    stockIn.setInboundType(inventory.getInboundType()); // 确保设置了入库类型
+                    stockIn.setCreateTime(DateUtils.getNowDate());
+                    stockIn.setOperator(operName);
+                    stockInMapper.insertStockIn(stockIn);
+
+                    successNum++;
+                    successMsg.append("<br/>" + successNum + "、物料 " + inventory.getMaterialName() + " 导入成功");
+                }
+                else if (isUpdateSupport)
+                {
+                    // 更新逻辑
+                    Long newQuantity = existingInventory.getCurrentQuantity() + inventory.getCurrentQuantity();
+                    existingInventory.setCurrentQuantity(newQuantity);
+                    existingInventory.setUpdateTime(DateUtils.getNowDate());
+                    existingInventory.setOperator(operName);
+                    inventoryMapper.updateInventory(existingInventory);
+
+                    // 记录入库
+                    StockIn stockIn = new StockIn();
+                    BeanUtils.copyProperties(inventory, stockIn);
+                    stockIn.setMaterialId(existingInventory.getMaterialId()); // 确保ID一致
+                    stockIn.setInboundTime(DateUtils.getNowDate());
+                    stockIn.setQuantity(inventory.getCurrentQuantity());
+                    stockIn.setInboundType(inventory.getInboundType()); // 确保设置了入库类型
+                    stockIn.setCreateTime(DateUtils.getNowDate());
+                    stockIn.setOperator(operName);
+                    stockInMapper.insertStockIn(stockIn);
+
+                    successNum++;
+                    successMsg.append("<br/>" + successNum + "、物料 " + inventory.getMaterialName() + " 更新成功");
+                }
+                else
+                {
+                    failureNum++;
+                    failureMsg.append("<br/>" + failureNum + "、物料 " + inventory.getMaterialName() + " 已存在");
+                }
+            }
+            catch (Exception e)
+            {
+                failureNum++;
+                String msg = "<br/>" + failureNum + "、物料 " + inventory.getMaterialName() + " 导入失败：";
+                failureMsg.append(msg + e.getMessage());
+                log.error(msg, e);
+            }
+        }
+        if (failureNum > 0)
+        {
+            failureMsg.insert(0, "很抱歉，导入失败！共 " + failureNum + " 条数据格式不正确，错误如下：");
+            throw new ServiceException(failureMsg.toString());
+        }
+        else
+        {
+            successMsg.insert(0, "恭喜您，数据已全部导入成功！共 " + successNum + " 条，数据如下：");
+        }
+        return successMsg.toString();
+    }
+
     /*@Override
     public int processStockOut(InventoryDTO inventoryDTO) {
         // 1. 参数校验
@@ -322,5 +442,46 @@ public class InventoryServiceImpl implements IInventoryService
 
         // 7. 返回成功消息
         return AjaxResult.success(message);
+    }
+
+    /**
+     * 扫码入库
+     *
+     * @param inventoryDTO
+     * @return
+     */
+    @Override
+    @Transactional
+    public int scanInbound(InventoryDTO inventoryDTO) {
+        if (StringUtils.isEmpty(inventoryDTO.getMaterialId())) {
+            throw new ServiceException("物料ID不能为空");
+        }
+        if (inventoryDTO.getQuantity() == null || inventoryDTO.getQuantity() <= 0) {
+            throw new ServiceException("入库数量必须大于0");
+        }
+
+        Inventory inventory = inventoryMapper.selectInventoryBymaterialId(inventoryDTO.getMaterialId());
+        if (inventory == null) {
+            throw new ServiceException("未找到该物料信息: " + inventoryDTO.getMaterialId());
+        }
+
+        // 更新库存
+        Long newQuantity = inventory.getCurrentQuantity() + inventoryDTO.getQuantity();
+        inventory.setCurrentQuantity(newQuantity);
+        inventory.setLastInboundTime(DateUtils.getNowDate());
+        inventory.setUpdateTime(DateUtils.getNowDate());
+        inventory.setOperator(SecurityUtils.getUsername());
+        inventoryMapper.updateInventory(inventory);
+
+        // 记录入库
+        StockIn stockIn = new StockIn();
+        BeanUtils.copyProperties(inventory, stockIn); // 复制基础信息
+        stockIn.setInboundTime(DateUtils.getNowDate());
+        stockIn.setQuantity(inventoryDTO.getQuantity()); // 只有本次入库数量
+        stockIn.setInboundType(inventoryDTO.getInboundType());
+        stockIn.setOperator(SecurityUtils.getUsername());
+        stockIn.setCreateTime(DateUtils.getNowDate());
+
+        return stockInMapper.insertStockIn(stockIn);
     }
 }

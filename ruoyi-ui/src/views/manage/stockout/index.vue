@@ -1,58 +1,73 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="物料ID" prop="materialId">
-        <el-input
-          v-model="queryParams.materialId"
-          placeholder="请输入物料ID"
-          clearable
-          size="small"
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="出库类型" prop="outboundType">
-        <el-select v-model="queryParams.outboundType" placeholder="请选择出库类型" clearable size="small">
-          <el-option
-            v-for="dict in dict.type.outbound_type"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="库区" prop="warehouseArea">
-        <el-select v-model="queryParams.warehouseArea" placeholder="请选择库区" clearable size="small">
-          <el-option
-            v-for="dict in dict.type.warehouse_area"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="出库时间" prop="outboundTime">
-        <el-date-picker
-          clearable
-          size="small"
-          v-model="queryParams.outboundTime"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="请选择出库时间">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="操作人员" prop="operator">
-        <el-input
-          v-model="queryParams.operator"
-          placeholder="请输入操作人员"
-          clearable
-          size="small"
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="80px">
+      <el-row :gutter="16" type="flex" align="middle">
+        <el-col :xs="24" :sm="24" :md="8">
+          <el-form-item label="物料ID" prop="materialId">
+            <el-input
+              v-model="queryParams.materialId"
+              placeholder="请输入物料ID"
+              clearable
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="8">
+          <el-form-item label="出库类型" prop="outboundType">
+            <el-select v-model="queryParams.outboundType" placeholder="请选择出库类型" clearable style="width:100%">
+              <el-option
+                v-for="dict in dict.type.outbound_type"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="8">
+          <el-form-item label="库区" prop="warehouseArea">
+            <el-select v-model="queryParams.warehouseArea" placeholder="请选择库区" clearable style="width:100%">
+              <el-option
+                v-for="dict in dict.type.warehouse_area"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="16" type="flex" align="middle">
+        <el-col :xs="24" :sm="24" :md="8">
+          <el-form-item label="出库时间" prop="outboundTime">
+            <el-date-picker
+              clearable
+              v-model="queryParams.outboundTime"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="请选择出库时间"
+              style="width:100%">
+            </el-date-picker>
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="8">
+          <el-form-item label="操作人员" prop="operator">
+            <el-input
+              v-model="queryParams.operator"
+              placeholder="请输入操作人员"
+              clearable
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="8" style="text-align:right;">
+          <el-form-item>
+            <el-button type="primary" icon="el-icon-search" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -61,7 +76,6 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="mini"
           @click="handleAdd"
           v-hasPermi="['manage:stockout:add']"
         >新增</el-button>
@@ -71,7 +85,6 @@
           type="danger"
           plain
           icon="el-icon-delete"
-          size="mini"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['manage:stockout:remove']"
@@ -82,7 +95,6 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="mini"
           @click="handleExport"
           v-hasPermi="['manage:stockout:export']"
         >导出</el-button>
@@ -110,14 +122,12 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
-            size="mini"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['manage:stockout:edit']"
           >修改</el-button>
           <el-button
-            size="mini"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"

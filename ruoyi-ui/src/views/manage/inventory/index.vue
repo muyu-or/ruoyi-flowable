@@ -88,6 +88,15 @@
 
       <el-col :span="1.5">
         <el-button
+          type="info"
+          plain
+          icon="el-icon-upload2"
+          @click="handleImport"
+          v-hasPermi="['manage:inventory:import']"
+        >导入</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="warning"
           plain
           icon="el-icon-download"
@@ -163,42 +172,61 @@
     />
 
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
+      <!-- 入库模式切换 -->
+      <div v-if="!form.id" style="text-align: center; margin-bottom: 20px;">
+        <el-radio-group v-model="inboundMode" size="small">
+          <el-radio-button label="new">新建物料入库</el-radio-button>
+          <el-radio-button label="scan">扫码/ID入库</el-radio-button>
+        </el-radio-group>
+      </div>
+
       <el-form ref="inventoryRef" :model="form" :rules="rules" label-width="80px">
 
-        <el-form-item label="物料名称" prop="materialName">
-          <el-input v-model="form.materialName" placeholder="请输入物料名称" />
-        </el-form-item>
-        <el-form-item label="物料大类" prop="materialCategory">
-          <el-select v-model="form.materialCategory" placeholder="请选择物料大类">
-            <el-option
-              v-for="dict in dict.type.material_category"
-              :key="dict.value"
-              :label="dict.label"
-              :value="dict.value"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="物料子类" prop="materialSubcategory">
-          <el-select v-model="form.materialSubcategory" placeholder="请选择物料子类">
-            <el-option
-              v-for="dict in dict.type.material_subcategory"
-              :key="dict.value"
-              :label="dict.label"
-              :value="dict.value"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="库区" prop="warehouseArea">
-          <el-select v-model="form.warehouseArea" placeholder="请选择库区">
-            <el-option
-              v-for="dict in dict.type.warehouse_area"
-              :key="dict.value"
-              :label="dict.label"
-              :value="dict.value"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="库存数量" prop="currentQuantity">
+        <!-- 扫码模式字段 -->
+        <template v-if="inboundMode === 'scan' && !form.id">
+           <el-form-item label="物料ID" prop="materialId" :rules="[{ required: true, message: '请扫描或输入物料ID', trigger: 'blur' }]">
+             <el-input v-model="form.materialId" placeholder="请扫描或输入物料ID" ref="scanInput" autofocus @keyup.enter.native="handleScanEnter" />
+           </el-form-item>
+        </template>
+
+        <!-- 新建物料模式字段 -->
+        <template v-if="inboundMode === 'new' || form.id">
+          <el-form-item label="物料名称" prop="materialName">
+            <el-input v-model="form.materialName" placeholder="请输入物料名称" />
+          </el-form-item>
+          <el-form-item label="物料大类" prop="materialCategory">
+            <el-select v-model="form.materialCategory" placeholder="请选择物料大类">
+              <el-option
+                v-for="dict in dict.type.material_category"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              ></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="物料子类" prop="materialSubcategory">
+            <el-select v-model="form.materialSubcategory" placeholder="请选择物料子类">
+              <el-option
+                v-for="dict in dict.type.material_subcategory"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              ></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="库区" prop="warehouseArea">
+            <el-select v-model="form.warehouseArea" placeholder="请选择库区">
+              <el-option
+                v-for="dict in dict.type.warehouse_area"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              ></el-option>
+            </el-select>
+          </el-form-item>
+        </template>
+
+        <el-form-item label="入库数量" prop="currentQuantity">
           <el-input-number v-model="form.currentQuantity" :min="1" :step="1" controls-position="right" placeholder="请输入数量" style="width: 100%" />
         </el-form-item>
         <el-form-item label="入库类型" prop="inboundType">
@@ -254,11 +282,40 @@
         <el-button @click="stockOutOpen=false">取 消</el-button>
       </div>
     </el-dialog>
+
+    <!-- 库存导入对话框 -->
+    <el-dialog :title="upload.title" :visible.sync="upload.open" width="400px" append-to-body>
+      <el-upload
+        ref="upload"
+        :limit="1"
+        accept=".xlsx, .xls"
+        :headers="upload.headers"
+        :action="upload.url + '?updateSupport=' + upload.updateSupport"
+        :disabled="upload.isUploading"
+        :on-progress="handleFileUploadProgress"
+        :on-success="handleFileSuccess"
+        :auto-upload="false"
+        drag
+      >
+        <i class="el-icon-upload"></i>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+        <div class="el-upload__tip" slot="tip">
+          <el-checkbox v-model="upload.updateSupport" /> 是否更新已经存在的库存数据
+          <el-link type="info" style="font-size:12px" @click="importTemplate">下载模板</el-link>
+        </div>
+        <div class="el-upload__tip" style="color:red" slot="tip">提示：仅允许导入“xls”或“xlsx”格式文件！</div>
+      </el-upload>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitFileForm">确 定</el-button>
+        <el-button @click="upload.open = false">取 消</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listInventory, getInventory, delInventory, addInventory, updateInventory, stockOutInventory } from "@/api/manage/inventory";
+import { listInventory, getInventory, delInventory, addInventory, updateInventory, stockOutInventory, scanInbound } from "@/api/manage/inventory";
+import { getToken } from "@/utils/auth";
 // 移除：import { listPlan } from "@/api/manage/plan";
 
 export default {
@@ -284,10 +341,29 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      // 入库模式: 'new' | 'scan'
+      inboundMode: 'new',
+
       // 是否显示出库弹出层
       stockOutOpen: false,
       // 记录禁用前的原始状态
       lastStatusBeforeDisable: new Map(),
+
+      // 用户导入参数
+      upload: {
+        // 是否显示弹出层（用户导入）
+        open: false,
+        // 弹出层标题（用户导入）
+        title: "",
+        // 是否禁用上传
+        isUploading: false,
+        // 是否更新已经存在的用户数据
+        updateSupport: 0,
+        // 设置上传的请求头部
+        headers: { Authorization: "Bearer " + getToken() },
+        // 上传的地址
+        url: process.env.VUE_APP_BASE_API + "/manage/inventory/importData"
+      },
 
       // 查询参数
       queryParams: {
@@ -422,10 +498,6 @@ export default {
           payload[key] = value;
         }
       });
-      // 若后端按“中文名称/标签”筛选入库类型
-      if (payload.inboundType !== undefined) {
-        payload.inboundType = this.mapValueToLabel(this.dict.type.inbound_type, payload.inboundType);
-      }
       return payload;
     },
 
@@ -503,8 +575,15 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
+      this.inboundMode = 'new'; // 默认新建模式
       this.open = true;
       this.title = "新增入库";
+    },
+
+    /** 扫码回车事件 */
+    handleScanEnter() {
+       // 可以在这里增加自动查询物料信息显示的逻辑，目前直接聚焦确认
+       // this.$refs['inventoryRef'].validateField('materialId');
     },
 
     /** 提交按钮 */
@@ -512,18 +591,31 @@ export default {
       this.$refs["inventoryRef"].validate(valid => {
         if (valid) {
           const payload = { ...this.form, quantity: this.form.currentQuantity };
+          
           if (this.form.id != null) {
+            // 编辑模式
             updateInventory(payload).then(response => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
             });
           } else {
-            addInventory(payload).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
+            // 新增模式
+            if (this.inboundMode === 'scan') {
+              // 扫码入库
+              scanInbound(payload).then(response => {
+                this.$modal.msgSuccess("扫码入库成功");
+                this.open = false;
+                this.getList();
+              });
+            } else {
+              // 新建物料入库
+              addInventory(payload).then(response => {
+                this.$modal.msgSuccess("新增成功");
+                this.open = false;
+                this.getList();
+              });
+            }
           }
         }
       });
@@ -625,6 +717,32 @@ export default {
       this.download('manage/inventory/export', {
         ...this.queryParams
       }, `inventory_${new Date().getTime()}.xlsx`)
+    },
+    /** 导入按钮操作 */
+    handleImport() {
+      this.upload.title = "库存导入";
+      this.upload.open = true;
+    },
+    /** 下载模板操作 */
+    importTemplate() {
+      this.download('manage/inventory/importTemplate', {
+      }, `inventory_template_${new Date().getTime()}.xlsx`)
+    },
+    // 文件上传中处理
+    handleFileUploadProgress(event, file, fileList) {
+      this.upload.isUploading = true;
+    },
+    // 文件上传成功处理
+    handleFileSuccess(response, file, fileList) {
+      this.upload.open = false;
+      this.upload.isUploading = false;
+      this.$refs.upload.clearFiles();
+      this.$alert("<div style='overflow: auto;overflow-x: hidden;max-height: 70vh;padding: 10px 20px 0;'>" + response.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
+      this.getList();
+    },
+    // 提交上传文件
+    submitFileForm() {
+      this.$refs.upload.submit();
     }
   }
 };
