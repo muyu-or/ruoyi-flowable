@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.manage.mapper.ReportTemplateMapper">
+    
+    <resultMap type="ReportTemplate" id="ReportTemplateResult">
+        <result property="id"    column="id"    />
+        <result property="templateCode"    column="template_code"    />
+        <result property="templateName"    column="template_name"    />
+        <result property="templateType"    column="template_type"    />
+        <result property="testType"    column="test_type"    />
+        <result property="storagePath"    column="storage_path"    />
+        <result property="paramConfig"    column="param_config"    />
+        <result property="reportStatus"    column="report_status"    />
+        <result property="remark"    column="remark"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectReportTemplateVo">
+        select id, template_code, template_name, template_type, test_type, storage_path, param_config, report_status, remark, create_by, create_time, update_by, update_time from report_template
+    </sql>
+
+    <select id="selectReportTemplateList" parameterType="ReportTemplate" resultMap="ReportTemplateResult">
+        <include refid="selectReportTemplateVo"/>
+        <where>  
+            <if test="templateCode != null  and templateCode != ''"> and template_code = #{templateCode}</if>
+            <if test="templateName != null  and templateName != ''"> and template_name like concat('%', #{templateName}, '%')</if>
+            <if test="templateType != null  and templateType != ''"> and template_type = #{templateType}</if>
+            <if test="testType != null  and testType != ''"> and test_type = #{testType}</if>
+            <if test="reportStatus != null "> and report_status = #{reportStatus}</if>
+        </where>
+    </select>
+    
+    <select id="selectReportTemplateById" parameterType="Long" resultMap="ReportTemplateResult">
+        <include refid="selectReportTemplateVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertReportTemplate" parameterType="ReportTemplate" useGeneratedKeys="true" keyProperty="id">
+        insert into report_template
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="templateCode != null and templateCode != ''">template_code,</if>
+            <if test="templateName != null and templateName != ''">template_name,</if>
+            <if test="templateType != null and templateType != ''">template_type,</if>
+            <if test="testType != null">test_type,</if>
+            <if test="storagePath != null and storagePath != ''">storage_path,</if>
+            <if test="paramConfig != null">param_config,</if>
+            <if test="reportStatus != null">report_status,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="templateCode != null and templateCode != ''">#{templateCode},</if>
+            <if test="templateName != null and templateName != ''">#{templateName},</if>
+            <if test="templateType != null and templateType != ''">#{templateType},</if>
+            <if test="testType != null">#{testType},</if>
+            <if test="storagePath != null and storagePath != ''">#{storagePath},</if>
+            <if test="paramConfig != null">#{paramConfig},</if>
+            <if test="reportStatus != null">#{reportStatus},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateReportTemplate" parameterType="ReportTemplate">
+        update report_template
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="templateCode != null and templateCode != ''">template_code = #{templateCode},</if>
+            <if test="templateName != null and templateName != ''">template_name = #{templateName},</if>
+            <if test="templateType != null and templateType != ''">template_type = #{templateType},</if>
+            <if test="testType != null">test_type = #{testType},</if>
+            <if test="storagePath != null and storagePath != ''">storage_path = #{storagePath},</if>
+            <if test="paramConfig != null">param_config = #{paramConfig},</if>
+            <if test="reportStatus != null">report_status = #{reportStatus},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteReportTemplateById" parameterType="Long">
+        delete from report_template where id = #{id}
+    </delete>
+
+    <delete id="deleteReportTemplateByIds" parameterType="String">
+        delete from report_template where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
