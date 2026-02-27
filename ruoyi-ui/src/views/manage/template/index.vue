@@ -17,16 +17,6 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="引擎类型" prop="templateType">
-        <el-select v-model="queryParams.templateType" placeholder="请选择引擎类型" clearable>
-          <el-option
-            v-for="dict in dict.type.template_type"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
       <el-form-item label="测试类型" prop="testType">
         <el-select v-model="queryParams.testType" placeholder="请选择测试类型" clearable>
           <el-option
@@ -90,11 +80,6 @@
       <el-table-column label="ID" align="center" prop="id" width="60" />
       <el-table-column label="模板编码" align="center" prop="templateCode" />
       <el-table-column label="模板名称" align="center" prop="templateName" show-overflow-tooltip />
-      <el-table-column label="引擎类型" align="center" prop="templateType">
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.template_type" :value="scope.row.templateType"/>
-        </template>
-      </el-table-column>
       <el-table-column label="测试类型" align="center" prop="testType">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.test_type" :value="scope.row.testType"/>
@@ -150,34 +135,18 @@
         <el-form-item label="模板名称" prop="templateName">
           <el-input v-model="form.templateName" placeholder="请输入模板名称" />
         </el-form-item>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="引擎类型" prop="templateType">
-              <el-select v-model="form.templateType" placeholder="请选择引擎类型" style="width: 100%">
-                <el-option
-                  v-for="dict in dict.type.template_type"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="测试类型" prop="testType">
-              <el-select v-model="form.testType" placeholder="请选择测试类型" style="width: 100%">
-                <el-option
-                  v-for="dict in dict.type.test_type"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <el-form-item label="测试类型" prop="testType">
+          <el-select v-model="form.testType" placeholder="请选择测试类型">
+            <el-option
+              v-for="dict in dict.type.test_type"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            ></el-option>
+          </el-select>
+        </el-form-item>
         <el-form-item label="模板文件" prop="storagePath">
-          <file-upload v-model="form.storagePath"/>
+          <file-upload v-model="form.storagePath" :isShowTip="false"/>
         </el-form-item>
         <el-form-item label="参数定义" prop="paramConfig">
           <el-input 
@@ -233,7 +202,7 @@ import * as XLSX from 'xlsx'
 
 export default {
   name: "Template",
-  dicts: ['template_type', 'test_type', 'report_status'],
+  dicts: ['test_type', 'report_status'],
   data() {
     return {
       // 遮罩层
@@ -265,7 +234,6 @@ export default {
         pageSize: 10,
         templateCode: null,
         templateName: null,
-        templateType: null,
         testType: null,
         reportStatus: null,
       },
@@ -278,9 +246,6 @@ export default {
         ],
         templateName: [
           { required: true, message: "模板名称不能为空", trigger: "blur" }
-        ],
-        templateType: [
-          { required: true, message: "模板引擎类型不能为空", trigger: "change" }
         ],
         storagePath: [
           { required: true, message: "模板文件存储路径/URL不能为空", trigger: "blur" }
@@ -315,7 +280,6 @@ export default {
         id: null,
         templateCode: null,
         templateName: null,
-        templateType: null,
         testType: null,
         storagePath: null,
         paramConfig: null,
@@ -413,23 +377,40 @@ export default {
         this.$modal.msgError("该模板未上传文件，无法预览");
         return;
       }
-      
-      const fileName = row.storagePath;
-      const fileType = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-      
+
       // 先打开弹窗并显示加载中
       this.previewOpen = true;
       this.previewType = 'loading';
-      
+
       // 构建资源请求URL
       const resourceUrl = '/common/download/resource?resource=' + encodeURIComponent(row.storagePath);
-      
+
       // 请求文件 Blob
       request({
         url: resourceUrl,
         method: 'get',
         responseType: 'blob'
       }).then(blob => {
+        // 优先从文件路径后缀判断，其次从blob的MIME type判断
+        const fileName = row.storagePath;
+        let fileType = '';
+        if (fileName.lastIndexOf('.') > -1) {
+          fileType = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        }
+        // 若路径无后缀，则从blob的MIME type推断
+        if (!fileType || fileType.length > 10) {
+          const mimeMap = {
+            'application/pdf': 'pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+            'application/msword': 'doc',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+            'application/vnd.ms-excel': 'xls',
+            'image/png': 'png',
+            'image/jpeg': 'jpg',
+            'image/gif': 'gif'
+          };
+          fileType = mimeMap[blob.type] || '';
+        }
         // 根据类型处理
         if (fileType === 'docx') {
           this.previewType = 'docx';
@@ -452,7 +433,7 @@ export default {
           reader.readAsArrayBuffer(blob);
         } else if (fileType === 'pdf') {
           this.previewType = 'pdf';
-          this.previewUrl = window.URL.createObjectURL(blob);
+          this.previewUrl = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
         } else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileType)) {
           this.previewType = 'image';
           this.previewUrl = window.URL.createObjectURL(blob);

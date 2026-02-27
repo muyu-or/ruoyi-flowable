@@ -72,34 +72,51 @@
       <el-table-column label="班组长姓名" align="center" prop="leaderName" />
       <el-table-column label="状态" align="center" prop="teamStatus">
         <template slot-scope="scope">
-          <el-switch
-            v-model="scope.row.teamStatus"
-            active-value="1"
-            inactive-value="0"
-            @change="handleStatusChange(scope.row)"
-          ></el-switch>
+          <dict-tag :options="dict.type.team_status" :value="scope.row.teamStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="260">
         <template slot-scope="scope">
           <el-button
+            size="mini"
             type="text"
             icon="el-icon-view"
             @click="handleView(scope.row)"
             v-hasPermi="['manage:team:query']"
           >查看</el-button>
           <el-button
+            size="mini"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['manage:team:edit']"
           >修改</el-button>
           <el-button
+            v-if="scope.row.teamStatus === '0'"
+            size="mini"
+            type="text"
+            icon="el-icon-open"
+            style="color: #67C23A;"
+            @click="handleStatusChange(scope.row, '1')"
+            v-hasPermi="['manage:team:edit']"
+          >启用</el-button>
+          <el-button
+            v-if="scope.row.teamStatus === '1'"
+            size="mini"
+            type="text"
+            icon="el-icon-turn-off"
+            style="color: #E6A23C;"
+            @click="handleStatusChange(scope.row, '0')"
+            v-hasPermi="['manage:team:edit']"
+          >停用</el-button>
+          <el-button
+            size="mini"
             type="text"
             icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['manage:team:remove']"
-          >删除</el-button>
+            style="color: #F56C6C;"
+            @click="handleDiscard(scope.row)"
+            v-hasPermi="['manage:team:edit']"
+          >废弃</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -224,6 +241,14 @@
         <el-table-column label="用户姓名" align="center" prop="nickName" />
         <el-table-column label="角色" align="center" prop="roleNames" :show-overflow-tooltip="true" />
         <el-table-column label="部门" align="center" prop="dept.deptName" />
+        <el-table-column label="所属班组" align="center" width="150">
+          <template slot-scope="scope">
+            <el-tooltip v-if="scope.row.teamNames" :content="scope.row.teamNames" placement="top" effect="dark">
+              <span class="team-cell">{{ scope.row.teamNames }}</span>
+            </el-tooltip>
+            <span v-else style="color: #c0c4cc;">暂无</span>
+          </template>
+        </el-table-column>
 
         <el-table-column label="操作" align="center" width="100">
           <template slot-scope="scope">
@@ -568,16 +593,23 @@ export default {
       }, `team_${new Date().getTime()}.xlsx`)
     },
     /** 状态修改 */
-    handleStatusChange(row) {
-      // 1=启用/正常, 0=停用
-      let text = row.teamStatus === "1" ? "启用" : "停用";
-      this.$modal.confirm('确认要"' + text + '""' + row.teamName + '"班组吗？').then(function() {
-        return updateTeam({ id: row.id, teamStatus: row.teamStatus });
+    handleStatusChange(row, status) {
+      let text = status === "1" ? "启用" : "停用";
+      this.$modal.confirm('确认要"' + text + '""' + row.teamName + '"班组吗？').then(() => {
+        return updateTeam({ id: row.id, teamStatus: status });
       }).then(() => {
+        this.getList();
         this.$modal.msgSuccess(text + "成功");
-      }).catch(function() {
-        row.teamStatus = row.teamStatus === "1" ? "0" : "1";
-      });
+      }).catch(() => {});
+    },
+    /** 废弃按钮操作 */
+    handleDiscard(row) {
+      this.$modal.confirm('确认要废弃"' + row.teamName + '"班组吗？废弃后将不在列表中展示。').then(() => {
+        return updateTeam({ id: row.id, teamStatus: "2" });
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("废弃成功");
+      }).catch(() => {});
     }
   }
 };
@@ -592,5 +624,13 @@ export default {
 }
 ::v-deep .el-table .success-row {
   background: #f0f9eb;
+}
+.team-cell {
+  display: inline-block;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 </style>

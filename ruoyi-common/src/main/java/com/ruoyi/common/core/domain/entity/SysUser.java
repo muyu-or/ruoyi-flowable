@@ -92,12 +92,23 @@ public class SysUser extends BaseEntity
     /** 角色名称组合（逗号分隔） */
     private String roleNames;
 
+    /** 所属班组名称组合（逗号分隔） */
+    private String teamNames;
+
     public String getRoleNames() {
         return roleNames;
     }
 
     public void setRoleNames(String roleNames) {
         this.roleNames = roleNames;
+    }
+
+    public String getTeamNames() {
+        return teamNames;
+    }
+
+    public void setTeamNames(String teamNames) {
+        this.teamNames = teamNames;
     }
 
     public SysUser()

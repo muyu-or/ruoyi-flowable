@@ -22,6 +22,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectInventoryVOList" parameterType="com.ruoyi.manage.domain.dto.InventoryDTO" resultMap="InventoryVOResult">
         <include refid="selectInventoryVo"/>
         <where>
+            AND i.status != '2'
             <if test="materialId != null and materialId != ''">
                 AND i.material_id LIKE CONCAT('%', #{materialId}, '%')
             </if>
