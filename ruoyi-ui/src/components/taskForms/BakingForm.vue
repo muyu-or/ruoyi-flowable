@@ -1,0 +1,100 @@
+<template>
+  <el-form ref="form" :model="form" :rules="rules" label-width="130px">
+    <el-form-item label="设备编号" prop="deviceNo">
+      <el-input v-model="form.deviceNo" placeholder="请输入设备编号" :disabled="readonly" />
+    </el-form-item>
+    <el-form-item label="烘烤温度(℃)" prop="bakingTemp">
+      <el-input-number
+        v-model="form.bakingTemp"
+        :min="0"
+        :precision="1"
+        :disabled="readonly"
+        style="width: 100%"
+      />
+    </el-form-item>
+    <el-form-item label="烘烤时长(分钟)" prop="bakingDuration">
+      <el-input-number
+        v-model="form.bakingDuration"
+        :min="0"
+        :disabled="readonly"
+        style="width: 100%"
+      />
+    </el-form-item>
+    <el-form-item label="镀膜厚度(nm)" prop="coatingThickness">
+      <el-input-number
+        v-model="form.coatingThickness"
+        :min="0"
+        :precision="2"
+        :disabled="readonly"
+        style="width: 100%"
+      />
+    </el-form-item>
+    <el-form-item label="操作人" prop="operator">
+      <el-input v-model="form.operator" placeholder="请输入操作人" :disabled="readonly" />
+    </el-form-item>
+    <el-form-item label="备注" prop="remark">
+      <el-input
+        v-model="form.remark"
+        type="textarea"
+        placeholder="请输入备注"
+        :disabled="readonly"
+      />
+    </el-form-item>
+  </el-form>
+</template>
+
+<script>
+export default {
+  name: 'BakingForm',
+  props: {
+    taskData: {
+      type: Object,
+      default: () => ({})
+    }
+  },
+  data() {
+    return {
+      readonly: false,
+      form: {
+        deviceNo: '',
+        bakingTemp: 0,
+        bakingDuration: 0,
+        coatingThickness: 0,
+        operator: '',
+        remark: ''
+      },
+      rules: {
+        deviceNo: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
+        bakingTemp: [{ required: true, message: '请输入烘烤温度', trigger: 'blur' }],
+        bakingDuration: [{ required: true, message: '请输入烘烤时长', trigger: 'blur' }],
+        coatingThickness: [{ required: true, message: '请输入镀膜厚度', trigger: 'blur' }],
+        operator: [{ required: true, message: '请输入操作人', trigger: 'blur' }]
+      }
+    }
+  },
+  methods: {
+    getFormData() {
+      return new Promise((resolve, reject) => {
+        this.$refs.form.validate(valid => {
+          if (valid) {
+            resolve({ ...this.form })
+          } else {
+            reject(new Error('表单校验失败'))
+          }
+        })
+      })
+    },
+    setFormData(data) {
+      if (!data) return
+      Object.keys(this.form).forEach(key => {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          this.$set(this.form, key, data[key])
+        }
+      })
+    },
+    setReadonly(val) {
+      this.readonly = val
+    }
+  }
+}
+</script>

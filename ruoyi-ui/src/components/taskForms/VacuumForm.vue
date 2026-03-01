@@ -1,0 +1,89 @@
+<template>
+  <el-form ref="form" :model="form" :rules="rules" label-width="130px">
+    <el-form-item label="设备编号" prop="deviceNo">
+      <el-input v-model="form.deviceNo" placeholder="请输入设备编号" :disabled="readonly" />
+    </el-form-item>
+    <el-form-item label="真空度(Pa)" prop="vacuumLevel">
+      <el-input-number
+        v-model="form.vacuumLevel"
+        :min="0"
+        :precision="2"
+        :disabled="readonly"
+        style="width: 100%"
+      />
+    </el-form-item>
+    <el-form-item label="处理时长(分钟)" prop="processDuration">
+      <el-input-number
+        v-model="form.processDuration"
+        :min="0"
+        :disabled="readonly"
+        style="width: 100%"
+      />
+    </el-form-item>
+    <el-form-item label="操作人" prop="operator">
+      <el-input v-model="form.operator" placeholder="请输入操作人" :disabled="readonly" />
+    </el-form-item>
+    <el-form-item label="异常记录" prop="abnormalRecord">
+      <el-input
+        v-model="form.abnormalRecord"
+        type="textarea"
+        placeholder="无异常则留空"
+        :disabled="readonly"
+      />
+    </el-form-item>
+  </el-form>
+</template>
+
+<script>
+export default {
+  name: 'VacuumForm',
+  props: {
+    taskData: {
+      type: Object,
+      default: () => ({})
+    }
+  },
+  data() {
+    return {
+      readonly: false,
+      form: {
+        deviceNo: '',
+        vacuumLevel: 0,
+        processDuration: 0,
+        operator: '',
+        abnormalRecord: ''
+      },
+      rules: {
+        deviceNo: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
+        vacuumLevel: [{ required: true, message: '请输入真空度', trigger: 'blur' }],
+        processDuration: [{ required: true, message: '请输入处理时长', trigger: 'blur' }],
+        operator: [{ required: true, message: '请输入操作人', trigger: 'blur' }]
+      }
+    }
+  },
+  methods: {
+    getFormData() {
+      return new Promise((resolve, reject) => {
+        this.$refs.form.validate(valid => {
+          if (valid) {
+            resolve({ ...this.form })
+          } else {
+            reject(new Error('表单校验失败'))
+          }
+        })
+      })
+    },
+    setFormData(data) {
+      if (!data) return
+      Object.keys(this.form).forEach(key => {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          this.$set(this.form, key, data[key])
+        }
+      })
+    },
+    setReadonly(val) {
+      this.readonly = val
+    }
+  }
+}
+</script>
