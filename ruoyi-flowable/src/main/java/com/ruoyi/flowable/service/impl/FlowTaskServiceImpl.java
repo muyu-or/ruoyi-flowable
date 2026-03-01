@@ -20,6 +20,7 @@ import com.ruoyi.flowable.flow.CustomProcessDiagramGenerator;
 import com.ruoyi.flowable.flow.FindNextNodeUtil;
 import com.ruoyi.flowable.flow.FlowableUtils;
 import com.ruoyi.flowable.service.IFlowTaskService;
+import com.ruoyi.flowable.service.IInventoryLinkageService;
 import com.ruoyi.flowable.service.ISysDeployFormService;
 import com.ruoyi.flowable.service.ISysFormService;
 import com.ruoyi.system.domain.SysForm;
@@ -84,8 +85,8 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
     @Resource
     private com.ruoyi.manage.mapper.ProductionTeamMapper productionTeamMapper;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.ruoyi.flowable.service.IInventoryLinkageService inventoryLinkageService;
+    @Resource
+    private IInventoryLinkageService inventoryLinkageService;
 
     /**
      * 完成任务
