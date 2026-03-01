@@ -139,7 +139,8 @@ export default {
         ],
         quantity: [
           {
-            validator: function(rule, value, callback) {
+            required: true,
+            validator: (rule, value, callback) => {
               if (value === undefined || value === null || value <= 0) {
                 callback(new Error('请输入大于0的入库数量'))
               } else {
@@ -161,20 +162,19 @@ export default {
         return Promise.resolve(Object.assign({}, this.form))
       }
       return new Promise((resolve, reject) => {
-        this.$refs.formRef.validate(function(valid) {
+        this.$refs.formRef.validate((valid) => {
           if (valid) {
             resolve(Object.assign({}, this.form))
           } else {
             reject(new Error('表单校验失败'))
           }
-        }.bind(this))
+        })
       })
     },
     setFormData(data) {
       if (!data) return
-      var keys = Object.keys(this.form)
-      for (var i = 0; i < keys.length; i++) {
-        var key = keys[i]
+      const keys = Object.keys(this.form)
+      for (const key of keys) {
         if (Object.prototype.hasOwnProperty.call(data, key)) {
           this.$set(this.form, key, data[key])
         }
