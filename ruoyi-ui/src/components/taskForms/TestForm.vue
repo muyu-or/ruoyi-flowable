@@ -1,5 +1,5 @@
 <template>
-  <el-form ref="form" :model="form" :rules="rules" label-width="120px">
+  <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
     <el-form-item label="测试项目" prop="testItems">
       <el-input v-model="form.testItems" placeholder="请输入测试项目" :disabled="readonly" />
     </el-form-item>
@@ -36,12 +36,6 @@
 <script>
 export default {
   name: 'TestForm',
-  props: {
-    taskData: {
-      type: Object,
-      default: () => ({})
-    }
-  },
   data() {
     return {
       readonly: false,
@@ -64,8 +58,11 @@ export default {
   },
   methods: {
     getFormData() {
+      if (this.readonly) {
+        return Promise.resolve({ ...this.form })
+      }
       return new Promise((resolve, reject) => {
-        this.$refs.form.validate(valid => {
+        this.$refs.formRef.validate(valid => {
           if (valid) {
             resolve({ ...this.form })
           } else {

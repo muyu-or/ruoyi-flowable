@@ -1,5 +1,5 @@
 <template>
-  <el-form ref="form" :model="form" :rules="rules" label-width="120px">
+  <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
     <el-form-item label="操作人" prop="operator">
       <el-input v-model="form.operator" placeholder="请输入操作人" :disabled="readonly" />
     </el-form-item>
@@ -34,12 +34,6 @@
 <script>
 export default {
   name: 'PreprocessForm',
-  props: {
-    taskData: {
-      type: Object,
-      default: () => ({})
-    }
-  },
   data() {
     return {
       readonly: false,
@@ -53,15 +47,27 @@ export default {
       rules: {
         operator: [{ required: true, message: '请输入操作人', trigger: 'blur' }],
         processMethod: [{ required: true, message: '请输入处理方式', trigger: 'blur' }],
-        processDuration: [{ required: true, message: '请输入处理时长', trigger: 'blur' }],
+        processDuration: [{
+          validator: (rule, value, callback) => {
+            if (value === undefined || value === null || value <= 0) {
+              callback(new Error('请输入大于0的处理时长'))
+            } else {
+              callback()
+            }
+          },
+          trigger: 'change'
+        }],
         processResult: [{ required: true, message: '请选择处理结果', trigger: 'change' }]
       }
     }
   },
   methods: {
     getFormData() {
+      if (this.readonly) {
+        return Promise.resolve({ ...this.form })
+      }
       return new Promise((resolve, reject) => {
-        this.$refs.form.validate(valid => {
+        this.$refs.formRef.validate(valid => {
           if (valid) {
             resolve({ ...this.form })
           } else {

@@ -1,5 +1,5 @@
 <template>
-  <el-form ref="form" :model="form" :rules="rules" label-width="130px">
+  <el-form ref="formRef" :model="form" :rules="rules" label-width="130px">
     <el-form-item label="设备编号" prop="deviceNo">
       <el-input v-model="form.deviceNo" placeholder="请输入设备编号" :disabled="readonly" />
     </el-form-item>
@@ -46,12 +46,6 @@
 <script>
 export default {
   name: 'BakingForm',
-  props: {
-    taskData: {
-      type: Object,
-      default: () => ({})
-    }
-  },
   data() {
     return {
       readonly: false,
@@ -65,17 +59,47 @@ export default {
       },
       rules: {
         deviceNo: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
-        bakingTemp: [{ required: true, message: '请输入烘烤温度', trigger: 'blur' }],
-        bakingDuration: [{ required: true, message: '请输入烘烤时长', trigger: 'blur' }],
-        coatingThickness: [{ required: true, message: '请输入镀膜厚度', trigger: 'blur' }],
+        bakingTemp: [{
+          validator: (rule, value, callback) => {
+            if (value === undefined || value === null || value <= 0) {
+              callback(new Error('请输入大于0的烘烤温度'))
+            } else {
+              callback()
+            }
+          },
+          trigger: 'change'
+        }],
+        bakingDuration: [{
+          validator: (rule, value, callback) => {
+            if (value === undefined || value === null || value <= 0) {
+              callback(new Error('请输入大于0的烘烤时长'))
+            } else {
+              callback()
+            }
+          },
+          trigger: 'change'
+        }],
+        coatingThickness: [{
+          validator: (rule, value, callback) => {
+            if (value === undefined || value === null || value <= 0) {
+              callback(new Error('请输入大于0的镀膜厚度'))
+            } else {
+              callback()
+            }
+          },
+          trigger: 'change'
+        }],
         operator: [{ required: true, message: '请输入操作人', trigger: 'blur' }]
       }
     }
   },
   methods: {
     getFormData() {
+      if (this.readonly) {
+        return Promise.resolve({ ...this.form })
+      }
       return new Promise((resolve, reject) => {
-        this.$refs.form.validate(valid => {
+        this.$refs.formRef.validate(valid => {
           if (valid) {
             resolve({ ...this.form })
           } else {

@@ -1,5 +1,5 @@
 <template>
-  <el-form ref="form" :model="form" :rules="rules" label-width="130px">
+  <el-form ref="formRef" :model="form" :rules="rules" label-width="130px">
     <el-form-item label="设备编号" prop="deviceNo">
       <el-input v-model="form.deviceNo" placeholder="请输入设备编号" :disabled="readonly" />
     </el-form-item>
@@ -37,12 +37,6 @@
 <script>
 export default {
   name: 'VacuumForm',
-  props: {
-    taskData: {
-      type: Object,
-      default: () => ({})
-    }
-  },
   data() {
     return {
       readonly: false,
@@ -55,16 +49,37 @@ export default {
       },
       rules: {
         deviceNo: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
-        vacuumLevel: [{ required: true, message: '请输入真空度', trigger: 'blur' }],
-        processDuration: [{ required: true, message: '请输入处理时长', trigger: 'blur' }],
+        vacuumLevel: [{
+          validator: (rule, value, callback) => {
+            if (value === undefined || value === null || value <= 0) {
+              callback(new Error('请输入大于0的真空度'))
+            } else {
+              callback()
+            }
+          },
+          trigger: 'change'
+        }],
+        processDuration: [{
+          validator: (rule, value, callback) => {
+            if (value === undefined || value === null || value <= 0) {
+              callback(new Error('请输入大于0的处理时长'))
+            } else {
+              callback()
+            }
+          },
+          trigger: 'change'
+        }],
         operator: [{ required: true, message: '请输入操作人', trigger: 'blur' }]
       }
     }
   },
   methods: {
     getFormData() {
+      if (this.readonly) {
+        return Promise.resolve({ ...this.form })
+      }
       return new Promise((resolve, reject) => {
-        this.$refs.form.validate(valid => {
+        this.$refs.formRef.validate(valid => {
           if (valid) {
             resolve({ ...this.form })
           } else {

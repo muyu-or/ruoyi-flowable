@@ -1,5 +1,5 @@
 <template>
-  <el-form ref="form" :model="form" :rules="rules" label-width="120px">
+  <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
     <el-form-item label="原料名称" prop="materialName">
       <el-select
         v-model="form.materialName"
@@ -46,12 +46,6 @@ import { listInventory } from '@/api/manage/inventory'
 
 export default {
   name: 'StockOutForm',
-  props: {
-    taskData: {
-      type: Object,
-      default: () => ({})
-    }
-  },
   data() {
     return {
       readonly: false,
@@ -65,7 +59,16 @@ export default {
       },
       rules: {
         materialName: [{ required: true, message: '请选择原料名称', trigger: 'change' }],
-        outQuantity: [{ required: true, message: '请输入出库数量', trigger: 'blur' }],
+        outQuantity: [{
+          validator: (rule, value, callback) => {
+            if (value === undefined || value === null || value <= 0) {
+              callback(new Error('请输入大于0的出库数量'))
+            } else {
+              callback()
+            }
+          },
+          trigger: 'change'
+        }],
         recipient: [{ required: true, message: '请输入领用人', trigger: 'blur' }],
         purpose: [{ required: true, message: '请输入用途', trigger: 'blur' }]
       }
@@ -83,8 +86,11 @@ export default {
       })
     },
     getFormData() {
+      if (this.readonly) {
+        return Promise.resolve({ ...this.form })
+      }
       return new Promise((resolve, reject) => {
-        this.$refs.form.validate(valid => {
+        this.$refs.formRef.validate(valid => {
           if (valid) {
             resolve({ ...this.form })
           } else {

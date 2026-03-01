@@ -1,5 +1,5 @@
 <template>
-  <el-form ref="form" :model="form" :rules="rules" label-width="120px">
+  <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
     <el-form-item label="产品名称" prop="productName">
       <el-input v-model="form.productName" placeholder="请输入产品名称" :disabled="readonly" />
     </el-form-item>
@@ -36,12 +36,6 @@
 <script>
 export default {
   name: 'FinalStockInForm',
-  props: {
-    taskData: {
-      type: Object,
-      default: () => ({})
-    }
-  },
   data() {
     return {
       readonly: false,
@@ -54,7 +48,16 @@ export default {
       },
       rules: {
         productName: [{ required: true, message: '请输入产品名称', trigger: 'blur' }],
-        inQuantity: [{ required: true, message: '请输入入库数量', trigger: 'blur' }],
+        inQuantity: [{
+          validator: (rule, value, callback) => {
+            if (value === undefined || value === null || value <= 0) {
+              callback(new Error('请输入大于0的入库数量'))
+            } else {
+              callback()
+            }
+          },
+          trigger: 'change'
+        }],
         storageLocation: [{ required: true, message: '请输入存放位置', trigger: 'blur' }],
         operator: [{ required: true, message: '请输入操作人', trigger: 'blur' }]
       }
@@ -62,8 +65,11 @@ export default {
   },
   methods: {
     getFormData() {
+      if (this.readonly) {
+        return Promise.resolve({ ...this.form })
+      }
       return new Promise((resolve, reject) => {
-        this.$refs.form.validate(valid => {
+        this.$refs.formRef.validate(valid => {
           if (valid) {
             resolve({ ...this.form })
           } else {
