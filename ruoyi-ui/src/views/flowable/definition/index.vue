@@ -450,7 +450,8 @@ export default {
         query: {
           deployId: row.deploymentId,
           procDefId: row.id,
-          procName: row.name
+          procName: row.name,
+          version: row.version
         }
       })
     },
