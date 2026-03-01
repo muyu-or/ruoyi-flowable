@@ -102,4 +102,10 @@ public class FlowTaskDto implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date finishTime;
 
+    @ApiModelProperty("任务是否成功(1:成功 0:失败 2:放弃)")
+    private Integer taskSuccess;
+
+    @ApiModelProperty("流程状态: running=进行中, finished=已完成, rejected=失败(不通过), stopped=已取消")
+    private String procStatus;
+
 }

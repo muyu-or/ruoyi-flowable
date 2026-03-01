@@ -311,7 +311,9 @@ public class FlowTeamServiceImpl extends FlowServiceFactory implements IFlowTeam
                 return;
             }
 
-            nodeExec.setStatus("completed");
+            // 根据 result 决定节点状态：rejected → "rejected"，其余 → "completed"
+            String nodeStatus = "rejected".equals(result) ? "rejected" : "completed";
+            nodeExec.setStatus(nodeStatus);
             nodeExec.setCompleteTime(nowStr);
             nodeExec.setResult(result);
             nodeExec.setApproveComment(comment);
@@ -328,9 +330,9 @@ public class FlowTeamServiceImpl extends FlowServiceFactory implements IFlowTeam
             }
 
             taskNodeExecutionService.updateTaskNodeExecution(nodeExec);
-            log.info("✅ 任务 {} 完成记录已保存（含执行人 {}），结果: {}", taskId, userId, result);
+            log.info("✅ 任务 {} 完成记录已保存（含执行人 {}），结果: {}, 节点状态: {}", taskId, userId, result, nodeStatus);
 
-            // 检测流程是否已全部完成
+            // 检测流程是否已全部完成（rejected 时流程已被 deleteProcessInstance 终止，remaining 为 0）
             try {
                 if (nodeExec.getExecRecordId() != null) {
                     TaskExecutionRecord execRecord = taskExecutionRecordService.selectTaskExecutionRecordById(nodeExec.getExecRecordId());
@@ -341,7 +343,8 @@ public class FlowTeamServiceImpl extends FlowServiceFactory implements IFlowTeam
                                 .active()
                                 .count();
                         if (remaining == 0) {
-                            execRecord.setStatus("completed");
+                            // 流程级别状态与节点结果保持一致
+                            execRecord.setStatus("rejected".equals(result) ? "rejected" : "completed");
                             execRecord.setCompleteTime(nowStr);
                             taskExecutionRecordService.updateTaskExecutionRecord(execRecord);
                         }

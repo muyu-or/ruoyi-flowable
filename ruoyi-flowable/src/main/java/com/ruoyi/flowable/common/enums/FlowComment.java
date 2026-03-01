@@ -16,7 +16,8 @@ public enum FlowComment {
     REJECT("3", "驳回意见"),
     DELEGATE("4", "委派意见"),
     ASSIGN("5", "转办意见"),
-    STOP("6", "终止流程");
+    STOP("6", "终止流程"),
+    ABANDON("7", "放弃任务");
 
     /**
      * 类型

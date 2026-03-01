@@ -104,6 +104,15 @@ export function saveXml(data) {
   })
 }
 
+// 根据nodeTeamMap启动流程（支持班组动态分配）
+export function startProcessWithTeam(data) {
+  return request({
+    url: '/flowable/definition/startWithTeam',
+    method: 'post',
+    data: data
+  })
+}
+
 // 新增流程定义
 export function addDeployment(data) {
   return request({

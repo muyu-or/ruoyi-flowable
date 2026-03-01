@@ -72,6 +72,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="teamName != null  and teamName != ''"> and team_name like concat('%', #{teamName}, '%')</if>
             <if test="leaderName != null  and leaderName != ''"> and leader_name like concat('%', #{leaderName}, '%')</if>
             <if test="teamStatus != null  and teamStatus != ''"> and team_status = #{teamStatus}</if>
+            <if test="leaderId != null"> and leader_id = #{leaderId}</if>
         </where>
     </select>
     

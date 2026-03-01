@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form v-show="showSearch" ref="queryForm" :model="queryParams" :inline="true" label-width="68px">
       <el-form-item label="名称" prop="name">
         <el-input
           v-model="queryParams.name"
@@ -11,12 +11,14 @@
         />
       </el-form-item>
       <el-form-item label="开始时间" prop="deployTime">
-        <el-date-picker clearable size="small"
-                        v-model="queryParams.deployTime"
-                        type="date"
-                        value-format="yyyy-MM-dd"
-                        placeholder="选择时间">
-        </el-date-picker>
+        <el-date-picker
+          v-model="queryParams.deployTime"
+          clearable
+          size="small"
+          type="date"
+          value-format="yyyy-MM-dd"
+          placeholder="选择时间"
+        />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -27,58 +29,61 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
+          v-hasPermi="['system:deployment:add']"
           type="primary"
           plain
           icon="el-icon-plus"
           size="mini"
           @click="handleAdd"
-          v-hasPermi="['system:deployment:add']"
         >新增流程</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
+          v-hasPermi="['system:deployment:remove']"
           type="danger"
           plain
           icon="el-icon-delete"
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
-          v-hasPermi="['system:deployment:remove']"
         >删除</el-button>
       </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
     <el-table v-loading="loading" :data="myProcessList" border @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="流程编号" align="center" prop="procInsId" :show-overflow-tooltip="true"/>
-      <el-table-column label="流程名称" align="center" prop="procDefName" :show-overflow-tooltip="true"/>
+      <el-table-column label="流程编号" align="center" prop="procInsId" :show-overflow-tooltip="true" />
+      <el-table-column label="流程名称" align="center" prop="procDefName" :show-overflow-tooltip="true" />
       <el-table-column label="流程类别" align="center" prop="category" width="100px" />
       <el-table-column label="流程版本" align="center" width="80px">
         <template slot-scope="scope">
-          <el-tag size="medium" >v{{ scope.row.procDefVersion }}</el-tag>
+          <el-tag size="medium">v{{ scope.row.procDefVersion }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="提交时间" align="center" prop="createTime" width="180"/>
+      <el-table-column label="提交时间" align="center" prop="createTime" width="180" />
       <el-table-column label="流程状态" align="center" width="100">
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.finishTime == null" size="mini">进行中</el-tag>
-          <el-tag type="success" v-if="scope.row.finishTime != null" size="mini">已完成</el-tag>
+          <el-tag v-if="scope.row.procStatus === 'running'" type="primary" size="mini">进行中</el-tag>
+          <el-tag v-else-if="scope.row.procStatus === 'finished'" type="success" size="mini">已完成</el-tag>
+          <el-tag v-else-if="scope.row.procStatus === 'rejected'" type="danger" size="mini">失败</el-tag>
+          <el-tag v-else-if="scope.row.procStatus === 'stopped'" type="info" size="mini">已取消</el-tag>
+          <el-tag v-else size="mini">{{ scope.row.finishTime == null ? '进行中' : '已完成' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="耗时" align="center" prop="duration" width="180"/>
-      <el-table-column label="当前节点" align="center" prop="taskName"/>
+      <el-table-column label="耗时" align="center" prop="duration" width="180" />
+      <el-table-column label="当前节点" align="center" prop="taskName" />
       <el-table-column label="办理人" align="center">
         <template slot-scope="scope">
-          <label v-if="scope.row.assigneeName">{{scope.row.assigneeName}} <el-tag type="info" size="mini">{{scope.row.assigneeDeptName}}</el-tag></label>
-<!--          <label v-if="scope.row.candidate">{{scope.row.candidate}}</label>-->
+          <label v-if="scope.row.assigneeName">{{ scope.row.assigneeName }} <el-tag type="info" size="mini">{{ scope.row.assigneeDeptName }}</el-tag></label>
+          <!--          <label v-if="scope.row.candidate">{{scope.row.candidate}}</label>-->
         </template>
       </el-table-column>
       <el-table-column label="操作" width="150" fixed="right" class-name="small-padding fixed-width">
         <template slot-scope="scope">
-          <el-button @click="handleFlowRecord(scope.row)" type="text" size="small">详情</el-button>
-          <el-button @click="handleStop(scope.row)" type="text" size="small">取消申请</el-button>
-          <el-button @click="handleDelete(scope.row)" type="text" size="small" v-hasPermi="['system:deployment:remove']">删除</el-button>
+          <el-button type="text" size="small" @click="handleFlowRecord(scope.row)">详情</el-button>
+          <el-button type="text" size="small" @click="handleStop(scope.row)">取消申请</el-button>
+          <el-button v-hasPermi="['system:deployment:remove']" type="text" size="small" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -93,7 +98,7 @@
 
     <!-- 发起流程 -->
     <el-dialog :title="title" :visible.sync="open" width="60%" append-to-body>
-      <el-form :model="queryProcessParams" ref="queryProcessForm" :inline="true" v-show="showSearch" label-width="68px">
+      <el-form v-show="showSearch" ref="queryProcessForm" :model="queryProcessParams" :inline="true" label-width="68px">
         <el-form-item label="名称" prop="name">
           <el-input
             v-model="queryProcessParams.name"
@@ -108,11 +113,11 @@
           <el-button icon="el-icon-refresh" size="mini" @click="resetProcessQuery">重置</el-button>
         </el-form-item>
       </el-form>
-      <el-table v-loading="processLoading" fit :data="definitionList" border >
+      <el-table v-loading="processLoading" fit :data="definitionList" border>
         <el-table-column label="流程名称" align="center" prop="name" />
         <el-table-column label="流程版本" align="center">
           <template slot-scope="scope">
-            <el-tag size="medium" >v{{ scope.row.version }}</el-tag>
+            <el-tag size="medium">v{{ scope.row.version }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="流程分类" align="center" prop="category" />
@@ -145,13 +150,12 @@ import {
   delDeployment,
   addDeployment,
   updateDeployment,
-  exportDeployment,
-  flowRecord
-} from "@/api/flowable/finished";
-import { myProcessList,stopProcess } from "@/api/flowable/process";
-import {listDefinition} from "@/api/flowable/definition";
+  exportDeployment
+} from '@/api/flowable/finished'
+import { myProcessList, stopProcess } from '@/api/flowable/process'
+import { listDefinition } from '@/api/flowable/definition'
 export default {
-  name: "Deploy",
+  name: 'Deploy',
   components: {
   },
   data() {
@@ -169,15 +173,15 @@ export default {
       showSearch: true,
       // 总条数
       total: 0,
-      processTotal:0,
+      processTotal: 0,
       // 我发起的流程列表数据
       myProcessList: [],
       // 弹出层标题
-      title: "",
+      title: '',
       // 是否显示弹出层
       open: false,
-      src: "",
-      definitionList:[],
+      src: '',
+      definitionList: [],
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -210,26 +214,26 @@ export default {
       form: {},
       // 表单校验
       rules: {
-      },
-    };
+      }
+    }
   },
   created() {
-    this.getList();
+    this.getList()
   },
   methods: {
     /** 查询流程定义列表 */
     getList() {
-      this.loading = true;
+      this.loading = true
       myProcessList(this.queryParams).then(response => {
-        this.myProcessList = response.data.records;
-        this.total = response.data.total;
-        this.loading = false;
-      });
+        this.myProcessList = response.data.records
+        this.total = response.data.total
+        this.loading = false
+      })
     },
     // 取消按钮
     cancel() {
-      this.open = false;
-      this.reset();
+      this.open = false
+      this.reset()
     },
     // 表单重置
     reset() {
@@ -244,134 +248,135 @@ export default {
         derivedFromRoot: null,
         parentDeploymentId: null,
         engineVersion: null
-      };
-      this.resetForm("form");
+      }
+      this.resetForm('form')
     },
     /** 搜索按钮操作 */
     handleQuery() {
-      this.queryParams.pageNum = 1;
-      this.getList();
+      this.queryParams.pageNum = 1
+      this.getList()
     },
     /** 重置按钮操作 */
     resetQuery() {
-      this.resetForm("queryForm");
-      this.handleQuery();
+      this.resetForm('queryForm')
+      this.handleQuery()
     },
     /** 搜索按钮操作 */
     handleProcessQuery() {
-      this.queryProcessParams.pageNum = 1;
-      this.listDefinition();
+      this.queryProcessParams.pageNum = 1
+      this.listDefinition()
     },
     /** 重置按钮操作 */
     resetProcessQuery() {
-      this.resetForm("queryProcessForm");
-      this.handleProcessQuery();
+      this.resetForm('queryProcessForm')
+      this.handleProcessQuery()
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.procInsId)
-      this.single = selection.length!==1
+      this.single = selection.length !== 1
       this.multiple = !selection.length
     },
     /** 新增按钮操作 */
     handleAdd() {
-      this.open = true;
-      this.title = "发起流程";
-      this.listDefinition();
+      this.open = true
+      this.title = '发起流程'
+      this.listDefinition()
     },
-    listDefinition(){
+    listDefinition() {
       listDefinition(this.queryProcessParams).then(response => {
-        this.definitionList = response.data.records;
-        this.processTotal = response.data.total;
-        this.processLoading = false;
-      });
+        this.definitionList = response.data.records
+        this.processTotal = response.data.total
+        this.processLoading = false
+      })
     },
     /**  发起流程申请 */
-    handleStartProcess(row){
+    handleStartProcess(row) {
       this.$router.push({ path: '/flowable/task/myProcess/send/index',
         query: {
           deployId: row.deploymentId,
-          procDefId: row.id
-          }
+          procDefId: row.id,
+          procName: row.name
+        }
       })
     },
     /**  取消流程申请 */
-    handleStop(row){
+    handleStop(row) {
       const params = {
         instanceId: row.procInsId
       }
-      stopProcess(params).then( res => {
-       this.$modal.msgSuccess(res.msg);
-        this.getList();
-      });
+      stopProcess(params).then(res => {
+        this.$modal.msgSuccess(res.msg)
+        this.getList()
+      })
     },
     /** 流程流转记录 */
-    handleFlowRecord(row){
+    handleFlowRecord(row) {
       this.$router.push({ path: '/flowable/task/myProcess/detail/index',
         query: {
           procInsId: row.procInsId,
           deployId: row.deployId,
           taskId: row.taskId
-      }})
+        }})
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
-      this.reset();
+      this.reset()
       const id = row.id || this.ids
       getDeployment(id).then(response => {
-        this.form = response.data;
-        this.open = true;
-        this.title = "修改流程定义";
-      });
+        this.form = response.data
+        this.open = true
+        this.title = '修改流程定义'
+      })
     },
     /** 提交按钮 */
     submitForm() {
-      this.$refs["form"].validate(valid => {
+      this.$refs['form'].validate(valid => {
         if (valid) {
           if (this.form.id != null) {
             updateDeployment(this.form).then(response => {
-             this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
+              this.$modal.msgSuccess('修改成功')
+              this.open = false
+              this.getList()
+            })
           } else {
             addDeployment(this.form).then(response => {
-             this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
+              this.$modal.msgSuccess('新增成功')
+              this.open = false
+              this.getList()
+            })
           }
         }
-      });
+      })
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      const ids = row.procInsId || this.ids;// 暂不支持删除多个流程
-      this.$confirm('是否确认删除流程定义编号为"' + ids + '"的数据项?', "警告", {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "warning"
+      const ids = row.procInsId || this.ids// 暂不支持删除多个流程
+      this.$confirm('是否确认删除流程定义编号为"' + ids + '"的数据项?', '警告', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
       }).then(() => {
-        return delDeployment(ids);
+        return delDeployment(ids)
       }).then(() => {
-        this.getList();
-       this.$modal.msgSuccess("删除成功");
+        this.getList()
+        this.$modal.msgSuccess('删除成功')
       })
     },
     /** 导出按钮操作 */
     handleExport() {
-      const queryParams = this.queryParams;
-      this.$confirm('是否确认导出所有流程定义数据项?', "警告", {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "warning"
+      const queryParams = this.queryParams
+      this.$confirm('是否确认导出所有流程定义数据项?', '警告', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
       }).then(() => {
-        return exportDeployment(queryParams);
+        return exportDeployment(queryParams)
       }).then(response => {
-        this.download(response.msg);
+        this.download(response.msg)
       })
     }
   }
-};
+}
 </script>
 

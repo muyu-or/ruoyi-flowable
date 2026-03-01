@@ -9,6 +9,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.system.domain.FlowProcDefDto;
 import com.ruoyi.flowable.domain.dto.FlowSaveXmlVo;
+import com.ruoyi.flowable.domain.dto.FlowStartDto;
 import com.ruoyi.flowable.service.IFlowDefinitionService;
 import com.ruoyi.system.domain.SysExpression;
 import com.ruoyi.system.service.ISysExpressionService;
@@ -164,6 +165,14 @@ public class FlowDefinitionController extends BaseController {
     public AjaxResult start(@ApiParam(value = "流程定义id") @PathVariable(value = "procDefId") String procDefId,
                             @ApiParam(value = "变量集合,json对象") @RequestBody Map<String, Object> variables) {
         return flowDefinitionService.startProcessInstanceById(procDefId, variables);
+    }
+
+    @ApiOperation(value = "发起流程（支持班组任务分配）")
+    @Log(title = "发起流程", businessType = BusinessType.INSERT)
+    @PostMapping("/startWithTeam")
+    @PreAuthorize("@ss.hasPermi('flowable:definition:start')")
+    public AjaxResult startWithTeam(@ApiParam(value = "流程启动参数") @RequestBody FlowStartDto flowStartDto) {
+        return flowDefinitionService.startProcessInstanceByDto(flowStartDto);
     }
 
     @ApiOperation(value = "激活或挂起流程定义")

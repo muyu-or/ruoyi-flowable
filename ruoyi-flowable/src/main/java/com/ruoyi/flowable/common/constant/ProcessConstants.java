@@ -76,5 +76,14 @@ public class ProcessConstants {
      */
     public static final String FLOWABLE_SKIP_EXPRESSION_ENABLED = "_FLOWABLE_SKIP_EXPRESSION_ENABLED";
 
+    /**
+     * 流程变量key：节点-班组映射（JSON字符串：{nodeKey: teamId}）
+     */
+    public static final String NODE_TEAM_MAP_KEY = "NODE_TEAM_MAP";
+
+    /**
+     * 流程变量key：主班组ID（兜底，当某节点无单独配置时使用）
+     */
+    public static final String MAIN_TEAM_ID_KEY = "MAIN_TEAM_ID";
 
 }

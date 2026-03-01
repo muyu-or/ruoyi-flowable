@@ -274,4 +274,28 @@ public class FlowTaskController extends BaseController {
         return flowTaskService.flowTaskInfo(procInsId,elementId);
     }
 
+    @ApiOperation(value = "更新任务候选人")
+    @PostMapping("/updateTaskCandidates")
+    @Log(title = "更新任务候选人", businessType = BusinessType.UPDATE)
+    public AjaxResult updateTaskCandidates(@RequestParam String taskId) {
+        try {
+            flowTaskService.updateTaskCandidates(taskId);
+            return AjaxResult.success("任务候选人已更新");
+        } catch (Exception e) {
+            return AjaxResult.error(e.getMessage());
+        }
+    }
+
+    @ApiOperation(value = "批量更新流程任务候选人")
+    @PostMapping("/updateFlowInstanceTasksCandidates")
+    @Log(title = "批量更新流程任务候选人", businessType = BusinessType.UPDATE)
+    public AjaxResult updateFlowInstanceTasksCandidates(@RequestParam String procInstId) {
+        try {
+            flowTaskService.updateFlowInstanceTasksCandidates(procInstId);
+            return AjaxResult.success("流程实例的所有任务候选人已更新");
+        } catch (Exception e) {
+            return AjaxResult.error(e.getMessage());
+        }
+    }
+
 }

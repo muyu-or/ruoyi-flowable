@@ -8,12 +8,15 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.flowable.common.enums.FlowComment;
+import com.ruoyi.flowable.domain.dto.FlowStartDto;
 import com.ruoyi.system.domain.FlowProcDefDto;
 import com.ruoyi.flowable.factory.FlowServiceFactory;
 import com.ruoyi.flowable.service.IFlowDefinitionService;
 import com.ruoyi.flowable.service.ISysDeployFormService;
 import com.ruoyi.system.domain.SysForm;
+import com.ruoyi.system.domain.TaskExecutionRecord;
 import com.ruoyi.system.mapper.FlowDeployMapper;
+import com.ruoyi.system.service.ITaskExecutionRecordService;
 import com.ruoyi.system.service.ISysDeptService;
 import com.ruoyi.system.service.ISysPostService;
 import com.ruoyi.system.service.ISysUserService;
@@ -29,11 +32,14 @@ import org.flowable.image.impl.DefaultProcessDiagramGenerator;
 import org.flowable.task.api.Task;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import com.alibaba.fastjson2.JSON;
 
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -58,7 +64,11 @@ public class FlowDefinitionServiceImpl extends FlowServiceFactory implements IFl
     @Resource
     private FlowDeployMapper flowDeployMapper;
 
+    @Resource
+    private ITaskExecutionRecordService taskExecutionRecordService;
+
     private static final String BPMN_FILE_SUFFIX = ".bpmn";
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public boolean exist(String processDefinitionKey) {
@@ -134,6 +144,50 @@ public class FlowDefinitionServiceImpl extends FlowServiceFactory implements IFl
         ProcessDefinition definition = repositoryService.createProcessDefinitionQuery().deploymentId(deploy.getId()).singleResult();
         repositoryService.setProcessDefinitionCategory(definition.getId(), category);
 
+        // ✅ 新增: 流程定义保存后，自动更新所有运行中的该流程实例的任务候选人
+        try {
+            log.info("========== 开始更新流程定义后的所有任务候选人 ==========");
+            log.info("流程定义: {}, 部署ID: {}", definition.getKey(), deploy.getId());
+
+            // 获取该流程定义的所有运行中的流程实例
+            List<ProcessInstance> processInstances = runtimeService.createProcessInstanceQuery()
+                    .processDefinitionKey(definition.getKey())
+                    .list();
+
+            log.info("找到{}个运行中的流程实例", processInstances.size());
+
+            if (processInstances.isEmpty()) {
+                log.info("无运行中的流程实例，无需更新任务候选人");
+                log.info("========== 流程定义保存完成 ==========");
+                return;
+            }
+
+            // ✅ 为每个运行中的流程实例更新任务候选人
+            int successCount = 0;
+            int failCount = 0;
+
+            for (ProcessInstance processInstance : processInstances) {
+                try {
+                    log.info("正在更新流程实例: {}", processInstance.getId());
+                    // 调用 updateFlowInstanceTasksCandidates 方法更新所有任务候选人
+                    com.ruoyi.common.utils.spring.SpringUtils.getBean(
+                            com.ruoyi.flowable.service.IFlowTaskService.class)
+                            .updateFlowInstanceTasksCandidates(processInstance.getId());
+                    successCount++;
+                } catch (Exception e) {
+                    log.error("更新流程实例{}的任务候选人失败", processInstance.getId(), e);
+                    failCount++;
+                }
+            }
+
+            log.info("✅ 流程定义保存完成，已更新{}个流程实例的任务候选人，成功{}个，失败{}个",
+                    processInstances.size(), successCount, failCount);
+            log.info("========== 流程定义保存完成 ==========");
+
+        } catch (Exception e) {
+            log.error("❌ 更新流程定义后的任务候选人时出错", e);
+            // 不抛出异常，避免影响流程定义保存
+        }
     }
 
     /**
@@ -195,18 +249,145 @@ public class FlowDefinitionServiceImpl extends FlowServiceFactory implements IFl
             // 设置流程发起人Id到流程中
             SysUser sysUser = SecurityUtils.getLoginUser().getUser();
             identityService.setAuthenticatedUserId(sysUser.getUserId().toString());
+
+            // 如果variables为null，初始化为HashMap
+            if (variables == null) {
+                variables = new HashMap<>();
+            }
             variables.put(ProcessConstants.PROCESS_INITIATOR, sysUser.getUserId());
 
             // 流程发起时 跳过发起人节点
             ProcessInstance processInstance = runtimeService.startProcessInstanceById(procDefId, variables);
-            // 给第一步申请人节点设置任务执行人和意见
-            Task task = taskService.createTaskQuery().processInstanceId(processInstance.getProcessInstanceId()).singleResult();
-            if (Objects.nonNull(task)) {
-                taskService.addComment(task.getId(), processInstance.getProcessInstanceId(), FlowComment.NORMAL.getType(), sysUser.getNickName() + "发起流程申请");
-                taskService.complete(task.getId(), variables);
+
+            String procInstId = processInstance.getProcessInstanceId();
+
+            // 为流程中的所有任务节点注入班组候选人
+            // 这确保即使任务监听器没有运行，候选人也能被正确设置
+            try {
+                List<Task> allTasks = taskService.createTaskQuery()
+                        .processInstanceId(procInstId)
+                        .list();
+
+                log.info("流程启动后，共有 {} 个待办任务", allTasks.size());
+
+                for (Task task : allTasks) {
+                    String nodeKey = task.getTaskDefinitionKey();
+                    String nodeName = task.getName();
+
+                    log.info("为节点 {} ({}) 注入班组候选人", nodeKey, nodeName);
+
+                    // 直接调用服务方法注入班组
+                    try {
+                        com.ruoyi.common.utils.spring.SpringUtils.getBean(
+                                com.ruoyi.flowable.service.IFlowTeamService.class)
+                                .injectTeamCandidates(task.getId(), procInstId, nodeKey, nodeName);
+                    } catch (Exception e) {
+                        log.warn("为节点 {} 注入班组时出错", nodeKey, e);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("注入班组候选人时出错", e);
             }
+
             return AjaxResult.success("流程启动成功");
         } catch (Exception e) {
+            e.printStackTrace();
+            return AjaxResult.error("流程启动错误");
+        }
+    }
+
+    /**
+     * 根据FlowStartDto启动流程实例（支持班组任务分配）
+     *
+     * @param flowStartDto 流程启动参数，包含nodeTeamMap节点班组映射
+     * @return AjaxResult
+     */
+    @Override
+    public AjaxResult startProcessInstanceByDto(FlowStartDto flowStartDto) {
+        try {
+            String procDefId = flowStartDto.getProcDefId();
+            ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
+                    .processDefinitionId(procDefId).latestVersion().singleResult();
+            if (Objects.nonNull(processDefinition) && processDefinition.isSuspended()) {
+                return AjaxResult.error("流程已被挂起,请先激活流程");
+            }
+
+            // 设置流程发起人Id到流程中
+            SysUser sysUser = SecurityUtils.getLoginUser().getUser();
+            identityService.setAuthenticatedUserId(sysUser.getUserId().toString());
+
+            // 初始化流程变量
+            Map<String, Object> variables = new HashMap<>();
+            if (flowStartDto.getVariables() != null) {
+                variables.putAll(flowStartDto.getVariables());
+            }
+            variables.put(ProcessConstants.PROCESS_INITIATOR, sysUser.getUserId());
+
+            // 将nodeTeamMap和mainTeamId序列化为JSON存入流程变量
+            if (flowStartDto.getNodeTeamMap() != null && !flowStartDto.getNodeTeamMap().isEmpty()) {
+                String nodeTeamMapJson = JSON.toJSONString(flowStartDto.getNodeTeamMap());
+                variables.put(ProcessConstants.NODE_TEAM_MAP_KEY, nodeTeamMapJson);
+                log.info("已设置NODE_TEAM_MAP: {}", nodeTeamMapJson);
+            }
+            if (flowStartDto.getMainTeamId() != null && flowStartDto.getMainTeamId() > 0) {
+                variables.put(ProcessConstants.MAIN_TEAM_ID_KEY, flowStartDto.getMainTeamId());
+                log.info("已设置MAIN_TEAM_ID: {}", flowStartDto.getMainTeamId());
+            }
+
+            // 启动流程实例
+            ProcessInstance processInstance = runtimeService.startProcessInstanceById(
+                    procDefId,
+                    flowStartDto.getBusinessKey(),
+                    variables);
+
+            String procInstId = processInstance.getProcessInstanceId();
+
+            // 写入task_execution_record主记录
+            TaskExecutionRecord record = new TaskExecutionRecord();
+            record.setProcInstId(procInstId);
+            record.setProcDefKey(processDefinition.getKey());
+            record.setProcDefVersion(processDefinition.getVersion());
+            record.setInitiatorId(sysUser.getUserId());
+            record.setMainTeamId(flowStartDto.getMainTeamId());
+            record.setStatus("running");
+            taskExecutionRecordService.insertTaskExecutionRecord(record);
+            log.info("已创建流程执行记录，procInstId={}", procInstId);
+
+            // ⚠️ 注意：不要自动完成任务节点，让 Listener 能正常触发
+            // 原代码会自动完成第一个 UserTask，导致 Listener 无法正常工作
+            // 任务应该由用户在待办列表中手动认领和完成
+
+            // 由于 Listener 可能无法正常触发，这里直接调用 IFlowTeamService
+            // 为流程中的所有 UserTask 节点注入班组候选人
+            try {
+                List<Task> allTasks = taskService.createTaskQuery()
+                        .processInstanceId(procInstId)
+                        .list();
+
+                log.info("流程启动后，共有 {} 个待办任务", allTasks.size());
+
+                for (Task task : allTasks) {
+                    String nodeKey = task.getTaskDefinitionKey();
+                    String nodeName = task.getName();
+
+                    log.info("直接为节点 {} ({}) 注入班组候选人", nodeKey, nodeName);
+
+                    // 直接调用服务方法注入班组
+                    try {
+                        com.ruoyi.common.utils.spring.SpringUtils.getBean(
+                                com.ruoyi.flowable.service.IFlowTeamService.class)
+                                .injectTeamCandidates(task.getId(), procInstId, nodeKey, nodeName);
+                    } catch (Exception e) {
+                        log.warn("为节点 {} 注入班组时出错", nodeKey, e);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("注入班组候选人时出错", e);
+            }
+
+            return AjaxResult.success("流程启动成功");
+        } catch (Exception e) {
+            log.error("根据DTO启动流程实例失败", e);
             e.printStackTrace();
             return AjaxResult.error("流程启动错误");
         }

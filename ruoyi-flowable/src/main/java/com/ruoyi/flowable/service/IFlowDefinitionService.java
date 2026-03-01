@@ -2,6 +2,7 @@ package com.ruoyi.flowable.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.flowable.domain.dto.FlowStartDto;
 import com.ruoyi.system.domain.FlowProcDefDto;
 
 import java.io.IOException;
@@ -53,6 +54,13 @@ public interface IFlowDefinitionService {
 
     AjaxResult startProcessInstanceById(String procDefId, Map<String, Object> variables);
 
+    /**
+     * 根据FlowStartDto启动流程实例（支持班组任务分配）
+     *
+     * @param flowStartDto 流程启动参数，包含nodeTeamMap节点班组映射
+     * @return AjaxResult
+     */
+    AjaxResult startProcessInstanceByDto(FlowStartDto flowStartDto);
 
     /**
      * 激活或挂起流程定义

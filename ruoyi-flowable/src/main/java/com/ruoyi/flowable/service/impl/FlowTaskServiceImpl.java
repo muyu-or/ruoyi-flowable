@@ -272,6 +272,16 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
         log.info("退回流程：procInsId={}, from={}, to={}", procInsId, currentActivityIds, targetKey);
 
+        // ── 退回前：将当前节点的执行记录标记为 "rejected"（退回视为当前节点失败）──
+        try {
+            Long returnUserId = SecurityUtils.getLoginUser().getUser().getUserId();
+            com.ruoyi.common.utils.spring.SpringUtils.getBean(com.ruoyi.flowable.service.IFlowTeamService.class)
+                    .onTaskCompleted(task.getId(), "rejected", comment, returnUserId);
+            log.info("退回：已将任务 {} 节点执行记录标记为 rejected", task.getId());
+        } catch (Exception e) {
+            log.warn("退回：更新当前节点执行记录状态失败，taskId={}", task.getId(), e);
+        }
+
         try {
             // 将所有当前活跃节点移动到目标节点（支持并行聚合到单节点）
             runtimeService.createChangeActivityStateBuilder()

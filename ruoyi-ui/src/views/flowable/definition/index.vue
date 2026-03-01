@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form v-show="showSearch" ref="queryForm" :model="queryParams" :inline="true" label-width="68px">
       <el-form-item label="名称" prop="name">
         <el-input
           v-model="queryParams.name"
@@ -11,12 +11,14 @@
         />
       </el-form-item>
       <el-form-item label="开始时间" prop="deployTime">
-        <el-date-picker clearable size="small"
-                        v-model="queryParams.deployTime"
-                        type="date"
-                        value-format="yyyy-MM-dd"
-                        placeholder="选择时间">
-        </el-date-picker>
+        <el-date-picker
+          v-model="queryParams.deployTime"
+          clearable
+          size="small"
+          type="date"
+          value-format="yyyy-MM-dd"
+          placeholder="选择时间"
+        />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -45,19 +47,19 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+          v-hasPermi="['system:deployment:remove']"
           type="danger"
           plain
           icon="el-icon-delete"
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
-          v-hasPermi="['system:deployment:remove']"
         >删除</el-button>
       </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
     <el-alert title="流程设计说明" type="success">
-      <template slot='title'>
+      <template slot="title">
         <p>流程设计说明:</p>
         <div>1、XML文件中的流程定义id属性用作流程定义的key参数。</div>
         <div>2、XML文件中的流程定义name属性用作流程定义的name参数。如果未给定name属性，会使用id作为name。</div>
@@ -65,9 +67,9 @@
         <div>4、id参数设置为{processDefinitionKey}:{processDefinitionVersion}:{generated-id}，其中generated-id是一个唯一数字，用以保证在集群环境下，流程定义缓存中，流程id的唯一性。</div>
       </template>
     </el-alert>
-    <el-table v-loading="loading" fit :data="definitionList" border   @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" fit :data="definitionList" border @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="流程编号" align="center" prop="deploymentId" :show-overflow-tooltip="true"/>
+      <el-table-column label="流程编号" align="center" prop="deploymentId" :show-overflow-tooltip="true" />
       <el-table-column label="流程标识" align="center" prop="flowKey" :show-overflow-tooltip="true" />
       <el-table-column label="流程分类" align="center" prop="category" />
       <el-table-column label="流程名称" align="center" width="120" :show-overflow-tooltip="true">
@@ -87,23 +89,24 @@
       </el-table-column>
       <el-table-column label="流程版本" align="center">
         <template slot-scope="scope">
-          <el-tag size="medium" >v{{ scope.row.version }}</el-tag>
+          <el-tag size="medium">v{{ scope.row.version }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="状态" align="center">
         <template slot-scope="scope">
-          <el-tag type="success" v-if="scope.row.suspensionState === 1">激活</el-tag>
-          <el-tag type="warning" v-if="scope.row.suspensionState === 2">挂起</el-tag>
+          <el-tag v-if="scope.row.suspensionState === 1" type="success">激活</el-tag>
+          <el-tag v-if="scope.row.suspensionState === 2" type="warning">挂起</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="部署时间" align="center" prop="deploymentTime" width="180"/>
-      <el-table-column label="操作" width="250" fixed="right"class-name="small-padding fixed-width">
+      <el-table-column label="部署时间" align="center" prop="deploymentTime" width="180" />
+      <el-table-column label="操作" width="300" fixed="right" class-name="small-padding fixed-width">
         <template slot-scope="scope">
-          <el-button @click="handleLoadXml(scope.row)" icon="el-icon-edit-outline" type="text" size="small">设计</el-button>
-          <el-button @click="handleAddForm(scope.row)" icon="el-icon-edit-el-icon-s-promotion" type="text" size="small" v-if="scope.row.formId == null">配置主表单</el-button>
-          <el-button @click="handleUpdateSuspensionState(scope.row)" icon="el-icon-video-pause" type="text" size="small" v-if="scope.row.suspensionState === 1">挂起</el-button>
-          <el-button @click="handleUpdateSuspensionState(scope.row)" icon="el-icon-video-play" type="text" size="small" v-if="scope.row.suspensionState === 2">激活</el-button>
-          <el-button @click="handleDelete(scope.row)" icon="el-icon-delete" type="text" size="small" v-hasPermi="['system:deployment:remove']">删除</el-button>
+          <el-button icon="el-icon-edit-outline" type="text" size="small" @click="handleLoadXml(scope.row)">设计</el-button>
+          <el-button v-if="scope.row.suspensionState === 1" icon="el-icon-circle-check" type="text" size="small" @click="handleStartProcess(scope.row)">启动</el-button>
+          <el-button v-if="scope.row.formId == null" icon="el-icon-edit-el-icon-s-promotion" type="text" size="small" @click="handleAddForm(scope.row)">配置主表单</el-button>
+          <el-button v-if="scope.row.suspensionState === 1" icon="el-icon-video-pause" type="text" size="small" @click="handleUpdateSuspensionState(scope.row)">挂起</el-button>
+          <el-button v-if="scope.row.suspensionState === 2" icon="el-icon-video-play" type="text" size="small" @click="handleUpdateSuspensionState(scope.row)">激活</el-button>
+          <el-button v-hasPermi="['system:deployment:remove']" icon="el-icon-delete" type="text" size="small" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -143,13 +146,13 @@
         :auto-upload="false"
         drag
       >
-        <i class="el-icon-upload"></i>
+        <i class="el-icon-upload" />
         <div class="el-upload__text">
           将文件拖到此处，或
           <em>点击上传</em>
         </div>
-        <div class="el-upload__tip" slot="tip">
-          流程名称：<el-input v-model="upload.name"/>
+        <div slot="tip" class="el-upload__tip">
+          流程名称：<el-input v-model="upload.name" />
           流程分类：
           <div>
             <!--          <el-input v-model="upload.category"/>-->
@@ -159,11 +162,11 @@
                 :key="dict.value"
                 :label="dict.label"
                 :value="dict.value"
-              ></el-option>
+              />
             </el-select>
           </div>
         </div>
-        <div class="el-upload__tip" style="color:red" slot="tip">提示：仅允许导入“bpmn20.xml”格式文件！</div>
+        <div slot="tip" class="el-upload__tip" style="color:red">提示：仅允许导入“bpmn20.xml”格式文件！</div>
       </el-upload>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitFileForm">确 定</el-button>
@@ -174,13 +177,13 @@
     <!-- 流程图 -->
     <el-dialog :title="readImage.title" :visible.sync="readImage.open" width="70%" append-to-body>
       <!-- <el-image :src="readImage.src"></el-image> -->
-      <bpmn-viewer :flowData="flowData"/>
+      <bpmn-viewer :flow-data="flowData" />
     </el-dialog>
 
     <!--表单配置详情-->
     <el-dialog :title="formTitle" :visible.sync="formConfOpen" width="50%" append-to-body>
       <div class="test-form">
-        <v-form-render :form-data="formData" ref="vFormRef"/>
+        <v-form-render ref="vFormRef" :form-data="formData" />
       </div>
     </el-dialog>
 
@@ -193,8 +196,9 @@
             :data="formList"
             border
             highlight-current-row
+            style="width: 100%"
             @current-change="handleCurrentChange"
-            style="width: 100%">
+          >
             <el-table-column label="表单编号" align="center" prop="formId" />
             <el-table-column label="表单名称" align="center" prop="formName" />
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
@@ -205,9 +209,9 @@
           </el-table>
 
           <pagination
+            v-show="formTotal>0"
             small
             layout="prev, pager, next"
-            v-show="formTotal>0"
             :total="formTotal"
             :page.sync="formQueryParams.pageNum"
             :limit.sync="formQueryParams.pageSize"
@@ -216,7 +220,7 @@
         </el-col>
         <el-col :span="14" :xs="24">
           <div class="test-form">
-            <v-form-render :form-data="formData" ref="vFormCurrentRowRef"/>
+            <v-form-render ref="vFormCurrentRowRef" :form-data="formData" />
           </div>
         </el-col>
       </el-row>
@@ -232,6 +236,7 @@
     <!--      append-to-body>-->
     <!--      <Model :deployId="deployId"/>-->
     <!--    </el-dialog>-->
+
   </div>
 </template>
 
@@ -245,18 +250,16 @@ import {
   exportDeployment,
   definitionStart,
   flowXmlAndNode
-} from "@/api/flowable/definition";
-import { getToken } from "@/utils/auth";
-import { getForm, addDeployForm ,listForm } from "@/api/flowable/form";
-import BpmnViewer from '@/components/Process/viewer';
-import Model from './model';
+} from '@/api/flowable/definition'
+import { getToken } from '@/utils/auth'
+import { getForm, addDeployForm, listForm } from '@/api/flowable/form'
+import BpmnViewer from '@/components/Process/viewer'
 
 export default {
-  name: "Definition",
+  name: 'Definition',
   dicts: ['sys_process_category'],
   components: {
-    BpmnViewer,
-    Model
+    BpmnViewer
   },
   data() {
     return {
@@ -276,34 +279,34 @@ export default {
       // 流程定义表格数据
       definitionList: [],
       // 弹出层标题
-      title: "",
+      title: '',
       // 是否显示弹出层
       open: false,
       formConfOpen: false,
-      formTitle: "",
+      formTitle: '',
       formDeployOpen: false,
-      formDeployTitle: "",
+      formDeployTitle: '',
       formList: [],
-      formTotal:0,
+      formTotal: 0,
       formData: {}, // 默认表单数据
-      readImage:{
+      readImage: {
         open: false,
-        src: "",
+        src: ''
       },
       // bpmn.xml 导入
       upload: {
         // 是否显示弹出层（xml导入）
         open: false,
         // 弹出层标题（xml导入）
-        title: "",
+        title: '',
         // 是否禁用上传
         isUploading: false,
         name: null,
         category: null,
         // 设置上传的请求头部
-        headers: { Authorization: "Bearer " + getToken() },
+        headers: { Authorization: 'Bearer ' + getToken() },
         // 上传的地址
-        url: process.env.VUE_APP_BASE_API + "/flowable/definition/import"
+        url: process.env.VUE_APP_BASE_API + '/flowable/definition/import'
       },
       // 查询参数
       queryParams: {
@@ -319,12 +322,12 @@ export default {
         parentDeploymentId: null,
         engineVersion: null
       },
-      formQueryParams:{
+      formQueryParams: {
         pageNum: 1,
-        pageSize: 10,
+        pageSize: 10
       },
       // 挂载表单到流程实例
-      formDeployParam:{
+      formDeployParam: {
         formId: null,
         deployId: null
       },
@@ -337,26 +340,26 @@ export default {
       // 表单校验
       rules: {
       }
-    };
+    }
   },
   created() {
-    this.getList();
+    this.getList()
   },
   activated() {
-    const time = this.$route.query.t;
+    const time = this.$route.query.t
     if (time != null) {
-      this.getList();
+      this.getList()
     }
   },
   methods: {
     /** 查询流程定义列表 */
     getList() {
-      this.loading = true;
+      this.loading = true
       listDefinition(this.queryParams).then(response => {
-        this.definitionList = response.data.records;
-        this.total = response.data.total;
-        this.loading = false;
-      });
+        this.definitionList = response.data.records
+        this.total = response.data.total
+        this.loading = false
+      })
     },
     handleClose(done) {
       this.$confirm('确定要关闭吗？关闭未保存的修改都会丢失？', '提示', {
@@ -364,13 +367,13 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        done();
-      }).catch(() => {});
+        done()
+      }).catch(() => {})
     },
     // 取消按钮
     cancel() {
-      this.open = false;
-      this.reset();
+      this.open = false
+      this.reset()
     },
     // 表单重置
     reset() {
@@ -385,79 +388,90 @@ export default {
         derivedFromRoot: null,
         parentDeploymentId: null,
         engineVersion: null
-      };
-      this.resetForm("form");
+      }
+      this.resetForm('form')
     },
     /** 搜索按钮操作 */
     handleQuery() {
-      this.queryParams.pageNum = 1;
-      this.getList();
+      this.queryParams.pageNum = 1
+      this.getList()
     },
     /** 重置按钮操作 */
     resetQuery() {
-      this.resetForm("queryForm");
-      this.handleQuery();
+      this.resetForm('queryForm')
+      this.handleQuery()
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.deploymentId)
-      this.single = selection.length!==1
+      this.single = selection.length !== 1
       this.multiple = !selection.length
     },
     /** 新增按钮操作 */
     handleAdd() {
-      this.reset();
-      this.open = true;
-      this.title = "添加流程定义";
+      this.reset()
+      this.open = true
+      this.title = '添加流程定义'
     },
     /** 跳转到流程设计页面 */
-    handleLoadXml(row){
+    handleLoadXml(row) {
       // this.dialogVisible = true;
       // this.deployId = row.deploymentId;
-      this.$router.push({ path: '/flowable/definition/model',query: { deployId: row.deploymentId }})
+      this.$router.push({ path: '/flowable/definition/model', query: { deployId: row.deploymentId }})
     },
     /** 流程图查看 */
-    handleReadImage(deployId){
-      this.readImage.title = "流程图";
-      this.readImage.open = true;
+    handleReadImage(deployId) {
+      this.readImage.title = '流程图'
+      this.readImage.open = true
       // this.readImage.src = process.env.VUE_APP_BASE_API + "/flowable/definition/readImage/" + deploymentId;
-      flowXmlAndNode({deployId:deployId}).then(res => {
-        this.flowData = res.data;
+      flowXmlAndNode({ deployId: deployId }).then(res => {
+        this.flowData = res.data
       })
     },
     /** 表单查看 */
-    handleForm(formId){
-      getForm(formId).then(res =>{
-        this.formTitle = "表单详情";
-        this.formConfOpen = true;
+    handleForm(formId) {
+      getForm(formId).then(res => {
+        this.formTitle = '表单详情'
+        this.formConfOpen = true
         this.$nextTick(() => {
           // 回显数据
           this.$refs.vFormRef.setFormJson(JSON.parse(res.data.formContent))
           this.$nextTick(() => {
             // 表单禁用
-            this.$refs.vFormRef.disableForm();
+            this.$refs.vFormRef.disableForm()
           })
         })
       })
     },
+    /** 启动流程（跳转到发起流程页面） */
+    handleStartProcess(row) {
+      this.$router.push({
+        path: '/flowable/task/myProcess/send/index',
+        query: {
+          deployId: row.deploymentId,
+          procDefId: row.id,
+          procName: row.name
+        }
+      })
+    },
     /** 启动流程 */
-    handleDefinitionStart(row){
-      definitionStart(row.id).then(res =>{
-        this.$modal.msgSuccess(res.msg);
+    handleDefinitionStart(row) {
+      definitionStart(row.id).then(res => {
+        this.$modal.msgSuccess(res.msg)
       })
     },
     /** 挂载表单弹框 */
-    handleAddForm(row){
+    handleAddForm(row) {
       this.formDeployParam.deployId = row.deploymentId
       this.ListFormDeploy()
     },
     /** 挂载表单列表 */
-    ListFormDeploy(){
-      listForm(this.formQueryParams).then(res =>{
-        this.formList = res.rows;
-        this.formTotal = res.total;
-        this.formDeployOpen = true;
-        this.formDeployTitle = "挂载表单";
+    ListFormDeploy() {
+      listForm(this.formQueryParams).then(res => {
+        this.formList = res.rows
+        this.formTotal = res.total
+        this.formDeployOpen = true
+        this.formDeployTitle = '挂载表单'
       })
     },
     // /** 更改挂载表单弹框 */
@@ -474,12 +488,12 @@ export default {
     //   })
     // },
     /** 挂载表单 */
-    submitFormDeploy(row){
-      this.formDeployParam.formId = row.formId;
-      addDeployForm(this.formDeployParam).then(res =>{
-        this.$modal.msgSuccess(res.msg);
-        this.formDeployOpen = false;
-        this.getList();
+    submitFormDeploy(row) {
+      this.formDeployParam.formId = row.formId
+      addDeployForm(this.formDeployParam).then(res => {
+        this.$modal.msgSuccess(res.msg)
+        this.formDeployOpen = false
+        this.getList()
       })
     },
     handleCurrentChange(data) {
@@ -489,14 +503,14 @@ export default {
           this.$refs.vFormCurrentRowRef.setFormJson(JSON.parse(data.formContent))
           this.$nextTick(() => {
             // 表单禁用
-            this.$refs.vFormCurrentRowRef.disableForm();
+            this.$refs.vFormCurrentRowRef.disableForm()
           })
         })
       }
     },
     /** 挂起/激活流程 */
-    handleUpdateSuspensionState(row){
-      let state = 1;
+    handleUpdateSuspensionState(row) {
+      let state = 1
       if (row.suspensionState === 1) {
         state = 2
       }
@@ -505,88 +519,83 @@ export default {
         state: state
       }
       updateState(params).then(res => {
-        this.$modal.msgSuccess(res.msg);
-        this.getList();
-      });
+        this.$modal.msgSuccess(res.msg)
+        this.getList()
+      })
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
-      this.reset();
-      const id = row.deploymentId || this.ids
-      getDeployment(id).then(response => {
-        this.form = response.data;
-        this.open = true;
-        this.title = "修改流程定义";
-      });
+      this.reset()
+      this.getList()
     },
     /** 提交按钮 */
     submitForm() {
-      this.$refs["form"].validate(valid => {
+      this.$refs['form'].validate(valid => {
         if (valid) {
           if (this.form.id != null) {
             updateDeployment(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
+              this.$modal.msgSuccess('修改成功')
+              this.open = false
+              this.getList()
+            })
           } else {
             addDeployment(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
+              this.$modal.msgSuccess('新增成功')
+              this.open = false
+              this.getList()
+            })
           }
         }
-      });
+      })
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      const deploymentIds = row.deploymentId || this.ids;
-      this.$confirm('是否确认删除流程定义编号为"' + deploymentIds + '"的数据项?', "警告", {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "warning"
+      const deploymentIds = row.deploymentId || this.ids
+      this.$confirm('是否确认删除流程定义编号为"' + deploymentIds + '"的数据项?', '警告', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
       }).then(function() {
-        return delDeployment(deploymentIds);
+        return delDeployment(deploymentIds)
       }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("删除成功");
+        this.getList()
+        this.$modal.msgSuccess('删除成功')
       })
     },
     /** 导出按钮操作 */
     handleExport() {
-      const queryParams = this.queryParams;
-      this.$confirm('是否确认导出所有流程定义数据项?', "警告", {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "warning"
+      const queryParams = this.queryParams
+      this.$confirm('是否确认导出所有流程定义数据项?', '警告', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
       }).then(function() {
-        return exportDeployment(queryParams);
+        return exportDeployment(queryParams)
       }).then(response => {
-        this.download(response.msg);
+        this.download(response.msg)
       })
     },
     /** 导入bpmn.xml文件 */
-    handleImport(){
-      this.upload.title = "bpmn20.xml文件导入";
-      this.upload.open = true;
+    handleImport() {
+      this.upload.title = 'bpmn20.xml文件导入'
+      this.upload.open = true
     },
     // 文件上传中处理
     handleFileUploadProgress(event, file, fileList) {
-      this.upload.isUploading = true;
+      this.upload.isUploading = true
     },
     // 文件上传成功处理
     handleFileSuccess(response, file, fileList) {
-      this.upload.open = false;
-      this.upload.isUploading = false;
-      this.$refs.upload.clearFiles();
-      this.$message(response.msg);
-      this.getList();
+      this.upload.open = false
+      this.upload.isUploading = false
+      this.$refs.upload.clearFiles()
+      this.$message(response.msg)
+      this.getList()
     },
     // 提交上传文件
     submitFileForm() {
-      this.$refs.upload.submit();
+      this.$refs.upload.submit()
     }
   }
-};
+}
 </script>

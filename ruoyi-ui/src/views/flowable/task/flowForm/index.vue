@@ -62,8 +62,63 @@ export default {
     if (StrUtil.isNotBlank(formId)) {
       getForm(formId).then(res => {
         this.$nextTick(() => {
-          // 加载表单json数据
-          this.$refs.vfDesigner.setFormJson(JSON.parse(res.data.formContent))
+          // 加载表单json数据 - 添加容错处理
+          try {
+            let formJson = res.data.formContent;
+            // 如果是字符串，则 parse；如果已是对象，直接使用
+            if (typeof formJson === 'string') {
+              formJson = JSON.parse(formJson);
+            }
+            // 验证必要字段
+            if (!formJson || !formJson.widgetList || !formJson.formConfig) {
+              console.warn('表单格式不完整，使用默认空表单');
+              formJson = {
+                "widgetList": [],
+                "formConfig": {
+                  "modelName": "formData",
+                  "refName": "vForm",
+                  "rulesName": "rules",
+                  "labelWidth": 80,
+                  "labelPosition": "left",
+                  "size": "",
+                  "labelAlign": "label-left-align",
+                  "cssCode": "",
+                  "customClass": "",
+                  "functions": "",
+                  "layoutType": "PC",
+                  "onFormCreated": "",
+                  "onFormMounted": "",
+                  "onFormDataChange": "",
+                  "onFormValidate": ""
+                }
+              };
+            }
+            this.$refs.vfDesigner.setFormJson(formJson);
+          } catch (error) {
+            console.error('加载表单失败:', error);
+            this.$message.error('表单格式错误，请重新设计表单');
+            // 使用默认空表单
+            this.$refs.vfDesigner.setFormJson({
+              "widgetList": [],
+              "formConfig": {
+                "modelName": "formData",
+                "refName": "vForm",
+                "rulesName": "rules",
+                "labelWidth": 80,
+                "labelPosition": "left",
+                "size": "",
+                "labelAlign": "label-left-align",
+                "cssCode": "",
+                "customClass": "",
+                "functions": "",
+                "layoutType": "PC",
+                "onFormCreated": "",
+                "onFormMounted": "",
+                "onFormDataChange": "",
+                "onFormValidate": ""
+              }
+            });
+          }
         })
         this.form = res.data;
       })
@@ -78,22 +133,76 @@ export default {
     // 保存表单数据
     saveFormJson() {
       let formJson = this.$refs.vfDesigner.getFormJson()
-      this.form.formContent = JSON.stringify(formJson);
-      this.formOpen = true;
+
+      // 调试：打印获取的数据
+      console.log('保存前的表单数据:', formJson)
+      console.log('表单数据类型:', typeof formJson)
+
+      // 验证必要字段
+      if (!formJson || typeof formJson !== 'object') {
+        this.$message.error('表单数据获取失败，请确保设计器正确加载')
+        console.error('表单格式错误：formJson 不是对象')
+        return
+      }
+
+      if (!formJson.widgetList || !Array.isArray(formJson.widgetList)) {
+        this.$message.error('表单缺少 widgetList 字段')
+        console.error('缺少 widgetList 或不是数组')
+        return
+      }
+
+      if (!formJson.formConfig || typeof formJson.formConfig !== 'object') {
+        this.$message.error('表单缺少 formConfig 字段')
+        console.error('缺少 formConfig 或不是对象')
+        return
+      }
+
+      // 确保数据完整，然后序列化
+      try {
+        // 使用完整的 JSON.stringify，不省略任何字段
+        const contentStr = JSON.stringify(formJson)
+        console.log('序列化后的长度:', contentStr.length)
+        console.log('序列化后的内容:', contentStr)
+
+        // 设置表单数据
+        this.form.formContent = contentStr
+
+        // 验证设置是否成功
+        console.log('form.formContent 已设置:', this.form.formContent.length, '字符')
+
+        this.formOpen = true
+      } catch (error) {
+        console.error('序列化失败:', error)
+        this.$message.error('表单数据序列化失败：' + error.message)
+      }
     },
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          // 再次验证 formContent
+          if (!this.form.formContent) {
+            this.$message.error('表单内容为空，请先保存表单')
+            return
+          }
+
+          console.log('提交时的 formContent:', this.form.formContent.length, '字符')
+
           if (this.form.formId != null) {
             updateForm(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
               this.formOpen = false;
+            }).catch(error => {
+              console.error('更新表单失败:', error)
+              this.$message.error('更新表单失败')
             });
           } else {
             addForm(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
               this.formOpen = false;
+            }).catch(error => {
+              console.error('新增表单失败:', error)
+              this.$message.error('新增表单失败')
             });
           }
           // 关闭当前标签页并返回上个页面

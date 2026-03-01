@@ -215,4 +215,16 @@ public interface IFlowTaskService {
      * @return
      */
     AjaxResult flowTaskInfo(String procInsId, String elementId);
+
+    /**
+     * 更新任务候选人（当班组配置改变时调用）
+     * @param taskId 任务ID
+     */
+    void updateTaskCandidates(String taskId);
+
+    /**
+     * 批量更新流程实例下的所有任务候选人
+     * @param procInstId 流程实例ID
+     */
+    void updateFlowInstanceTasksCandidates(String procInstId);
 }

@@ -9,7 +9,9 @@
         <!--表单信息-->
         <el-tab-pane label="表单信息" name="1">
           <el-col :span="16" :offset="4">
-              <v-form-render ref="vFormRef"/>
+            <!-- 无表单时提示 -->
+            <el-empty v-if="!hasForm" description="该任务无绑定表单" :image-size="80" style="padding: 40px 0;"/>
+            <v-form-render v-show="hasForm" ref="vFormRef"/>
           </el-col>
         </el-tab-pane>
         <!--流程流转记录-->
@@ -68,36 +70,31 @@
 
 <script>
 import {flowRecord} from "@/api/flowable/finished";
-import {getProcessVariables, flowXmlAndNode} from "@/api/flowable/definition";
+import {flowXmlAndNode} from "@/api/flowable/definition";
+import {flowTaskForm} from "@/api/flowable/todo";
 import BpmnViewer from '@/components/Process/viewer';
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 
 export default {
-  name: "Record",
+  name: "FinishedDetail",
   components: {
     BpmnViewer,
   },
   props: {},
   data() {
     return {
-      // 模型xml数据
       flowData: {},
       activeName: '1',
-      // 查询参数
-      queryParams: {
-        deptId: undefined
-      },
-      // 遮罩层
       loading: true,
-      flowRecordList: [], // 流程流转数据
+      hasForm: false,
+      flowRecordList: [],
       taskForm:{
-        multiple: false,
-        comment:"", // 意见内容
-        procInsId: "", // 流程实例编号
-        instanceId: "", // 流程实例编号
-        deployId: "",  // 流程定义编号
-        taskId: "" ,// 流程任务编号
-        procDefId: "",  // 流程编号
+        comment:"",
+        procInsId: "",
+        instanceId: "",
+        deployId: "",
+        taskId: "",
+        procDefId: "",
         vars: "",
       },
     };
@@ -106,11 +103,10 @@ export default {
     this.taskForm.deployId = this.$route.query && this.$route.query.deployId;
     this.taskForm.taskId  = this.$route.query && this.$route.query.taskId;
     this.taskForm.procInsId = this.$route.query && this.$route.query.procInsId;
-    // 流程任务重获取变量表单
-    if (this.taskForm.taskId){
-      this.processVariables( this.taskForm.taskId)
+    if (this.taskForm.taskId) {
+      this.loadTaskForm(this.taskForm.taskId);
     }
-    this.getFlowRecordList( this.taskForm.procInsId, this.taskForm.deployId);
+    this.getFlowRecordList(this.taskForm.procInsId, this.taskForm.deployId);
   },
   methods: {
     handleClick(tab, event) {
@@ -121,52 +117,72 @@ export default {
       }
     },
     setIcon(val) {
-      if (val) {
-        return "el-icon-check";
-      } else {
-        return "el-icon-time";
-      }
+      return val ? "el-icon-check" : "el-icon-time";
     },
     setColor(val) {
-      if (val) {
-        return "#2bc418";
-      } else {
-        return "#b3bdbb";
-      }
+      return val ? "#2bc418" : "#b3bdbb";
+    },
+    /** 加载任务表单（复用 flowTaskForm 接口，该接口已支持命名空间数据回填） */
+    loadTaskForm(taskId) {
+      flowTaskForm({taskId: taskId}).then(res => {
+        const data = res.data || {};
+        let formJson = data.formJson || {};
+
+        // 兜底：确保 widgetList 和 formConfig 都存在
+        if (!formJson.widgetList) formJson.widgetList = [];
+        if (!formJson.formConfig) {
+          formJson.formConfig = {
+            modelName: 'formData', refName: 'vForm', rulesName: 'rules',
+            labelWidth: 80, labelPosition: 'left', size: '',
+            labelAlign: 'label-left-align', cssCode: '', customClass: [],
+            functions: '', layoutType: 'PC', jsonVersion: 3
+          };
+        }
+
+        // 无字段时不显示表单
+        if (!formJson.widgetList.length) {
+          this.hasForm = false;
+          return;
+        }
+
+        this.hasForm = true;
+
+        // 聚合所有节点命名空间下的表单数据（{taskDefKey}__formData）
+        // 并将字段值平铺，用于 setFormData 回填
+        const mergedFormData = {};
+        Object.keys(data).forEach(key => {
+          if (key.endsWith('__formData') && data[key] && typeof data[key] === 'object') {
+            Object.assign(mergedFormData, data[key]);
+          }
+        });
+        // 兼容旧数据：顶层裸字段值也保留
+        Object.assign(mergedFormData, data);
+
+        this.$nextTick(() => {
+          this.$refs.vFormRef.setFormJson(formJson);
+          this.$nextTick(() => {
+            this.$refs.vFormRef.setFormData(mergedFormData);
+            this.$nextTick(() => {
+              // 已办任务表单全部只读
+              this.$refs.vFormRef.disableForm();
+            });
+          });
+        });
+      }).catch(() => {
+        this.hasForm = false;
+      });
     },
     /** 流程流转记录 */
     getFlowRecordList(procInsId, deployId) {
-      const that = this
       const params = {procInsId: procInsId, deployId: deployId}
       flowRecord(params).then(res => {
-        that.flowRecordList = res.data.flowList;
-      }).catch(res => {
+        this.flowRecordList = res.data.flowList;
+      }).catch(() => {
         this.goBack();
       })
     },
-    /** 获取流程变量内容 */
-    processVariables(taskId) {
-      if (taskId) {
-        // 提交流程申请时填写的表单存入了流程变量中后续任务处理时需要展示
-        getProcessVariables(taskId).then(res => {
-          // 回显表单
-          this.$nextTick(() => {
-            this.$refs.vFormRef.setFormJson(res.data.formJson);
-            this.$nextTick(() => {
-              // 加载表单填写的数据
-              this.$refs.vFormRef.setFormData(res.data);
-              this.$nextTick(() => {
-                // 表单禁用
-                this.$refs.vFormRef.disableForm();
-              })
-            })
-          })
-        });
-      }
-    },
     /** 返回页面 */
     goBack() {
-      // 关闭当前标签页并返回上个页面
       const obj = { path: "/task/finished", query: { t: Date.now()} };
       this.$tab.closeOpenPage(obj);
     },
@@ -174,12 +190,6 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-.test-form {
-  margin: 15px auto;
-  width: 800px;
-  padding: 15px;
-}
-
 .clearfix:before,
 .clearfix:after {
   display: table;
@@ -188,16 +198,13 @@ export default {
 .clearfix:after {
   clear: both
 }
-
 .box-card {
   width: 100%;
   margin-bottom: 20px;
 }
-
 .el-tag + .el-tag {
   margin-left: 10px;
 }
-
 .my-label {
   background: #E1F3D8;
 }

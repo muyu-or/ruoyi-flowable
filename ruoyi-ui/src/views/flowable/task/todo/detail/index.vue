@@ -77,9 +77,43 @@
             <flow-user v-if="checkSendUser" :checkType="checkType" @handleUserSelect="handleUserSelect"></flow-user>
             <flow-role v-if="checkSendRole" @handleRoleSelect="handleRoleSelect"></flow-role>
           </el-form-item>
+
+          <el-form-item label="审批结果" label-width="80px" prop="approvalStatus"
+                        :rules="[{ required: true, message: '请选择审批结果', trigger: 'change' }]">
+            <el-radio-group v-model="taskForm.approvalStatus" @change="onApprovalStatusChange">
+              <el-radio label="approved">通过</el-radio>
+              <el-radio label="returned">返回上一节点</el-radio>
+              <el-radio label="rejected">不通过</el-radio>
+            </el-radio-group>
+          </el-form-item>
+
           <el-form-item label="处理意见" label-width="80px" prop="comment"
                         :rules="[{ required: true, message: '请输入处理意见', trigger: 'blur' }]">
             <el-input type="textarea" v-model="taskForm.comment" placeholder="请输入处理意见"/>
+          </el-form-item>
+
+          <!-- 返回上一节点时显示退回节点选择 -->
+          <el-form-item v-if="taskForm.approvalStatus === 'returned'" label="退回节点" label-width="80px" prop="targetKey">
+            <span v-if="loadingReturnList" style="color: #909399; font-size: 12px;">加载中...</span>
+            <template v-else-if="returnTaskList.length === 0">
+              <span style="color: #ff6b6b; font-size: 12px;">无可退回的节点，当前已是第一个节点</span>
+            </template>
+            <template v-else-if="returnTaskList.length === 1">
+              <!-- 只有一个节点时自动选中，直接显示节点名 -->
+              <el-tag type="info">{{ returnTaskList[0].name }}</el-tag>
+              <span style="color: #909399; font-size: 12px; margin-left: 8px;">（已自动选中）</span>
+            </template>
+            <template v-else>
+              <!-- 多个节点时提供下拉选择 -->
+              <el-select v-model="taskForm.targetKey" placeholder="请选择要退回的节点">
+                <el-option
+                  v-for="item in returnTaskList"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id">
+                </el-option>
+              </el-select>
+            </template>
           </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
@@ -167,6 +201,7 @@ export default {
         delegateTaskShow: false, // 是否展示回退表单
         defaultTaskShow: true, // 默认处理
         comment: "", // 意见内容
+        approvalStatus: "", // 审批结果：approved/rejected
         procInsId: "", // 流程实例编号
         instanceId: "", // 流程实例编号
         deployId: "",  // 流程定义编号
@@ -188,7 +223,9 @@ export default {
       taskName: null, // 任务节点
       startUser: null, // 发起人信息,
       multiInstanceVars: '', // 会签节点
-      formJson:{}
+      formJson:{},
+      taskDefinitionKey: '', // 当前节点 key，用于表单数据命名空间隔离
+      loadingReturnList: false // 加载退回节点列表状态
     };
   },
   created() {
@@ -270,9 +307,25 @@ export default {
       if (taskId) {
         // 提交流程申请时填写的表单存入了流程变量中后续任务处理时需要展示
         flowTaskForm({taskId: taskId}).then(res => {
+          // 兜底：确保 formJson 同时包含 widgetList 和 formConfig，
+          // 否则 vform setFormJson 会报 "Invalid format of form json"
+          let formJson = res.data.formJson || {};
+          if (!formJson.widgetList) {
+            formJson.widgetList = [];
+          }
+          if (!formJson.formConfig) {
+            formJson.formConfig = {
+              modelName: 'formData', refName: 'vForm', rulesName: 'rules',
+              labelWidth: 80, labelPosition: 'left', size: '',
+              labelAlign: 'label-left-align', cssCode: '', customClass: [],
+              functions: '', layoutType: 'PC', jsonVersion: 3
+            };
+          }
           // 回显表单
-          this.$refs.vFormRef.setFormJson(res.data.formJson);
-          this.formJson = res.data.formJson;
+          this.$refs.vFormRef.setFormJson(formJson);
+          this.formJson = formJson;
+          // 保存当前节点 key，提交时用于数据命名空间隔离
+          this.taskDefinitionKey = res.data._taskDefinitionKey || '';
           this.$nextTick(() => {
             // 加载表单填写的数据
             this.$refs.vFormRef.setFormData(res.data);
@@ -373,21 +426,101 @@ export default {
         this.$modal.msgError("请选择流程接收角色组!");
         return;
       }
-      if (!this.taskForm.comment) {
-        this.$modal.msgError("请输入审批意见!");
+      if (!this.taskForm.approvalStatus) {
+        this.$modal.msgError("请选择审批结果!");
         return;
       }
-      if (this.taskForm) {
-        complete(this.taskForm).then(response => {
-          this.$modal.msgSuccess(response.msg);
-          this.goBack();
-        });
-      } else {
-        complete(this.taskForm).then(response => {
-          this.$modal.msgSuccess(response.msg);
-          this.goBack();
-        });
+      if (!this.taskForm.comment) {
+        this.$modal.msgError("请输入处理意见!");
+        return;
       }
+      if (this.taskForm.approvalStatus === 'returned' && this.returnTaskList.length === 0) {
+        this.$modal.msgError("无可退回的节点，当前已是第一个节点!");
+        return;
+      }
+      if (this.taskForm.approvalStatus === 'returned' && this.returnTaskList.length > 1 && !this.taskForm.targetKey) {
+        this.$modal.msgError("请选择要退回的节点!");
+        return;
+      }
+
+      if (this.taskForm.approvalStatus === 'approved') {
+        this.completeTaskSuccess();
+      } else if (this.taskForm.approvalStatus === 'returned') {
+        this.returnTaskToNode();
+      } else if (this.taskForm.approvalStatus === 'rejected') {
+        this.doRejectTask();
+      }
+    },
+
+    /** 通过审批 */
+    completeTaskSuccess() {
+      if (!this.taskForm.variables) {
+        this.taskForm.variables = {};
+      }
+      this.taskForm.variables.approval_status = 'approved';
+      complete(this.taskForm).then(response => {
+        this.$modal.msgSuccess("审批通过，流程继续进行!");
+        this.completeOpen = false;
+        this.goBack();
+      }).catch(() => {
+        this.$modal.msgError("完成任务失败");
+      });
+    },
+
+    /** 返回上一节点 */
+    returnTaskToNode() {
+      const taskVo = {
+        taskId: this.taskForm.taskId,
+        instanceId: this.taskForm.instanceId,
+        targetKey: this.taskForm.targetKey,
+        comment: this.taskForm.comment
+      };
+      returnTask(taskVo).then(() => {
+        this.$modal.msgSuccess("已退回到上一节点!");
+        this.completeOpen = false;
+        this.goBack();
+      }).catch(() => {
+        this.$modal.msgError("退回失败");
+      });
+    },
+
+    /** 不通过 - 退回到流程发起节点，初始节点时直接终止流程 */
+    doRejectTask() {
+      rejectTask(this.taskForm).then(() => {
+        this.$modal.msgSuccess("已不通过!");
+        this.completeOpen = false;
+        this.goBack();
+      }).catch(() => {
+        this.$modal.msgError("操作失败");
+      });
+    },
+
+    /** 审批结果选择改变事件 */
+    onApprovalStatusChange() {
+      if (this.taskForm.approvalStatus === 'returned' && this.returnTaskList.length === 0) {
+        this.loadReturnTaskList();
+      }
+    },
+
+    /** 加载可退回的节点列表 */
+    loadReturnTaskList() {
+      this.loadingReturnList = true;
+      const params = {taskId: this.taskForm.taskId};
+      returnList(params).then(res => {
+        this.returnTaskList = res.data || [];
+        if (this.returnTaskList.length === 0) {
+          this.$message.warning('无可退回的节点，当前已是第一个节点');
+          // 自动重置审批结果，避免用户卡在无法提交的状态
+          this.taskForm.approvalStatus = '';
+        } else if (this.returnTaskList.length === 1) {
+          // 只有一个可退回节点时自动选中，无需用户手动选择
+          this.taskForm.targetKey = this.returnTaskList[0].id;
+        }
+        this.loadingReturnList = false;
+      }).catch(() => {
+        this.$message.error("加载退回节点失败");
+        this.loadingReturnList = false;
+      });
     },
     /** 申请流程表单数据提交 */
     submitForm() {
@@ -395,9 +528,15 @@ export default {
       const params = {taskId: this.taskForm.taskId}
       getNextFlowNode(params).then(res => {
         this.$refs.vFormRef.getFormData().then(formData => {
-          Object.assign(this.taskForm.variables, formData);
+          // 以 {taskDefinitionKey}__formData 为命名空间存储当前节点表单数据
+          // 避免多节点使用同一张表单时字段 id 相同导致数据互相覆盖
+          if (this.taskDefinitionKey) {
+            this.$set(this.taskForm.variables, this.taskDefinitionKey + '__formData', formData);
+          } else {
+            // 兼容旧逻辑（未获取到 taskDefinitionKey 时降级平铺）
+            Object.assign(this.taskForm.variables, formData);
+          }
           this.taskForm.variables.formJson = this.formJson;
-          console.log(this.taskForm, "流程审批提交表单数据1")
         }).catch(error => {
           // this.$modal.msgError(error)
         })
