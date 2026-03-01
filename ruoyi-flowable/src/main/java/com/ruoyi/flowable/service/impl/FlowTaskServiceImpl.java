@@ -84,6 +84,9 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
     @Resource
     private com.ruoyi.manage.mapper.ProductionTeamMapper productionTeamMapper;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.ruoyi.flowable.service.IInventoryLinkageService inventoryLinkageService;
+
     /**
      * 完成任务
      *
@@ -124,6 +127,9 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             taskService.setAssignee(taskVo.getTaskId(), userId.toString());
             // 完成任务，传递合并后的所有变量到下一节点
             taskService.complete(taskVo.getTaskId(), allVariables);
+
+            // 库存联动：根据节点 key 自动执行入库/出库操作（失败时事务回滚）
+            inventoryLinkageService.handleNodeCompletion(task.getTaskDefinitionKey(), allVariables);
 
             // 任务完成后，为后续新创建的任务注入班组候选人
             // 这是为了处理任务监听器可能未被触发的情况
