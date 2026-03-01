@@ -359,10 +359,14 @@ export default {
               functions: '', layoutType: 'PC', jsonVersion: 3
             }
           }
-          this.$refs.vFormRef.setFormJson(formJson)
           this.formJson = formJson
+          if (this.$refs.vFormRef) {
+            this.$refs.vFormRef.setFormJson(formJson)
+          }
           this.$nextTick(() => {
-            this.$refs.vFormRef.setFormData(res.data)
+            if (this.$refs.vFormRef) {
+              this.$refs.vFormRef.setFormData(res.data)
+            }
           })
         }
       })
@@ -442,9 +446,13 @@ export default {
     },
     /** 加载审批任务弹框 */
     handleComplete() {
-      this.completeOpen = true
-      this.completeTitle = '流程审批'
-      this.submitForm()
+      this.submitForm().then(() => {
+        this.completeOpen = true
+        this.completeTitle = '流程审批'
+      }).catch(() => {
+        // 表单校验未通过，不打开审批弹框
+        this.$message.warning('请先完整填写表单')
+      })
     },
     /** 用户审批任务 */
     taskComplete() {
@@ -556,40 +564,38 @@ export default {
     submitForm() {
       // 根据当前任务或者流程设计配置的下一步节点 todo 暂时未涉及到考虑网关、表达式和多节点情况
       const params = { taskId: this.taskForm.taskId }
-      getNextFlowNode(params).then(res => {
+      return getNextFlowNode(params).then(res => {
         const getDataPromise = this.currentFormComponent && this.$refs.taskFormRef
           ? this.$refs.taskFormRef.getFormData()
           : this.$refs.vFormRef.getFormData()
 
-        getDataPromise.then(formData => {
+        return getDataPromise.then(formData => {
           if (this.taskDefinitionKey) {
             this.$set(this.taskForm.variables, this.taskDefinitionKey + '__formData', formData)
           } else {
             Object.assign(this.taskForm.variables, formData)
           }
           this.taskForm.variables.formJson = this.formJson
-        }).catch(() => {
-          // 表单校验失败时不阻断审批弹框打开
-        })
-        const data = res.data
-        if (data) {
-          if (data.dataType === 'dynamic') {
-            if (data.type === 'assignee') { // 指定人员
-              this.checkSendUser = true
-              this.checkType = 'single'
-            } else if (data.type === 'candidateUsers') { // 候选人员(多个)
-              this.checkSendUser = true
-              this.checkType = 'multiple'
-            } else if (data.type === 'candidateGroups') { // 指定组(所属角色接收任务)
-              this.checkSendRole = true
-            } else { // 会签
-              // 流程设计指定的 elementVariable 作为会签人员列表
-              this.multiInstanceVars = data.vars
-              this.checkSendUser = true
-              this.checkType = 'multiple'
+          const data = res.data
+          if (data) {
+            if (data.dataType === 'dynamic') {
+              if (data.type === 'assignee') { // 指定人员
+                this.checkSendUser = true
+                this.checkType = 'single'
+              } else if (data.type === 'candidateUsers') { // 候选人员(多个)
+                this.checkSendUser = true
+                this.checkType = 'multiple'
+              } else if (data.type === 'candidateGroups') { // 指定组(所属角色接收任务)
+                this.checkSendRole = true
+              } else { // 会签
+                // 流程设计指定的 elementVariable 作为会签人员列表
+                this.multiInstanceVars = data.vars
+                this.checkSendUser = true
+                this.checkType = 'multiple'
+              }
             }
           }
-        }
+        })
       })
     },
     // 动态绑定操作按钮的点击事件
