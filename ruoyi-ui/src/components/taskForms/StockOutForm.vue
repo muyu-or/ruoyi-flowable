@@ -1,18 +1,19 @@
 <template>
   <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-    <el-form-item label="物料名称" prop="materialName">
+    <el-form-item label="物料名称" prop="materialId">
       <el-select
-        v-model="form.materialName"
+        v-model="form.materialId"
         placeholder="请选择物料"
         :disabled="readonly"
         style="width: 100%"
+        filterable
         @change="handleMaterialChange"
       >
         <el-option
           v-for="item in inventoryList"
           :key="item.materialId"
           :label="item.materialName"
-          :value="item.materialName"
+          :value="item.materialId"
         />
       </el-select>
     </el-form-item>
@@ -81,18 +82,18 @@ export default {
       readonly: false,
       inventoryList: [],
       form: {
-        materialName: '',
         materialId: '',
+        materialName: '',
         materialCategory: '',
         currentQuantity: 0,
         warehouseArea: '',
-        outQuantity: 0,
+        outQuantity: null,
         outboundType: '',
         remark: ''
       },
       rules: {
-        materialName: [
-          { required: true, message: '请选择物料名称', trigger: 'change' }
+        materialId: [
+          { required: true, message: '请选择物料', trigger: 'change' }
         ],
         outQuantity: [
           {
@@ -126,15 +127,15 @@ export default {
         this.$message.error('加载库存列表失败')
       })
     },
-    handleMaterialChange(materialName) {
-      const item = this.inventoryList.find(i => i.materialName === materialName)
+    handleMaterialChange(materialId) {
+      const item = this.inventoryList.find(i => i.materialId === materialId)
       if (item) {
-        this.$set(this.form, 'materialId', item.materialId || '')
+        this.$set(this.form, 'materialName', item.materialName || '')
         this.$set(this.form, 'materialCategory', item.materialCategory || '')
         this.$set(this.form, 'currentQuantity', item.currentQuantity || 0)
         this.$set(this.form, 'warehouseArea', item.warehouseArea || '')
       } else {
-        this.$set(this.form, 'materialId', '')
+        this.$set(this.form, 'materialName', '')
         this.$set(this.form, 'materialCategory', '')
         this.$set(this.form, 'currentQuantity', 0)
         this.$set(this.form, 'warehouseArea', '')
