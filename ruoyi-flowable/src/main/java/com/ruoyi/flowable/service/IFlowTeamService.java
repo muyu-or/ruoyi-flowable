@@ -32,4 +32,23 @@ public interface IFlowTeamService {
      * @param taskId 任务ID
      */
     void onTaskCompleted(String taskId);
+
+    /**
+     * 任务完成时：更新 task_node_execution 状态（新版本，支持结果和意见）
+     *
+     * @param taskId 任务ID
+     * @param result 任务结果（completed/rejected/abandoned）
+     * @param comment 审批意见
+     */
+    void onTaskCompleted(String taskId, String result, String comment);
+
+    /**
+     * 任务完成时：更新 task_node_execution 状态（含执行人，确保 claim_user_id 有值）
+     *
+     * @param taskId    任务ID
+     * @param result    任务结果（completed/rejected）
+     * @param comment   审批意见
+     * @param userId    实际执行该任务的用户ID
+     */
+    void onTaskCompleted(String taskId, String result, String comment, Long userId);
 }
