@@ -18,31 +18,34 @@
       <div v-else class="loading-placeholder">加载中...</div>
     </el-card>
 
-    <!-- 班组任务汇总（仅班组长可见） -->
-    <el-card
-      v-if="statsData && statsData.isLeader && statsData.teamStats"
-      class="stat-card team-card"
-      shadow="hover"
-    >
-      <div slot="header" class="card-header">
-        <span>
-          {{ statsData.teamStats.teamName }} 班组任务汇总
-          <el-tag size="small" type="info" style="margin-left:8px;">
-            共 {{ statsData.teamStats.memberCount }} 名成员
-          </el-tag>
-        </span>
-      </div>
-      <el-row :gutter="20">
-        <el-col v-for="item in teamStatItems" :key="item.key" :span="4">
-          <div class="stat-item">
-            <div class="stat-num" :style="{ color: item.color }">
-              {{ statsData.teamStats[item.key] }}
+    <!-- 班组任务汇总（仅班组长可见，支持多班组） -->
+    <template v-if="statsData && statsData.isLeader && statsData.teamStatsList && statsData.teamStatsList.length">
+      <el-card
+        v-for="team in statsData.teamStatsList"
+        :key="team.teamId"
+        class="stat-card team-card"
+        shadow="hover"
+      >
+        <div slot="header" class="card-header">
+          <span>
+            {{ team.teamName }} 班组任务汇总
+            <el-tag size="small" type="info" style="margin-left:8px;">
+              共 {{ team.memberCount }} 名成员
+            </el-tag>
+          </span>
+        </div>
+        <el-row :gutter="20">
+          <el-col v-for="item in teamStatItems" :key="item.key" :span="4">
+            <div class="stat-item">
+              <div class="stat-num" :style="{ color: item.color }">
+                {{ team[item.key] }}
+              </div>
+              <div class="stat-label">{{ item.label }}</div>
             </div>
-            <div class="stat-label">{{ item.label }}</div>
-          </div>
-        </el-col>
-      </el-row>
-    </el-card>
+          </el-col>
+        </el-row>
+      </el-card>
+    </template>
   </div>
 </template>
 

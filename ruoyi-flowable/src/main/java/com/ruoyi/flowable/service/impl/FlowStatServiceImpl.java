@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -40,19 +41,23 @@ public class FlowStatServiceImpl implements IFlowStatService {
         List<ProductionTeam> leaderTeams = productionTeamMapper.selectProductionTeamList(query);
 
         if (leaderTeams != null && !leaderTeams.isEmpty()) {
-            ProductionTeam team = leaderTeams.get(0);
             result.setIsLeader(true);
 
-            // 3. 班组成员人数
-            int memberCount = productionTeamMapper.selectUserListByTeamId(team.getId()).size();
+            // 遍历当前用户担任班组长的所有班组，每个都计算统计
+            List<DashboardStatsDto.TeamStatsDto> teamStatsList = new ArrayList<>();
+            for (ProductionTeam team : leaderTeams) {
+                // 班组成员人数
+                int memberCount = productionTeamMapper.selectUserListByTeamId(team.getId()).size();
 
-            // 4. 班组任务统计
-            List<Map<String, Object>> teamRows = taskNodeExecutionMapper.countTeamStatsByStatus(team.getId());
-            DashboardStatsDto.TeamStatsDto teamStats = buildTeamStats(teamRows);
-            teamStats.setTeamId(team.getId());
-            teamStats.setTeamName(team.getTeamName());
-            teamStats.setMemberCount(memberCount);
-            result.setTeamStats(teamStats);
+                // 班组任务统计
+                List<Map<String, Object>> teamRows = taskNodeExecutionMapper.countTeamStatsByStatus(team.getId());
+                DashboardStatsDto.TeamStatsDto teamStats = buildTeamStats(teamRows);
+                teamStats.setTeamId(team.getId());
+                teamStats.setTeamName(team.getTeamName());
+                teamStats.setMemberCount(memberCount);
+                teamStatsList.add(teamStats);
+            }
+            result.setTeamStatsList(teamStatsList);
         } else {
             result.setIsLeader(false);
         }

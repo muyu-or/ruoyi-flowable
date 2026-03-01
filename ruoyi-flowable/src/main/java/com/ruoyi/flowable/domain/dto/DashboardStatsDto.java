@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 任务统计 Dashboard DTO
@@ -19,8 +20,8 @@ public class DashboardStatsDto implements Serializable {
     @ApiModelProperty("是否是班组长")
     private Boolean isLeader;
 
-    @ApiModelProperty("班组任务汇总（仅班组长有值）")
-    private TeamStatsDto teamStats;
+    @ApiModelProperty("所有担任班组长的班组任务汇总列表（仅班组长有值）")
+    private List<TeamStatsDto> teamStatsList;
 
     @Data
     public static class MyStatsDto implements Serializable {
