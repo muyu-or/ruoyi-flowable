@@ -234,10 +234,20 @@ export default {
         const data = res.data || res
         const nodes = []
         if (data.xmlData && typeof data.xmlData === 'string') {
-          const userTaskPattern = /<userTask\s+id="([^"]+)"\s+name="([^"]*)"/g
-          let match
-          while ((match = userTaskPattern.exec(data.xmlData)) !== null) {
-            nodes.push({ id: match[1], name: match[2] })
+          try {
+            const parser = new DOMParser()
+            const doc = parser.parseFromString(data.xmlData, 'application/xml')
+            const userTasks = doc.getElementsByTagName('userTask')
+            for (let i = 0; i < userTasks.length; i++) {
+              const el = userTasks[i]
+              const id = el.getAttribute('id')
+              const name = el.getAttribute('name') || ''
+              if (id) {
+                nodes.push({ id, name })
+              }
+            }
+          } catch (parseError) {
+            console.error('解析 BPMN XML 失败', parseError)
           }
         }
         this.processNodes = nodes
@@ -249,6 +259,10 @@ export default {
     },
     nextStep() {
       if (this.activeStep === 0) {
+        if (!this.$refs.mainFormRef) {
+          this.$message.warning('表单未加载完成，请稍后重试')
+          return
+        }
         this.$refs.mainFormRef.validate((valid) => {
           if (valid) {
             this.formData = {
@@ -286,7 +300,15 @@ export default {
         businessKey: this.startForm.businessKey || null,
         mainTeamId: this.startForm.mainTeamId || null,
         nodeTeamMap,
-        variables: Object.assign({}, this.formData)
+        variables: (() => {
+          const vars = Object.assign({}, this.formData)
+          if (Array.isArray(vars.procDateRange) && vars.procDateRange.length === 2) {
+            vars.procDateStart = vars.procDateRange[0]
+            vars.procDateEnd = vars.procDateRange[1]
+          }
+          delete vars.procDateRange
+          return vars
+        })()
       }
       this.submitLoading = true
       startProcessWithTeam(requestData).then(res => {
