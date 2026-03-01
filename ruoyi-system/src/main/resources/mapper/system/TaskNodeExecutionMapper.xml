@@ -156,12 +156,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         GROUP BY status
     </select>
 
-    <!-- 班组成员任务按状态统计 -->
+    <!-- 班组成员任务按状态统计（只统计确实分配给该班组的节点） -->
     <select id="countTeamStatsByStatus" resultType="java.util.HashMap">
         SELECT tne.status, COUNT(*) AS cnt
         FROM task_node_execution tne
-        INNER JOIN production_team_user ptu ON tne.claim_user_id = ptu.user_id
-        WHERE ptu.team_id = #{teamId}
+        WHERE tne.assigned_team_id = #{teamId}
         GROUP BY tne.status
     </select>
 </mapper>

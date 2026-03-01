@@ -303,6 +303,14 @@ public class FlowTeamServiceImpl extends FlowServiceFactory implements IFlowTeam
                 log.info("任务 {} 未经认领直接完成，补充 claim_user_id={}", taskId, userId);
             }
 
+            // result 为 null 时（来自 Listener）只补充 claim_user_id，
+            // status/result 由业务层（complete/taskReject）负责写，避免"不通过"被覆盖成"completed"
+            if (result == null) {
+                taskNodeExecutionService.updateTaskNodeExecution(nodeExec);
+                log.info("任务 {} Listener 触发，仅补充执行人信息", taskId);
+                return;
+            }
+
             nodeExec.setStatus("completed");
             nodeExec.setCompleteTime(nowStr);
             nodeExec.setResult(result);

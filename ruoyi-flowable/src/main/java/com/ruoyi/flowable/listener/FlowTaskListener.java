@@ -39,8 +39,9 @@ public class FlowTaskListener implements TaskListener {
                 // 任务创建时：注入班组成员为候选人 + 写 task_node_execution
                 flowTeamService.injectTeamCandidates(taskId, procInstId, nodeKey, nodeName);
             } else if (EVENTNAME_COMPLETE.equals(event)) {
-                // 任务完成时：更新 task_node_execution 状态，并记录执行人
-                // delegateTask.getAssignee() 在 complete 事件时即为实际完成任务的用户ID
+                // 任务完成时：仅补充 claim_user_id（如果还没有认领记录）
+                // result / status 由业务层（FlowTaskServiceImpl.complete / taskReject）明确写入
+                // 这里不设置 result，避免"不通过"被误判为"completed"
                 String assigneeStr = delegateTask.getAssignee();
                 Long assigneeId = null;
                 if (assigneeStr != null && !assigneeStr.isEmpty()) {
@@ -50,7 +51,8 @@ public class FlowTaskListener implements TaskListener {
                         log.warn("无法解析 assignee 为 userId: {}", assigneeStr);
                     }
                 }
-                flowTeamService.onTaskCompleted(taskId, "completed", "", assigneeId);
+                // 只补充执行人，不覆盖 result（传 null result 让 onTaskCompleted 跳过 result 赋值）
+                flowTeamService.onTaskCompleted(taskId, null, "", assigneeId);
             }
         } catch (Exception e) {
             log.error("任务监听器处理异常，事件: {}, 任务ID: {}", event, taskId, e);
