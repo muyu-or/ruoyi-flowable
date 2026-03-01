@@ -9,8 +9,9 @@ import com.ruoyi.manage.domain.dto.InventoryDTO;
 import com.ruoyi.manage.mapper.InventoryMapper;
 import com.ruoyi.manage.service.IInventoryService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
 
 import java.util.Collections;
 import java.util.Map;
@@ -31,10 +32,10 @@ public class InventoryLinkageServiceImpl implements IInventoryLinkageService {
     private static final String PRODUCT_SUBCATEGORY  = "finished";
     private static final String PRODUCT_INBOUND_TYPE = "1";
 
-    @Autowired
+    @Resource
     private IInventoryService inventoryService;
 
-    @Autowired
+    @Resource
     private InventoryMapper inventoryMapper;
 
     @Override
