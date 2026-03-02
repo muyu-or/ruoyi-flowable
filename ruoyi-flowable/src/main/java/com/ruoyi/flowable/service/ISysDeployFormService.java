@@ -66,4 +66,21 @@ public interface ISysDeployFormService
      * @return
      */
     SysForm selectSysDeployFormByDeployId(String deployId);
+
+    /**
+     * 保存流程-表单/组件关联（upsert：已存在则更新，不存在则插入）
+     * formId 与 formComponent 互斥：有一个非空时，另一个置 null
+     *
+     * @param sysDeployForm 含 deployId，以及 formId 或 formComponent（二选一）
+     * @return 影响行数
+     */
+    int saveDeployForm(SysDeployForm sysDeployForm);
+
+    /**
+     * 按 deployId 查完整关联配置（含 formId + formComponent）
+     *
+     * @param deployId 流程部署ID
+     * @return SysDeployForm，不存在时返回 null
+     */
+    SysDeployForm selectDeployFormByDeployId(String deployId);
 }

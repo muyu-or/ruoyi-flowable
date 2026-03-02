@@ -10,8 +10,20 @@
         <el-tab-pane label="表单信息" name="1">
           <el-col :span="16" :offset="4">
             <!-- 无表单时提示 -->
-            <el-empty v-if="!hasForm" description="该流程无绑定表单" :image-size="80" style="padding: 40px 0;"/>
+            <el-empty v-if="!hasForm && componentNodes.length === 0" description="该流程无绑定表单" :image-size="80" style="padding: 40px 0;"/>
+            <!-- vForm 节点表单 -->
             <v-form-render v-show="hasForm" ref="vFormRef"/>
+            <!-- 自定义Vue组件节点（每个节点一个分区） -->
+            <div v-for="(node, idx) in componentNodes" :key="node.taskDefKey" style="margin-top: 20px;">
+              <div style="font-size: 14px; font-weight: 600; color: #303133; border-left: 3px solid #409EFF; padding-left: 10px; margin-bottom: 12px;">
+                {{ node.taskName }}
+              </div>
+              <component
+                :is="getNodeComponent(node.formComponent)"
+                :ref="'compNode_' + idx"
+                style="margin-bottom: 8px;"
+              />
+            </div>
           </el-col>
         </el-tab-pane>
         <!--流程流转记录-->
@@ -74,6 +86,7 @@ import {flowRecord} from "@/api/flowable/finished";
 import {flowXmlAndNode} from "@/api/flowable/definition";
 import {flowTaskForm} from "@/api/flowable/todo";
 import BpmnViewer from '@/components/Process/viewer';
+import { TASK_FORM_COMPONENT_MAP } from '@/components/taskForms/index';
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 
 export default {
@@ -90,6 +103,8 @@ export default {
       // 遮罩层
       loading: true,
       hasForm: false,
+      // 自定义Vue组件节点列表（已完成流程聚合）
+      componentNodes: [],
       flowRecordList: [], // 流程流转数据
       taskForm:{
         comment:"", // 意见内容
@@ -124,6 +139,10 @@ export default {
     setColor(val) {
       return val ? "#2bc418" : "#b3bdbb";
     },
+    /** 根据组件名查找对应的 Vue 组件 */
+    getNodeComponent(formComponent) {
+      return TASK_FORM_COMPONENT_MAP[formComponent] || null;
+    },
     /** 加载任务表单（支持已完成流程聚合所有节点表单） */
     loadTaskForm(taskId) {
       flowTaskForm({taskId: taskId}).then(res => {
@@ -141,7 +160,31 @@ export default {
           };
         }
 
-        // 无字段时不显示表单
+        // 处理自定义Vue组件节点
+        const rawComponentNodes = Array.isArray(data._componentNodes) ? data._componentNodes : [];
+        this.$set(this, 'componentNodes', rawComponentNodes);
+
+        // 渲染自定义组件节点：nextTick 后逐一 setFormData + setReadonly
+        if (rawComponentNodes.length > 0) {
+          this.$nextTick(() => {
+            rawComponentNodes.forEach((node, idx) => {
+              const refKey = 'compNode_' + idx;
+              const compRef = this.$refs[refKey];
+              // $refs 可能是数组（v-for 内）
+              const comp = Array.isArray(compRef) ? compRef[0] : compRef;
+              if (comp) {
+                if (typeof comp.setFormData === 'function') {
+                  comp.setFormData(node.formData || {});
+                }
+                if (typeof comp.setReadonly === 'function') {
+                  comp.setReadonly(true);
+                }
+              }
+            });
+          });
+        }
+
+        // vForm 节点处理
         if (!formJson.widgetList.length) {
           this.hasForm = false;
           return;

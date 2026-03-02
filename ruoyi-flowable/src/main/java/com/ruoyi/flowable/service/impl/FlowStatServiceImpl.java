@@ -1,5 +1,6 @@
 package com.ruoyi.flowable.service.impl;
 
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.flowable.domain.dto.DashboardStatsDto;
 import com.ruoyi.flowable.service.IFlowStatService;
 import com.ruoyi.manage.domain.ProductionTeam;
@@ -34,7 +35,17 @@ public class FlowStatServiceImpl implements IFlowStatService {
         List<Map<String, Object>> myRows = taskNodeExecutionMapper.countMyStatsByStatus(userId);
         result.setMyStats(buildMyStats(myRows));
 
-        // 2. 判断是否为班组长（取第一个担任班组长的启用班组）
+        // 2. 超级管理员：查看全部启用班组的统计汇总
+        if (SecurityUtils.isAdmin(userId)) {
+            ProductionTeam allQuery = new ProductionTeam();
+            allQuery.setTeamStatus("1");
+            List<ProductionTeam> allTeams = productionTeamMapper.selectProductionTeamList(allQuery);
+            result.setIsLeader(true);
+            result.setTeamStatsList(buildTeamStatsList(allTeams));
+            return result;
+        }
+
+        // 3. 普通用户：判断是否为班组长
         ProductionTeam query = new ProductionTeam();
         query.setLeaderId(userId);
         query.setTeamStatus("1");
@@ -42,27 +53,28 @@ public class FlowStatServiceImpl implements IFlowStatService {
 
         if (leaderTeams != null && !leaderTeams.isEmpty()) {
             result.setIsLeader(true);
-
-            // 遍历当前用户担任班组长的所有班组，每个都计算统计
-            List<DashboardStatsDto.TeamStatsDto> teamStatsList = new ArrayList<>();
-            for (ProductionTeam team : leaderTeams) {
-                // 班组成员人数
-                int memberCount = productionTeamMapper.selectUserListByTeamId(team.getId()).size();
-
-                // 班组任务统计
-                List<Map<String, Object>> teamRows = taskNodeExecutionMapper.countTeamStatsByStatus(team.getId());
-                DashboardStatsDto.TeamStatsDto teamStats = buildTeamStats(teamRows);
-                teamStats.setTeamId(team.getId());
-                teamStats.setTeamName(team.getTeamName());
-                teamStats.setMemberCount(memberCount);
-                teamStatsList.add(teamStats);
-            }
-            result.setTeamStatsList(teamStatsList);
+            result.setTeamStatsList(buildTeamStatsList(leaderTeams));
         } else {
             result.setIsLeader(false);
         }
 
         return result;
+    }
+
+    /** 批量构建班组统计列表 */
+    private List<DashboardStatsDto.TeamStatsDto> buildTeamStatsList(List<ProductionTeam> teams) {
+        List<DashboardStatsDto.TeamStatsDto> teamStatsList = new ArrayList<>();
+        if (teams == null) return teamStatsList;
+        for (ProductionTeam team : teams) {
+            int memberCount = productionTeamMapper.selectUserListByTeamId(team.getId()).size();
+            List<Map<String, Object>> teamRows = taskNodeExecutionMapper.countTeamStatsByStatus(team.getId());
+            DashboardStatsDto.TeamStatsDto teamStats = buildTeamStats(teamRows);
+            teamStats.setTeamId(team.getId());
+            teamStats.setTeamName(team.getTeamName());
+            teamStats.setMemberCount(memberCount);
+            teamStatsList.add(teamStats);
+        }
+        return teamStatsList;
     }
 
     // ---- 私有帮助方法 ----

@@ -385,12 +385,12 @@ public class InventoryServiceImpl implements IInventoryService
         // 2. 查询并锁定库存记录
         Inventory inventory = inventoryMapper.selectInventoryById(inventoryDTO.getId());
 
-        Long stockOutQuantity = inventoryDTO.getQuantity();
-        Long currentQuantity = inventory.getCurrentQuantity()-stockOutQuantity;
-        // 3. 业务校验
+        // 3. 业务校验（必须在使用 inventory 之前判空）
         if (inventory == null) {
-            throw new ServiceException("库存记录不存在");
+            throw new ServiceException("库存记录不存在，id=" + inventoryDTO.getId());
         }
+        Long stockOutQuantity = inventoryDTO.getQuantity() != null ? inventoryDTO.getQuantity() : 0L;
+        Long currentQuantity = inventory.getCurrentQuantity() - stockOutQuantity;
         if (!"1".equals(inventory.getStatus())) { // "1" 代表 "在库"
             throw new ServiceException("只有'在库'状态的物料才能出库");
         }

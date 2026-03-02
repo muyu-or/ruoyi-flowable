@@ -12,12 +12,20 @@
         style="width: 100%"
       />
     </el-form-item>
-    <el-form-item label="存放位置" prop="storageLocation">
-      <el-input
-        v-model="form.storageLocation"
-        placeholder="请输入存放位置（如：A区-货架3）"
+    <el-form-item label="库区" prop="warehouseArea">
+      <el-select
+        v-model="form.warehouseArea"
+        placeholder="请选择库区"
         :disabled="readonly"
-      />
+        style="width: 100%"
+      >
+        <el-option
+          v-for="dict in dict.type.warehouse_area"
+          :key="dict.value"
+          :label="dict.label"
+          :value="dict.value"
+        />
+      </el-select>
     </el-form-item>
     <el-form-item label="操作人" prop="operator">
       <el-input v-model="form.operator" placeholder="请输入操作人" :disabled="readonly" />
@@ -36,13 +44,14 @@
 <script>
 export default {
   name: 'FinalStockInForm',
+  dicts: ['warehouse_area'],
   data() {
     return {
       readonly: false,
       form: {
         productName: '',
         inQuantity: 0,
-        storageLocation: '',
+        warehouseArea: '',
         operator: '',
         remark: ''
       },
@@ -58,7 +67,7 @@ export default {
           },
           trigger: 'change'
         }],
-        storageLocation: [{ required: true, message: '请输入存放位置', trigger: 'blur' }],
+        warehouseArea: [{ required: true, message: '请选择库区', trigger: 'change' }],
         operator: [{ required: true, message: '请输入操作人', trigger: 'blur' }]
       }
     }

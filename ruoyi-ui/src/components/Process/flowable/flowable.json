@@ -1250,6 +1250,20 @@
           "isAttr": true
         }
       ]
+    },
+    {
+      "name": "FormComponent",
+      "superClass": ["Element"],
+      "meta": {
+        "allowedIn": ["bpmn:UserTask"]
+      },
+      "properties": [
+        {
+          "name": "value",
+          "type": "String",
+          "isAttr": true
+        }
+      ]
     }
   ],
   "emumerations": []

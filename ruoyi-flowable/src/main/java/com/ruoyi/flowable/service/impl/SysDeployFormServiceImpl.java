@@ -4,11 +4,14 @@ import java.util.List;
 import java.util.Objects;
 
 import com.ruoyi.system.domain.SysForm;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.system.mapper.SysDeployFormMapper;
 import com.ruoyi.system.domain.SysDeployForm;
 import com.ruoyi.flowable.service.ISysDeployFormService;
+
+import javax.annotation.Resource;
 
 /**
  * 流程实例关联表单Service业务层处理
@@ -19,7 +22,7 @@ import com.ruoyi.flowable.service.ISysDeployFormService;
 @Service
 public class SysDeployFormServiceImpl implements ISysDeployFormService 
 {
-    @Autowired
+    @Resource
     private SysDeployFormMapper sysDeployFormMapper;
 
     /**
@@ -108,5 +111,28 @@ public class SysDeployFormServiceImpl implements ISysDeployFormService
     @Override
     public SysForm selectSysDeployFormByDeployId(String deployId) {
         return sysDeployFormMapper.selectSysDeployFormByDeployId(deployId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int saveDeployForm(SysDeployForm sysDeployForm) {
+        // 互斥：有 formComponent 则清空 formId，有 formId 则清空 formComponent
+        if (StringUtils.isNotBlank(sysDeployForm.getFormComponent())) {
+            sysDeployForm.setFormId(null);
+        } else if (sysDeployForm.getFormId() != null) {
+            sysDeployForm.setFormComponent(null);
+        }
+
+        // 先尝试 update，若无记录则 insert
+        int updated = sysDeployFormMapper.updateByDeployId(sysDeployForm);
+        if (updated > 0) {
+            return updated;
+        }
+        return sysDeployFormMapper.insertSysDeployForm(sysDeployForm);
+    }
+
+    @Override
+    public SysDeployForm selectDeployFormByDeployId(String deployId) {
+        return sysDeployFormMapper.selectDeployFormByDeployId(deployId);
     }
 }

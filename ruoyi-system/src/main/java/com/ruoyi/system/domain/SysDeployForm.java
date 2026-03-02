@@ -26,6 +26,18 @@ public class SysDeployForm extends BaseEntity
     @Excel(name = "流程定义主键")
     private String deployId;
 
+    /** 自定义Vue表单组件名（与formId互斥） */
+    @Excel(name = "自定义表单组件名")
+    private String formComponent;
+
+    public String getFormComponent() {
+        return formComponent;
+    }
+
+    public void setFormComponent(String formComponent) {
+        this.formComponent = formComponent;
+    }
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -59,6 +71,7 @@ public class SysDeployForm extends BaseEntity
             .append("id", getId())
             .append("formId", getFormId())
             .append("deployId", getDeployId())
+            .append("formComponent", getFormComponent())
             .toString();
     }
 }

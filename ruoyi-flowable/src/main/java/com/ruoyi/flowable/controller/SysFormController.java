@@ -112,6 +112,18 @@ public class SysFormController extends BaseController {
     @Log(title = "流程表单", businessType = BusinessType.INSERT)
     @PostMapping("/addDeployForm")
     public AjaxResult addDeployForm(@RequestBody SysDeployForm sysDeployForm) {
-        return toAjax(sysDeployFormService.insertSysDeployForm(sysDeployForm));
+        return toAjax(sysDeployFormService.saveDeployForm(sysDeployForm));
+    }
+
+    /**
+     * 查询流程绑定的主表单配置（formId 或 formComponent）
+     * 供发起流程页面动态决定渲染哪种主表单
+     *
+     * @param deployId 流程部署ID
+     */
+    @GetMapping("/getDeployForm")
+    public AjaxResult getDeployForm(String deployId) {
+        SysDeployForm deployForm = sysDeployFormService.selectDeployFormByDeployId(deployId);
+        return AjaxResult.success(deployForm);
     }
 }

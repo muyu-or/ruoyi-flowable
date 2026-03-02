@@ -16,34 +16,11 @@
       <!-- Step 1：填写主表单 -->
       <div v-show="activeStep === 0">
         <el-col :span="16" :offset="4">
-          <el-form ref="mainFormRef" :model="mainForm" :rules="mainFormRules" label-width="120px" size="small">
-            <el-form-item label="任务名称" prop="taskName">
-              <el-input v-model="mainForm.taskName" placeholder="请输入任务名称" />
-            </el-form-item>
-            <el-form-item label="流程名称" prop="procName">
-              <el-input v-model="mainForm.procName" placeholder="请输入流程名称" />
-            </el-form-item>
-            <el-form-item label="流程版本">
-              <el-input :value="procVersionDisplay" readonly />
-            </el-form-item>
-            <el-form-item label="流程日期" prop="procDateRange">
-              <el-date-picker
-                v-model="mainForm.procDateRange"
-                type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
-                value-format="yyyy-MM-dd"
-                style="width: 100%"
-              />
-            </el-form-item>
-            <el-form-item label="操作人">
-              <el-input :value="operatorName" readonly />
-            </el-form-item>
-            <el-form-item label="备注">
-              <el-input v-model="mainForm.remark" type="textarea" :rows="3" placeholder="请输入备注（选填）" />
-            </el-form-item>
-          </el-form>
+          <component
+            :is="mainFormComponent"
+            ref="mainFormRef"
+            :initial-proc-name="procName"
+          />
         </el-col>
       </div>
 
@@ -156,9 +133,15 @@
 <script>
 import { startProcessWithTeam, flowXmlAndNode } from '@/api/flowable/definition'
 import { listTeam } from '@/api/manage/team'
+import { getDeployForm } from '@/api/flowable/form'
+import MainForm from '@/components/taskForms/MainForm'
+import { TASK_FORM_COMPONENT_MAP } from '@/components/taskForms/index'
 
 export default {
   name: 'ProcessSend',
+  components: {
+    MainForm
+  },
   data() {
     return {
       activeStep: 0,
@@ -167,17 +150,6 @@ export default {
       procDefId: '',
       procName: '',
       version: '',
-      mainForm: {
-        taskName: '',
-        procName: '',
-        procDateRange: [],
-        remark: ''
-      },
-      mainFormRules: {
-        taskName: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
-        procName: [{ required: true, message: '请输入流程名称', trigger: 'blur' }],
-        procDateRange: [{ required: true, message: '请选择流程日期范围', trigger: 'change' }]
-      },
       formData: {},
       teamList: [],
       processNodes: [],
@@ -185,7 +157,9 @@ export default {
       startForm: {
         businessKey: '',
         mainTeamId: null
-      }
+      },
+      // 主表单组件名（默认 MainForm，由 getDeployForm 动态决定）
+      mainFormComponentName: 'MainForm'
     }
   },
   computed: {
@@ -204,6 +178,9 @@ export default {
     },
     operatorName() {
       return this.$store.state.user.name || ''
+    },
+    mainFormComponent() {
+      return TASK_FORM_COMPONENT_MAP[this.mainFormComponentName] || MainForm
     }
   },
   watch: {
@@ -218,12 +195,24 @@ export default {
     this.procDefId = this.$route.query && this.$route.query.procDefId
     this.procName = (this.$route.query && this.$route.query.procName) || ''
     this.version = (this.$route.query && this.$route.query.version) || ''
-    this.mainForm.procName = this.procName
     this.startForm.businessKey = this.generateBusinessKey()
+    this.loadMainFormComponent()
     this.loadTeamList()
     this.loadProcessNodes()
   },
   methods: {
+    /** 根据 deployId 加载配置的主表单组件 */
+    loadMainFormComponent() {
+      if (!this.deployId) return
+      getDeployForm(this.deployId).then(res => {
+        const data = res.data
+        if (data && data.formComponent) {
+          this.$set(this, 'mainFormComponentName', data.formComponent)
+        }
+      }).catch(() => {
+        // 加载失败时保持默认 MainForm，不影响发起流程
+      })
+    },
     loadTeamList() {
       listTeam({ pageNum: 1, pageSize: 100 }).then(res => {
         this.teamList = res.rows || res.data || []
@@ -263,18 +252,14 @@ export default {
           this.$message.warning('表单未加载完成，请稍后重试')
           return
         }
-        this.$refs.mainFormRef.validate((valid) => {
-          if (valid) {
-            this.formData = {
-              ...this.mainForm,
-              procVersion: this.procVersionDisplay,
-              operator: this.operatorName,
-              procDateRange: this.mainForm.procDateRange
-            }
-            this.activeStep++
-          } else {
-            this.$message.warning('请填写完整表单信息')
-          }
+        this.$refs.mainFormRef.getFormData().then(formData => {
+          this.formData = Object.assign({}, formData, {
+            procVersion: this.procVersionDisplay,
+            operator: this.operatorName
+          })
+          this.activeStep++
+        }).catch(() => {
+          this.$message.warning('请填写完整表单信息')
         })
       } else if (this.activeStep === 1) {
         const allConfigured = this.nodeTeamMapArray.every(v => v)
@@ -326,11 +311,13 @@ export default {
       this.startForm.mainTeamId = null
       this.startForm.businessKey = this.generateBusinessKey()
       this.nodeTeamMapArray = new Array(this.processNodes.length).fill(null)
-      this.mainForm = {
-        taskName: '',
-        procName: this.procName,
-        procDateRange: [],
-        remark: ''
+      if (this.$refs.mainFormRef && this.$refs.mainFormRef.setFormData) {
+        this.$refs.mainFormRef.setFormData({
+          taskName: '',
+          procName: this.procName || '',
+          procDateRange: [],
+          remark: ''
+        })
       }
     },
     goBack() {

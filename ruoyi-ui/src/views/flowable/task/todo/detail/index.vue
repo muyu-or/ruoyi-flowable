@@ -198,7 +198,7 @@ import {
 } from '@/api/flowable/todo'
 import BpmnViewer from '@/components/Process/viewer'
 import '@riophae/vue-treeselect/dist/vue-treeselect.css'
-import { TASK_FORM_MAP } from '@/components/taskForms/index'
+import { TASK_FORM_MAP, TASK_FORM_COMPONENT_MAP } from '@/components/taskForms/index'
 
 export default {
   name: 'Record',
@@ -247,11 +247,17 @@ export default {
       multiInstanceVars: '', // 会签节点
       formJson: {},
       taskDefinitionKey: '', // 当前节点 key，用于表单数据命名空间隔离
+      formComponent: '', // 后端返回的自定义组件名（extensionElements 绑定机制）
       loadingReturnList: false // 加载退回节点列表状态
     }
   },
   computed: {
     currentFormComponent() {
+      // 优先：后端通过 extensionElements 返回的组件名（新机制，跨流程复用）
+      if (this.formComponent) {
+        return TASK_FORM_COMPONENT_MAP[this.formComponent] || null
+      }
+      // 兼容：旧的节点 key 硬编码映射
       if (!this.taskDefinitionKey) return null
       return TASK_FORM_MAP[this.taskDefinitionKey] || null
     }
@@ -335,13 +341,14 @@ export default {
       if (!taskId) return
       flowTaskForm({ taskId: taskId }).then(res => {
         this.taskDefinitionKey = res.data._taskDefinitionKey || ''
+        this.formComponent = res.data._formComponent || ''
 
-        if (TASK_FORM_MAP[this.taskDefinitionKey]) {
+        if (this.currentFormComponent) {
           // 有自定义表单组件：只回填数据，不走 vFormRef
           this.$nextTick(() => {
             if (this.$refs.taskFormRef) {
               const nsKey = this.taskDefinitionKey + '__formData'
-              const nsData = res.data[nsKey] || res.data
+              const nsData = res.data[nsKey] || {}
               this.$refs.taskFormRef.setFormData(nsData)
             }
           })
@@ -565,9 +572,24 @@ export default {
       // 根据当前任务或者流程设计配置的下一步节点 todo 暂时未涉及到考虑网关、表达式和多节点情况
       const params = { taskId: this.taskForm.taskId }
       return getNextFlowNode(params).then(res => {
-        const getDataPromise = this.currentFormComponent && this.$refs.taskFormRef
-          ? this.$refs.taskFormRef.getFormData()
-          : this.$refs.vFormRef.getFormData()
+        // 确定取表单数据的方式：
+        //   1. 有自定义 Vue 组件 → taskFormRef.getFormData()
+        //   2. 有 vForm 字段配置 → vFormRef.getFormData()
+        //   3. 无任何表单（节点未绑定表单） → 直接返回空对象，允许通过审批
+        let getDataPromise
+        if (this.currentFormComponent && this.$refs.taskFormRef) {
+          getDataPromise = this.$refs.taskFormRef.getFormData()
+        } else if (
+          this.formJson &&
+          Array.isArray(this.formJson.widgetList) &&
+          this.formJson.widgetList.length > 0 &&
+          this.$refs.vFormRef
+        ) {
+          getDataPromise = this.$refs.vFormRef.getFormData()
+        } else {
+          // 节点未配置表单，直接用空对象，不阻塞审批流程
+          getDataPromise = Promise.resolve({})
+        }
 
         return getDataPromise.then(formData => {
           if (this.taskDefinitionKey) {

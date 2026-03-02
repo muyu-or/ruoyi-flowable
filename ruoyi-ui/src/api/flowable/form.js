@@ -66,3 +66,12 @@ export function exportForm(query) {
     params: query
   })
 }
+
+// 查询流程绑定的主表单配置（formId 或 formComponent）
+export function getDeployForm(deployId) {
+  return request({
+    url: '/flowable/form/getDeployForm',
+    method: 'get',
+    params: { deployId }
+  })
+}

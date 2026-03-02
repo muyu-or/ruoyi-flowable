@@ -8,10 +8,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="id"    />
         <result property="formId"    column="form_id"    />
         <result property="deployId"    column="deploy_id"    />
+        <result property="formComponent" column="form_component" />
     </resultMap>
 
     <sql id="selectSysDeployFormVo">
-        select id, form_id, deploy_id from sys_deploy_form
+        select id, form_id, deploy_id, form_component from sys_deploy_form
     </sql>
 
     <select id="selectSysDeployFormList" parameterType="SysDeployForm" resultMap="SysDeployFormResult">
@@ -37,10 +38,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="formId != null">form_id,</if>
             <if test="deployId != null">deploy_id,</if>
+            <if test="formComponent != null and formComponent != ''">form_component,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="formId != null">#{formId},</if>
             <if test="deployId != null">#{deployId},</if>
+            <if test="formComponent != null and formComponent != ''">#{formComponent},</if>
          </trim>
     </insert>
 
@@ -58,9 +61,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteSysDeployFormByIds" parameterType="String">
-        delete from sys_deploy_form where id in 
+        delete from sys_deploy_form where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
+
+    <select id="selectDeployFormByDeployId" parameterType="String" resultMap="SysDeployFormResult">
+        select id, form_id, deploy_id, form_component
+        from sys_deploy_form
+        where deploy_id = #{deployId}
+        limit 1
+    </select>
+
+    <update id="updateByDeployId" parameterType="SysDeployForm">
+        update sys_deploy_form
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="formId != null">form_id = #{formId},</if>
+            <if test="formId == null">form_id = null,</if>
+            <if test="formComponent != null and formComponent != ''">form_component = #{formComponent},</if>
+            <if test="formComponent == null or formComponent == ''">form_component = null,</if>
+        </trim>
+        where deploy_id = #{deployId}
+    </update>
 </mapper>

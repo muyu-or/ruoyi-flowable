@@ -14,6 +14,7 @@ import com.ruoyi.flowable.factory.FlowServiceFactory;
 import com.ruoyi.flowable.service.IFlowDefinitionService;
 import com.ruoyi.flowable.service.ISysDeployFormService;
 import com.ruoyi.system.domain.SysForm;
+import com.ruoyi.system.domain.SysDeployForm;
 import com.ruoyi.system.domain.TaskExecutionRecord;
 import com.ruoyi.system.mapper.FlowDeployMapper;
 import com.ruoyi.system.service.ITaskExecutionRecordService;
@@ -117,10 +118,20 @@ public class FlowDefinitionServiceImpl extends FlowServiceFactory implements IFl
         final List<FlowProcDefDto> dataList = flowDeployMapper.selectDeployList(name);
         // 加载挂表单
         for (FlowProcDefDto procDef : dataList) {
-            SysForm sysForm = sysDeployFormService.selectSysDeployFormByDeployId(procDef.getDeploymentId());
-            if (Objects.nonNull(sysForm)) {
-                procDef.setFormName(sysForm.getFormName());
-                procDef.setFormId(sysForm.getFormId());
+            SysDeployForm deployForm = sysDeployFormService.selectDeployFormByDeployId(procDef.getDeploymentId());
+            if (Objects.nonNull(deployForm)) {
+                if (deployForm.getFormId() != null) {
+                    // 绑定了 SysForm，查名称
+                    SysForm sysForm =
+                            sysDeployFormService.selectSysDeployFormByDeployId(procDef.getDeploymentId());
+                    if (Objects.nonNull(sysForm)) {
+                        procDef.setFormName(sysForm.getFormName());
+                        procDef.setFormId(sysForm.getFormId());
+                    }
+                }
+                if (StringUtils.isNotBlank(deployForm.getFormComponent())) {
+                    procDef.setFormComponent(deployForm.getFormComponent());
+                }
             }
         }
         page.setTotal(new PageInfo(dataList).getTotal());

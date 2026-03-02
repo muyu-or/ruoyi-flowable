@@ -103,7 +103,7 @@ public class InventoryLinkageServiceImpl implements IInventoryLinkageService {
         InventoryDTO dto = new InventoryDTO();
         dto.setMaterialName(toStr(form.get("productName")));
         dto.setQuantity(toLong(form.get("inQuantity")));
-        dto.setWarehouseArea(toStr(form.get("storageLocation")));
+        dto.setWarehouseArea(toStr(form.get("warehouseArea")));
         dto.setMaterialCategory(PRODUCT_CATEGORY);
         dto.setMaterialSubcategory(PRODUCT_SUBCATEGORY);
         dto.setInboundType(PRODUCT_INBOUND_TYPE);

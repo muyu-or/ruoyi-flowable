@@ -69,4 +69,14 @@ public interface SysDeployFormMapper
      * @return
      */
     SysForm selectSysDeployFormByDeployId(String deployId);
+
+    /**
+     * 按 deployId 查完整配置（含 formId + formComponent）
+     */
+    SysDeployForm selectDeployFormByDeployId(String deployId);
+
+    /**
+     * 按 deployId 更新（upsert 的 update 部分）
+     */
+    int updateByDeployId(SysDeployForm sysDeployForm);
 }

@@ -918,13 +918,12 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             }
             map.put("flowList", hisFlowList);
         }
-        // 第一次申请获取初始化表单
+        // 第一次申请获取初始化表单（vForm 可选；自定义组件流程无 formId，跳过即可）
         if (StringUtils.isNotBlank(deployId)) {
             SysForm sysForm = sysInstanceFormService.selectSysDeployFormByDeployId(deployId);
-            if (Objects.isNull(sysForm)) {
-                return AjaxResult.error("请先配置流程表单");
+            if (Objects.nonNull(sysForm)) {
+                map.put("formData", JSONObject.parseObject(sysForm.getFormContent()));
             }
-            map.put("formData", JSONObject.parseObject(sysForm.getFormContent()));
         }
         return AjaxResult.success(map);
     }
@@ -1286,14 +1285,28 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
                     .processInstanceId(procInsId).singleResult();
             Map<String, String> nodeFormKeyMap = new HashMap<>();
+            // 节点key → 自定义Vue组件名（从 extensionElements 读取）
+            Map<String, String> nodeComponentMap = new HashMap<>();
+            // 节点key → 节点名称（用于前端展示）
+            Map<String, String> nodeNameMap = new HashMap<>();
             if (Objects.nonNull(hpi)) {
                 BpmnModel bpmnModel = repositoryService.getBpmnModel(hpi.getProcessDefinitionId());
                 if (Objects.nonNull(bpmnModel)) {
                     bpmnModel.getMainProcess().getFlowElements().forEach(el -> {
                         if (el instanceof UserTask) {
                             UserTask ut = (UserTask) el;
+                            nodeNameMap.put(ut.getId(), ut.getName());
                             if (StringUtils.isNotBlank(ut.getFormKey())) {
                                 nodeFormKeyMap.put(ut.getId(), ut.getFormKey());
+                            }
+                            // 读取 extensionElements 中的 formComponent
+                            ExtensionElement compExt = FlowableUtils
+                                    .getExtensionElementFromFlowElementByName(ut, "formComponent");
+                            if (compExt != null) {
+                                String compName = compExt.getAttributeValue(null, "value");
+                                if (StringUtils.isNotBlank(compName)) {
+                                    nodeComponentMap.put(ut.getId(), compName);
+                                }
                             }
                         }
                     });
@@ -1309,6 +1322,8 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
             List<JSONObject> mergedWidgetList = new ArrayList<>();
             JSONObject baseFormConfig = null;
+            // 自定义Vue组件节点列表：每个元素含 taskDefKey、taskName、formComponent、formData
+            List<Map<String, Object>> componentNodesList = new ArrayList<>();
 
             // 去重：同一 taskDefinitionKey 只取第一次出现（避免退回后重复节点叠加）
             Set<String> seenTaskDefKeys = new LinkedHashSet<>();
@@ -1319,6 +1334,18 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                 // 从 BPMN 模型映射中取 formKey，而非 ht.getFormKey()（历史实例该字段为空）
                 String htFormKey = nodeFormKeyMap.get(ht.getTaskDefinitionKey());
                 if (StringUtils.isBlank(htFormKey)) {
+                    // 没有 vForm 绑定，检查是否绑定了自定义 Vue 组件
+                    String compName = nodeComponentMap.get(ht.getTaskDefinitionKey());
+                    if (StringUtils.isNotBlank(compName)) {
+                        String nsKey = ht.getTaskDefinitionKey() + "__formData";
+                        Object nsData = parameters.get(nsKey);
+                        Map<String, Object> compNode = new HashMap<>();
+                        compNode.put("taskDefKey", ht.getTaskDefinitionKey());
+                        compNode.put("taskName", nodeNameMap.getOrDefault(ht.getTaskDefinitionKey(), ht.getName()));
+                        compNode.put("formComponent", compName);
+                        compNode.put("formData", nsData != null ? JSONObject.parseObject(JSON.toJSONString(nsData)) : new JSONObject());
+                        componentNodesList.add(compNode);
+                    }
                     continue;
                 }
                 try {
@@ -1343,13 +1370,15 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                     }
 
                     // 所有字段设为只读（已办任务不可编辑）
-                    for (JSONObject field : htFields) {
-                        JSONObject options = field.getJSONObject("options");
-                        if (Objects.nonNull(options)) {
-                            options.put("disabled", true);
+                    if (htFields != null) {
+                        for (JSONObject field : htFields) {
+                            JSONObject options = field.getJSONObject("options");
+                            if (Objects.nonNull(options)) {
+                                options.put("disabled", true);
+                            }
                         }
+                        mergedWidgetList.addAll(htFields);
                     }
-                    mergedWidgetList.addAll(htFields);
                 } catch (NumberFormatException e) {
                     log.warn("节点 {} 的 formKey 不是有效数字: {}", ht.getTaskDefinitionKey(), htFormKey);
                 }
@@ -1357,6 +1386,8 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
             formJson.put("widgetList", mergedWidgetList);
             formJson.put("formConfig", Objects.nonNull(baseFormConfig) ? baseFormConfig : buildDefaultFormConfig());
+            // 将自定义组件节点列表也放入 parameters，供前端渲染
+            parameters.put("_componentNodes", componentNodesList);
 
         } else if (Objects.nonNull(task) && StringUtils.isNotBlank(task.getFormKey())) {
             // ── 待办任务：只显示当前节点绑定的表单，各节点数据互相隔离 ──
@@ -1391,13 +1422,15 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                 List<JSONObject> fields = JSON.parseObject(
                         JSON.toJSONString(formJson.get("widgetList")),
                         new TypeReference<List<JSONObject>>() {});
-                for (JSONObject field : fields) {
-                    JSONObject options = field.getJSONObject("options");
-                    if (Objects.nonNull(options)) {
-                        options.put("disabled", true);
+                if (fields != null) {
+                    for (JSONObject field : fields) {
+                        JSONObject options = field.getJSONObject("options");
+                        if (Objects.nonNull(options)) {
+                            options.put("disabled", true);
+                        }
                     }
+                    formJson.put("widgetList", fields);
                 }
-                formJson.put("widgetList", fields);
             }
         }
 
@@ -1410,6 +1443,28 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
         }
         parameters.put("formJson", formJson);
         parameters.put("_taskDefinitionKey", taskDefKey);
+
+        // 读取节点绑定的自定义 Vue 表单组件名（存储在 BPMN extensionElements 中）
+        try {
+            String procDefId4Comp = Objects.nonNull(task)
+                    ? task.getProcessDefinitionId()
+                    : (Objects.nonNull(historicTaskInstance) ? historicTaskInstance.getProcessDefinitionId() : null);
+            if (StringUtils.isNotBlank(procDefId4Comp) && StringUtils.isNotBlank(taskDefKey)) {
+                BpmnModel compBpmnModel = repositoryService.getBpmnModel(procDefId4Comp);
+                if (Objects.nonNull(compBpmnModel)) {
+                    FlowElement compElem = compBpmnModel.getFlowElement(taskDefKey);
+                    if (compElem != null) {
+                        ExtensionElement formCompElem =
+                                FlowableUtils.getExtensionElementFromFlowElementByName(compElem, "formComponent");
+                        if (formCompElem != null) {
+                            parameters.put("_formComponent", formCompElem.getAttributeValue(null, "value"));
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("读取节点 {} 自定义表单组件名失败", taskDefKey, e);
+        }
 
         log.info("获取任务表单 {}，formKey: {}，nodeKey: {}，已完成: {}", taskId,
                 Objects.nonNull(task) ? task.getFormKey() : "(historic)", taskDefKey, isFinished);

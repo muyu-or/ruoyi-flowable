@@ -84,6 +84,9 @@
           <el-button v-if="scope.row.formId" type="text" @click="handleForm(scope.row.formId)">
             <span>{{ scope.row.formName }}</span>
           </el-button>
+          <el-tag v-else-if="scope.row.formComponent" type="success" size="small">
+            {{ scope.row.formComponent }}
+          </el-tag>
           <label v-else>暂无表单</label>
         </template>
       </el-table-column>
@@ -103,7 +106,8 @@
         <template slot-scope="scope">
           <el-button icon="el-icon-edit-outline" type="text" size="small" @click="handleLoadXml(scope.row)">设计</el-button>
           <el-button v-if="scope.row.suspensionState === 1" icon="el-icon-circle-check" type="text" size="small" @click="handleStartProcess(scope.row)">启动</el-button>
-          <el-button v-if="scope.row.formId == null" icon="el-icon-edit-el-icon-s-promotion" type="text" size="small" @click="handleAddForm(scope.row)">配置主表单</el-button>
+          <el-button v-if="!scope.row.formId && !scope.row.formComponent" icon="el-icon-edit-el-icon-s-promotion" type="text" size="small" @click="handleAddForm(scope.row)">配置主表单</el-button>
+          <el-button v-if="scope.row.formId || scope.row.formComponent" icon="el-icon-edit" type="text" size="small" @click="handleAddForm(scope.row)">修改表单</el-button>
           <el-button v-if="scope.row.suspensionState === 1" icon="el-icon-video-pause" type="text" size="small" @click="handleUpdateSuspensionState(scope.row)">挂起</el-button>
           <el-button v-if="scope.row.suspensionState === 2" icon="el-icon-video-play" type="text" size="small" @click="handleUpdateSuspensionState(scope.row)">激活</el-button>
           <el-button v-hasPermi="['system:deployment:remove']" icon="el-icon-delete" type="text" size="small" @click="handleDelete(scope.row)">删除</el-button>
@@ -188,42 +192,72 @@
     </el-dialog>
 
     <!--挂载表单-->
-    <el-dialog :title="formDeployTitle" :visible.sync="formDeployOpen" width="60%" append-to-body>
-      <el-row :gutter="24">
-        <el-col :span="10" :xs="24">
-          <el-table
-            ref="singleTable"
-            :data="formList"
-            border
-            highlight-current-row
-            style="width: 100%"
-            @current-change="handleCurrentChange"
-          >
-            <el-table-column label="表单编号" align="center" prop="formId" />
-            <el-table-column label="表单名称" align="center" prop="formName" />
-            <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-              <template slot-scope="scope">
-                <el-button size="mini" type="text" @click="submitFormDeploy(scope.row)">确定</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+    <el-dialog :title="formDeployTitle" :visible.sync="formDeployOpen" width="65%" append-to-body>
+      <el-tabs v-model="formDeployActiveTab">
 
-          <pagination
-            v-show="formTotal>0"
-            small
-            layout="prev, pager, next"
-            :total="formTotal"
-            :page.sync="formQueryParams.pageNum"
-            :limit.sync="formQueryParams.pageSize"
-            @pagination="ListFormDeploy"
-          />
-        </el-col>
-        <el-col :span="14" :xs="24">
-          <div class="test-form">
-            <v-form-render ref="vFormCurrentRowRef" :form-data="formData" />
+        <!-- Tab1：vForm 表单（现有逻辑） -->
+        <el-tab-pane label="vForm 表单" name="vform">
+          <el-row :gutter="24">
+            <el-col :span="10" :xs="24">
+              <el-table
+                ref="singleTable"
+                :data="formList"
+                border
+                highlight-current-row
+                style="width: 100%"
+                @current-change="handleCurrentChange"
+              >
+                <el-table-column label="表单编号" align="center" prop="formId" />
+                <el-table-column label="表单名称" align="center" prop="formName" />
+                <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+                  <template slot-scope="scope">
+                    <el-button size="mini" type="text" @click="submitFormDeploy(scope.row)">确定</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <pagination
+                v-show="formTotal>0"
+                small
+                layout="prev, pager, next"
+                :total="formTotal"
+                :page.sync="formQueryParams.pageNum"
+                :limit.sync="formQueryParams.pageSize"
+                @pagination="ListFormDeploy"
+              />
+            </el-col>
+            <el-col :span="14" :xs="24">
+              <div class="test-form">
+                <v-form-render ref="vFormCurrentRowRef" :form-data="formData" />
+              </div>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+
+        <!-- Tab2：自定义 Vue 组件 -->
+        <el-tab-pane label="自定义 Vue 组件" name="component">
+          <el-form label-width="120px" size="small" style="margin-top: 20px">
+            <el-form-item label="选择表单组件">
+              <el-select
+                v-model="formDeployComponent"
+                placeholder="请选择自定义表单组件"
+                clearable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in formComponentOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-form>
+          <div style="text-align: right; margin-top: 20px; padding-right: 10px;">
+            <el-button type="primary" :disabled="!formDeployComponent" @click="submitComponentDeploy">确 定</el-button>
           </div>
-        </el-col>
-      </el-row>
+        </el-tab-pane>
+
+      </el-tabs>
     </el-dialog>
 
     <!--    &lt;!&ndash;流程设计器&ndash;&gt;-->
@@ -252,7 +286,7 @@ import {
   flowXmlAndNode
 } from '@/api/flowable/definition'
 import { getToken } from '@/utils/auth'
-import { getForm, addDeployForm, listForm } from '@/api/flowable/form'
+import { getForm, addDeployForm, listForm, getDeployForm } from '@/api/flowable/form'
 import BpmnViewer from '@/components/Process/viewer'
 
 export default {
@@ -331,6 +365,21 @@ export default {
         formId: null,
         deployId: null
       },
+      // 配置主表单弹框：当前激活 Tab（'vform' 或 'component'）
+      formDeployActiveTab: 'vform',
+      // 配置主表单弹框：当前选中的自定义组件名
+      formDeployComponent: '',
+      // 自定义组件选项列表
+      formComponentOptions: [
+        { label: 'MainForm（主表单）',            value: 'MainForm' },
+        { label: 'StockInForm（原料检测入库）',   value: 'StockInForm' },
+        { label: 'StockOutForm（出库）',          value: 'StockOutForm' },
+        { label: 'PreprocessForm（预处理）',      value: 'PreprocessForm' },
+        { label: 'VacuumForm（真空处理）',        value: 'VacuumForm' },
+        { label: 'BakingForm（烘烤镀膜）',        value: 'BakingForm' },
+        { label: 'TestForm（检测）',              value: 'TestForm' },
+        { label: 'FinalStockInForm（产品入库）',  value: 'FinalStockInForm' }
+      ],
       deployId: '',
       currentRow: null,
       // xml
@@ -464,6 +513,13 @@ export default {
     /** 挂载表单弹框 */
     handleAddForm(row) {
       this.formDeployParam.deployId = row.deploymentId
+      this.formDeployComponent = ''
+      this.formDeployActiveTab = 'vform'
+      // 回显已有配置
+      if (row.formComponent) {
+        this.formDeployActiveTab = 'component'
+        this.formDeployComponent = row.formComponent
+      }
       this.ListFormDeploy()
     },
     /** 挂载表单列表 */
@@ -495,6 +551,22 @@ export default {
         this.$modal.msgSuccess(res.msg)
         this.formDeployOpen = false
         this.getList()
+      })
+    },
+    /** 提交自定义组件绑定 */
+    submitComponentDeploy() {
+      if (!this.formDeployComponent) return
+      const params = {
+        deployId: this.formDeployParam.deployId,
+        formComponent: this.formDeployComponent
+      }
+      addDeployForm(params).then(res => {
+        this.$modal.msgSuccess(res.msg || '配置成功')
+        this.formDeployOpen = false
+        this.formDeployComponent = ''
+        this.getList()
+      }).catch(() => {
+        this.$modal.msgError('配置失败，请重试')
       })
     },
     handleCurrentChange(data) {

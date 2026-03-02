@@ -39,6 +39,9 @@ public class FlowProcDefDto implements Serializable {
     @ApiModelProperty("配置表单id")
     private Long formId;
 
+    @ApiModelProperty("自定义表单组件名")
+    private String formComponent;
+
     @ApiModelProperty("版本")
     private int version;
 

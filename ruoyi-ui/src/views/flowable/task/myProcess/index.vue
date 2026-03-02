@@ -220,13 +220,22 @@ export default {
   created() {
     this.getList()
   },
+  activated() {
+    // 从发起页面/详情页面返回时刷新列表（keep-alive 场景）
+    this.getList()
+  },
   methods: {
     /** 查询流程定义列表 */
     getList() {
       this.loading = true
       myProcessList(this.queryParams).then(response => {
-        this.myProcessList = response.data.records
-        this.total = response.data.total
+        const page = response.data || response || {}
+        this.myProcessList = page.records || []
+        this.total = page.total || 0
+        this.loading = false
+      }).catch(() => {
+        this.myProcessList = []
+        this.total = 0
         this.loading = false
       })
     },
