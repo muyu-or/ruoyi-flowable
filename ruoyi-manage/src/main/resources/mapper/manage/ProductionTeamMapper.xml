@@ -163,4 +163,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             (#{item.teamId}, #{item.userId})
         </foreach>
     </insert>
+
+    <!-- 查询班组长所在班组的所有成员用户名 -->
+    <select id="selectMemberUsernamesByLeaderUsername" resultType="String">
+        select distinct su.user_name
+        from production_team pt
+        join production_team_user ptu on ptu.team_id = pt.id
+        join sys_user su on su.user_id = ptu.user_id
+        join sys_user leader on leader.user_id = pt.leader_id
+        where leader.user_name = #{leaderUsername}
+    </select>
 </mapper>

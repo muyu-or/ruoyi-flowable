@@ -42,3 +42,12 @@ export function delTemplate(id) {
     method: 'delete'
   })
 }
+
+// xlsx/xls 预览（后端转 HTML）
+export function previewTemplate(resource) {
+  return request({
+    url: '/manage/template/preview',
+    method: 'get',
+    params: { resource }
+  })
+}

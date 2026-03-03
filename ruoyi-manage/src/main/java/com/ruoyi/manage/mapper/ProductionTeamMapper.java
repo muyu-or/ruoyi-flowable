@@ -3,6 +3,7 @@ package com.ruoyi.manage.mapper;
 import java.util.List;
 import com.ruoyi.manage.domain.ProductionTeam;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.manage.domain.ProductionTeamUser;
@@ -103,4 +104,9 @@ public interface ProductionTeamMapper
      * @return 用户列表
      */
     public List<SysUser> selectUserListForTeam(SysUser user);
+
+    /**
+     * 查询指定班组长所在班组的所有成员用户名
+     */
+    List<String> selectMemberUsernamesByLeaderUsername(@Param("leaderUsername") String leaderUsername);
 }
