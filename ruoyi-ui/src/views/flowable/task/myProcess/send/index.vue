@@ -20,6 +20,7 @@
             :is="mainFormComponent"
             ref="mainFormRef"
             :initial-proc-name="procName"
+            :initial-material-id="initialMaterialId"
           />
         </el-col>
       </div>
@@ -161,7 +162,11 @@ export default {
         mainTeamId: null
       },
       // 主表单组件名（默认 MainForm，由 getDeployForm 动态决定）
-      mainFormComponentName: 'MainForm'
+      mainFormComponentName: 'MainForm',
+      // 来自库存页面的物料信息（路由query传入）
+      initialMaterialId: '',
+      initialMaterialName: '',
+      initialInventoryId: ''
     }
   },
   computed: {
@@ -198,6 +203,9 @@ export default {
     this.procName = (this.$route.query && this.$route.query.procName) || ''
     this.version = (this.$route.query && this.$route.query.version) || ''
     this.fromPath = (this.$route.query && this.$route.query.from) || ''
+    this.initialMaterialId = (this.$route.query && this.$route.query.materialId) || ''
+    this.initialMaterialName = (this.$route.query && this.$route.query.materialName) || ''
+    this.initialInventoryId = (this.$route.query && this.$route.query.inventoryId) || ''
     this.startForm.businessKey = this.generateBusinessKey()
     this.loadMainFormComponent()
     this.loadTeamList()

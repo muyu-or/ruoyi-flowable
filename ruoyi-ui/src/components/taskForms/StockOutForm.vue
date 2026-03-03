@@ -81,6 +81,12 @@ import { listInventory } from '@/api/manage/inventory'
 export default {
   name: 'StockOutForm',
   dicts: ['outbound_type'],
+  props: {
+    initialMaterialId: {
+      type: String,
+      default: ''
+    }
+  },
   data() {
     return {
       readonly: false,
@@ -129,6 +135,11 @@ export default {
     loadInventoryList() {
       listInventory({ pageNum: 1, pageSize: 200 }).then(res => {
         this.inventoryList = res.rows || []
+        // 如果从库存页面传入了物料ID，自动选中
+        if (this.initialMaterialId) {
+          this.$set(this.form, 'materialId', this.initialMaterialId)
+          this.handleMaterialChange(this.initialMaterialId)
+        }
       }).catch(() => {
         this.$message.error('加载库存列表失败')
       })
