@@ -118,6 +118,14 @@ public class FlowTaskController extends BaseController {
         return AjaxResult.success();
     }
 
+    @ApiOperation(value = "退回重审（当前节点重置，由同班组人员重新处理）")
+    @Log(title = "退回重审", businessType = BusinessType.UPDATE)
+    @PostMapping(value = "/redo")
+    public AjaxResult redoTask(@RequestBody FlowTaskVo flowTaskVo) {
+        flowTaskService.redoTask(flowTaskVo);
+        return AjaxResult.success();
+    }
+
     @ApiOperation(value = "获取所有可回退的节点")
     @PostMapping(value = "/returnList")
     public AjaxResult findReturnTaskList(@RequestBody FlowTaskVo flowTaskVo) {
@@ -260,6 +268,17 @@ public class FlowTaskController extends BaseController {
         return flowTaskService.flowTaskForm(taskId);
     }
 
+    /**
+     * 按流程实例ID聚合所有已完成节点的表单（发起人/管理员实时查看进行中流程）
+     *
+     * @param procInsId 流程实例编号
+     * @return
+     */
+    @GetMapping("/flowTaskFormByProcInst")
+    public AjaxResult flowTaskFormByProcInst(@RequestParam("procInsId") String procInsId) throws Exception {
+        return flowTaskService.flowTaskFormByProcInst(procInsId);
+    }
+
 
     /**
      * 流程节点信息
@@ -296,6 +315,21 @@ public class FlowTaskController extends BaseController {
         } catch (Exception e) {
             return AjaxResult.error(e.getMessage());
         }
+    }
+
+    @ApiOperation(value = "判断当前用户是否为任务所属班组的班组长")
+    @GetMapping("/isLeaderOfTask")
+    public AjaxResult isLeaderOfTask(@RequestParam String taskId) {
+        boolean isLeader = flowTaskService.isLeaderOfTask(taskId);
+        return AjaxResult.success(isLeader);
+    }
+
+    @ApiOperation(value = "班组成员提交表单数据（不推进流程）")
+    @Log(title = "提交表单数据", businessType = BusinessType.UPDATE)
+    @PostMapping("/saveFormData")
+    public AjaxResult saveFormData(@RequestBody FlowTaskVo flowTaskVo) {
+        flowTaskService.saveTaskFormData(flowTaskVo);
+        return AjaxResult.success("表单数据已保存");
     }
 
 }

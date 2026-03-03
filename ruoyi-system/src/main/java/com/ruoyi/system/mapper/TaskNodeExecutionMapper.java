@@ -92,4 +92,11 @@ public interface TaskNodeExecutionMapper
      * @return 状态→数量的 Map 列表，每行含 status 和 cnt 字段
      */
     List<java.util.Map<String, Object>> countTeamStatsByStatus(@org.apache.ibatis.annotations.Param("teamId") Long teamId);
+
+    /**
+     * 将某流程执行记录下所有未完成的节点任务标记为已取消
+     *
+     * @param execRecordId 流程执行记录ID
+     */
+    void cancelByExecRecordId(@org.apache.ibatis.annotations.Param("execRecordId") Long execRecordId);
 }

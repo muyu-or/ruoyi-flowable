@@ -37,6 +37,13 @@ public interface IFlowTaskService {
     void taskReturn(FlowTaskVo flowTaskVo);
 
     /**
+     * 退回重审：将当前节点重置为待处理状态，由同班组人员重新处理（不退回上一节点）
+     *
+     * @param flowTaskVo 请求实体参数（taskId、comment 必填）
+     */
+    void redoTask(FlowTaskVo flowTaskVo);
+
+    /**
      * 获取所有可回退的节点
      *
      * @param flowTaskVo
@@ -207,6 +214,13 @@ public interface IFlowTaskService {
      */
     AjaxResult flowTaskForm(String taskId) throws Exception;
 
+    /**
+     * 按流程实例ID聚合所有已完成节点的表单数据（流程进行中也可实时查看）
+     * @param procInsId 流程实例ID
+     * @return
+     */
+    AjaxResult flowTaskFormByProcInst(String procInsId) throws Exception;
+
 
     /**
      * 流程节点信息
@@ -227,4 +241,19 @@ public interface IFlowTaskService {
      * @param procInstId 流程实例ID
      */
     void updateFlowInstanceTasksCandidates(String procInstId);
+
+    /**
+     * 判断当前登录用户是否为指定任务所属班组的班组长
+     *
+     * @param taskId 任务ID
+     * @return true=班组长，false=普通成员或无班组配置
+     */
+    boolean isLeaderOfTask(String taskId);
+
+    /**
+     * 仅保存表单数据到流程变量（不推进流程），供班组成员提交表单使用
+     *
+     * @param taskVo 包含 taskId、variables（含命名空间表单数据）
+     */
+    void saveTaskFormData(FlowTaskVo taskVo);
 }

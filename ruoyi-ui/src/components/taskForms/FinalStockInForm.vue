@@ -3,6 +3,36 @@
     <el-form-item label="产品名称" prop="productName">
       <el-input v-model="form.productName" placeholder="请输入产品名称" :disabled="readonly" />
     </el-form-item>
+    <el-form-item label="物料大类" prop="materialCategory">
+      <el-select
+        v-model="form.materialCategory"
+        placeholder="请选择物料大类"
+        :disabled="readonly"
+        style="width: 100%"
+      >
+        <el-option
+          v-for="dict in dict.type.material_category"
+          :key="dict.value"
+          :label="dict.label"
+          :value="dict.value"
+        />
+      </el-select>
+    </el-form-item>
+    <el-form-item label="物料子类" prop="materialSubcategory">
+      <el-select
+        v-model="form.materialSubcategory"
+        placeholder="请选择物料子类"
+        :disabled="readonly"
+        style="width: 100%"
+      >
+        <el-option
+          v-for="dict in dict.type.material_subcategory"
+          :key="dict.value"
+          :label="dict.label"
+          :value="dict.value"
+        />
+      </el-select>
+    </el-form-item>
     <el-form-item label="入库数量" prop="inQuantity">
       <el-input-number
         v-model="form.inQuantity"
@@ -28,7 +58,7 @@
       </el-select>
     </el-form-item>
     <el-form-item label="操作人" prop="operator">
-      <el-input v-model="form.operator" placeholder="请输入操作人" :disabled="readonly" />
+      <el-input v-model="form.operator" :disabled="true" />
     </el-form-item>
     <el-form-item label="备注" prop="remark">
       <el-input
@@ -44,12 +74,14 @@
 <script>
 export default {
   name: 'FinalStockInForm',
-  dicts: ['warehouse_area'],
+  dicts: ['warehouse_area', 'material_category', 'material_subcategory'],
   data() {
     return {
       readonly: false,
       form: {
         productName: '',
+        materialCategory: '',
+        materialSubcategory: '',
         inQuantity: 0,
         warehouseArea: '',
         operator: '',
@@ -57,6 +89,8 @@ export default {
       },
       rules: {
         productName: [{ required: true, message: '请输入产品名称', trigger: 'blur' }],
+        materialCategory: [{ required: true, message: '请选择物料大类', trigger: 'change' }],
+        materialSubcategory: [{ required: true, message: '请选择物料子类', trigger: 'change' }],
         inQuantity: [{
           validator: (rule, value, callback) => {
             if (value === undefined || value === null || value <= 0) {
@@ -67,10 +101,12 @@ export default {
           },
           trigger: 'change'
         }],
-        warehouseArea: [{ required: true, message: '请选择库区', trigger: 'change' }],
-        operator: [{ required: true, message: '请输入操作人', trigger: 'blur' }]
+        warehouseArea: [{ required: true, message: '请选择库区', trigger: 'change' }]
       }
     }
+  },
+  created() {
+    this.form.operator = this.$store.state.user.name || ''
   },
   methods: {
     getFormData() {

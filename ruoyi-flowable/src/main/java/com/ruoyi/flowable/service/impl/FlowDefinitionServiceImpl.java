@@ -318,7 +318,7 @@ public class FlowDefinitionServiceImpl extends FlowServiceFactory implements IFl
         try {
             String procDefId = flowStartDto.getProcDefId();
             ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
-                    .processDefinitionId(procDefId).latestVersion().singleResult();
+                    .processDefinitionId(procDefId).singleResult();
             if (Objects.nonNull(processDefinition) && processDefinition.isSuspended()) {
                 return AjaxResult.error("流程已被挂起,请先激活流程");
             }

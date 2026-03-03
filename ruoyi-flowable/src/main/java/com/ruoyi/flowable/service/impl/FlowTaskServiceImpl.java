@@ -336,6 +336,93 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
 
     /**
+     * 退回重审：将当前节点重置为待处理状态，由同班组人员重新处理。
+     * <p>
+     * 与"退回上一节点"不同，本操作不改变流程节点位置，仅：
+     * 1. 完成当前任务（以"重审"意见）
+     * 2. 通过 changeActivityState 将流程跳回当前节点自身
+     * 3. 重新注入班组候选人，使同班组成员可以在待办列表再次看到该任务
+     * </p>
+     *
+     * @param flowTaskVo 请求实体参数（taskId、comment 必填）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void redoTask(FlowTaskVo flowTaskVo) {
+        Task task = taskService.createTaskQuery().taskId(flowTaskVo.getTaskId()).singleResult();
+        if (Objects.isNull(task)) {
+            throw new CustomException("任务不存在");
+        }
+        if (task.isSuspended()) {
+            throw new CustomException("任务处于挂起状态");
+        }
+
+        String procInsId = task.getProcessInstanceId();
+        String currentTaskKey = task.getTaskDefinitionKey();
+        String comment = StringUtils.isBlank(flowTaskVo.getComment()) ? "退回重审" : flowTaskVo.getComment();
+
+        // 记录退回重审意见
+        taskService.addComment(task.getId(), procInsId, FlowComment.REBACK.getType(), comment);
+
+        // 更新当前节点执行记录状态为 "rejected"（退回重审视为本轮未通过）
+        try {
+            Long userId = SecurityUtils.getLoginUser().getUser().getUserId();
+            com.ruoyi.common.utils.spring.SpringUtils.getBean(com.ruoyi.flowable.service.IFlowTeamService.class)
+                    .onTaskCompleted(task.getId(), "rejected", comment, userId);
+        } catch (Exception e) {
+            log.warn("退回重审：更新节点执行记录失败，taskId={}", task.getId(), e);
+        }
+
+        // 获取当前所有活跃任务 key（用于 moveActivityIds）
+        List<Task> runTaskList = taskService.createTaskQuery().processInstanceId(procInsId).list();
+        List<String> currentActivityIds = runTaskList.stream()
+                .map(Task::getTaskDefinitionKey)
+                .collect(Collectors.toList());
+        if (currentActivityIds.isEmpty()) {
+            throw new CustomException("当前流程无活跃任务，无法退回重审");
+        }
+
+        log.info("退回重审：procInsId={}, nodeKey={}", procInsId, currentTaskKey);
+
+        try {
+            // 将当前节点跳回自身（重新激活同一节点，产生新的任务实例）
+            runtimeService.createChangeActivityStateBuilder()
+                    .processInstanceId(procInsId)
+                    .moveActivityIdsToSingleActivityId(currentActivityIds, currentTaskKey)
+                    .changeState();
+        } catch (FlowableObjectNotFoundException e) {
+            throw new CustomException("未找到流程实例，流程可能已发生变化");
+        } catch (FlowableException e) {
+            log.error("退回重审失败", e);
+            throw new CustomException("退回重审失败：" + e.getMessage());
+        }
+
+        // 重新注入班组候选人，确保同班组成员在待办列表可见
+        try {
+            List<Task> reactivatedTasks = taskService.createTaskQuery()
+                    .processInstanceId(procInsId)
+                    .taskDefinitionKey(currentTaskKey)
+                    .active()
+                    .list();
+            for (Task reactivatedTask : reactivatedTasks) {
+                log.info("退回重审：为新任务 {} 注入班组候选人", reactivatedTask.getId());
+                try {
+                    com.ruoyi.common.utils.spring.SpringUtils.getBean(
+                            com.ruoyi.flowable.service.IFlowTeamService.class)
+                            .injectTeamCandidates(reactivatedTask.getId(),
+                                    procInsId,
+                                    reactivatedTask.getTaskDefinitionKey(),
+                                    reactivatedTask.getName());
+                } catch (Exception e) {
+                    log.warn("退回重审：为任务 {} 注入候选人时出错", reactivatedTask.getId(), e);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("退回重审：注入候选人失败，procInsId={}", procInsId, e);
+        }
+    }
+
+    /**
      * 获取可回退的节点列表
      * 根据流程历史，返回当前节点之前已经执行过的、且唯一的用户任务节点（去重后按执行顺序倒序）。
      * 对于顺序流程，"返回上一节点" 的目标是最近一次完成的、与当前节点不同的节点。
@@ -617,6 +704,25 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
         String comment = StringUtils.isBlank(flowTaskVo.getComment()) ? "取消申请" : flowTaskVo.getComment();
         // 用 deleteProcessInstance 终止并携带 STOPPED: 前缀，供前端区分"已取消"状态
         runtimeService.deleteProcessInstance(flowTaskVo.getInstanceId(), "STOPPED:" + comment);
+
+        // 将该流程实例下所有未完成的节点执行记录标记为已取消，保证统计数据正确
+        try {
+            com.ruoyi.system.service.ITaskExecutionRecordService recordService =
+                    com.ruoyi.common.utils.spring.SpringUtils.getBean(
+                            com.ruoyi.system.service.ITaskExecutionRecordService.class);
+            com.ruoyi.system.domain.TaskExecutionRecord execRecord =
+                    recordService.selectByProcInstId(flowTaskVo.getInstanceId());
+            if (execRecord != null) {
+                com.ruoyi.system.service.ITaskNodeExecutionService nodeExecService =
+                        com.ruoyi.common.utils.spring.SpringUtils.getBean(
+                                com.ruoyi.system.service.ITaskNodeExecutionService.class);
+                nodeExecService.cancelByExecRecordId(execRecord.getId());
+                log.info("已将流程实例 {} 的节点执行记录标记为已取消", flowTaskVo.getInstanceId());
+            }
+        } catch (Exception e) {
+            log.warn("标记节点执行记录为取消状态时出错，不影响流程取消", e);
+        }
+
         return AjaxResult.success();
     }
 
@@ -1471,6 +1577,133 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
         return AjaxResult.success(parameters);
     }
 
+    /**
+     * 按流程实例ID聚合所有已完成节点的表单数据（流程进行中也可实时查看已完成节点）
+     * 与 flowTaskForm 的区别：直接用 procInsId，且只聚合 endTime != null 的已完成节点
+     */
+    @Override
+    public AjaxResult flowTaskFormByProcInst(String procInsId) throws Exception {
+        if (StringUtils.isBlank(procInsId)) {
+            return AjaxResult.error("procInsId 不能为空");
+        }
+
+        HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
+                .processInstanceId(procInsId).singleResult();
+        if (Objects.isNull(hpi)) {
+            return AjaxResult.error("流程实例不存在");
+        }
+
+        // 加载整个流程实例的最终变量快照
+        Map<String, Object> parameters = new HashMap<>();
+        historyService.createHistoricVariableInstanceQuery()
+                .processInstanceId(procInsId)
+                .list()
+                .forEach(v -> parameters.put(v.getVariableName(), v.getValue()));
+
+        // 从 BPMN 模型建立 taskDefinitionKey → formKey / formComponent / nodeName 映射
+        Map<String, String> nodeFormKeyMap = new HashMap<>();
+        Map<String, String> nodeComponentMap = new HashMap<>();
+        Map<String, String> nodeNameMap = new HashMap<>();
+        BpmnModel bpmnModel = repositoryService.getBpmnModel(hpi.getProcessDefinitionId());
+        if (Objects.nonNull(bpmnModel)) {
+            bpmnModel.getMainProcess().getFlowElements().forEach(el -> {
+                if (el instanceof UserTask) {
+                    UserTask ut = (UserTask) el;
+                    nodeNameMap.put(ut.getId(), ut.getName());
+                    if (StringUtils.isNotBlank(ut.getFormKey())) {
+                        nodeFormKeyMap.put(ut.getId(), ut.getFormKey());
+                    }
+                    ExtensionElement compExt = FlowableUtils
+                            .getExtensionElementFromFlowElementByName(ut, "formComponent");
+                    if (compExt != null) {
+                        String compName = compExt.getAttributeValue(null, "value");
+                        if (StringUtils.isNotBlank(compName)) {
+                            nodeComponentMap.put(ut.getId(), compName);
+                        }
+                    }
+                }
+            });
+        }
+
+        // 查所有历史任务，只取已完成（endTime != null）的节点，按开始时间升序
+        List<HistoricTaskInstance> finishedTasks = historyService.createHistoricTaskInstanceQuery()
+                .processInstanceId(procInsId)
+                .finished()
+                .orderByHistoricTaskInstanceStartTime().asc()
+                .list();
+
+        List<JSONObject> mergedWidgetList = new ArrayList<>();
+        JSONObject baseFormConfig = null;
+        List<Map<String, Object>> componentNodesList = new ArrayList<>();
+
+        // 去重：同一 taskDefinitionKey 只取第一次出现
+        Set<String> seenTaskDefKeys = new LinkedHashSet<>();
+        for (HistoricTaskInstance ht : finishedTasks) {
+            if (!seenTaskDefKeys.add(ht.getTaskDefinitionKey())) {
+                continue;
+            }
+            String htFormKey = nodeFormKeyMap.get(ht.getTaskDefinitionKey());
+            if (StringUtils.isBlank(htFormKey)) {
+                // 检查是否绑定了自定义 Vue 组件
+                String compName = nodeComponentMap.get(ht.getTaskDefinitionKey());
+                if (StringUtils.isNotBlank(compName)) {
+                    String nsKey = ht.getTaskDefinitionKey() + "__formData";
+                    Object nsData = parameters.get(nsKey);
+                    Map<String, Object> compNode = new HashMap<>();
+                    compNode.put("taskDefKey", ht.getTaskDefinitionKey());
+                    compNode.put("taskName", nodeNameMap.getOrDefault(ht.getTaskDefinitionKey(), ht.getName()));
+                    compNode.put("formComponent", compName);
+                    compNode.put("formData", nsData != null ? JSONObject.parseObject(JSON.toJSONString(nsData)) : new JSONObject());
+                    componentNodesList.add(compNode);
+                }
+                continue;
+            }
+            try {
+                SysForm htForm = sysFormService.selectSysFormById(Long.parseLong(htFormKey));
+                if (Objects.isNull(htForm)) continue;
+
+                JSONObject htFormJson = JSONObject.parseObject(htForm.getFormContent());
+                if (Objects.isNull(baseFormConfig) && Objects.nonNull(htFormJson.get("formConfig"))) {
+                    baseFormConfig = htFormJson.getJSONObject("formConfig");
+                }
+                List<JSONObject> htFields = JSON.parseObject(
+                        JSON.toJSONString(htFormJson.get("widgetList")),
+                        new TypeReference<List<JSONObject>>() {});
+
+                // 将该节点命名空间的字段值平铺到 parameters
+                String nsKey = ht.getTaskDefinitionKey() + "__formData";
+                Object nsData = parameters.get(nsKey);
+                if (Objects.nonNull(nsData)) {
+                    JSONObject savedData = JSONObject.parseObject(JSON.toJSONString(nsData));
+                    savedData.forEach(parameters::put);
+                }
+
+                // 所有字段设为只读
+                if (htFields != null) {
+                    for (JSONObject field : htFields) {
+                        JSONObject options = field.getJSONObject("options");
+                        if (Objects.nonNull(options)) {
+                            options.put("disabled", true);
+                        }
+                    }
+                    mergedWidgetList.addAll(htFields);
+                }
+            } catch (NumberFormatException e) {
+                log.warn("节点 {} 的 formKey 不是有效数字: {}", ht.getTaskDefinitionKey(), htFormKey);
+            }
+        }
+
+        JSONObject formJson = new JSONObject();
+        formJson.put("widgetList", mergedWidgetList);
+        formJson.put("formConfig", Objects.nonNull(baseFormConfig) ? baseFormConfig : buildDefaultFormConfig());
+        parameters.put("_componentNodes", componentNodesList);
+        parameters.put("formJson", formJson);
+
+        log.info("按流程实例聚合表单 procInsId={}，已完成节点数={}，自定义组件节点数={}",
+                procInsId, seenTaskDefKeys.size(), componentNodesList.size());
+        return AjaxResult.success(parameters);
+    }
+
     /** 构建 vform 默认 formConfig，确保 setFormJson 不报格式错误 */
     private JSONObject buildDefaultFormConfig() {
         JSONObject cfg = new JSONObject();
@@ -1786,5 +2019,61 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
         }
 
         return null;
+    }
+
+    /**
+     * 判断当前登录用户是否为指定任务所属班组的班组长
+     *
+     * @param taskId 任务ID
+     * @return true=班组长，false=普通成员或无班组配置
+     */
+    @Override
+    public boolean isLeaderOfTask(String taskId) {
+        try {
+            Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+            if (task == null) {
+                log.warn("isLeaderOfTask: 任务 {} 不存在", taskId);
+                return false;
+            }
+            Map<String, Object> vars = taskService.getVariables(taskId);
+            Long teamId = resolveTeamId(vars, task.getTaskDefinitionKey());
+            if (teamId == null) {
+                log.warn("isLeaderOfTask: 任务 {} 无班组配置，默认允许审批", taskId);
+                // 无班组配置时，默认认为可以审批（不限制）
+                return true;
+            }
+            com.ruoyi.manage.domain.ProductionTeam team = productionTeamMapper.selectProductionTeamById(teamId);
+            if (team == null) {
+                log.warn("isLeaderOfTask: 班组 {} 不存在", teamId);
+                return true;
+            }
+            Long currentUserId = SecurityUtils.getLoginUser().getUser().getUserId();
+            boolean isLeader = currentUserId.equals(team.getLeaderId());
+            log.info("isLeaderOfTask: taskId={}, teamId={}, leaderId={}, currentUserId={}, isLeader={}",
+                    taskId, teamId, team.getLeaderId(), currentUserId, isLeader);
+            return isLeader;
+        } catch (Exception e) {
+            log.warn("isLeaderOfTask 发生异常，默认返回 true 允许操作", e);
+            return true;
+        }
+    }
+
+    /**
+     * 仅保存表单数据到流程变量（不推进流程），供班组成员提交表单使用
+     *
+     * @param taskVo 包含 taskId、variables（含命名空间表单数据）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveTaskFormData(FlowTaskVo taskVo) {
+        Task task = taskService.createTaskQuery().taskId(taskVo.getTaskId()).singleResult();
+        if (task == null) {
+            throw new CustomException("任务不存在，taskId=" + taskVo.getTaskId());
+        }
+        if (taskVo.getVariables() != null && !taskVo.getVariables().isEmpty()) {
+            taskService.setVariables(taskVo.getTaskId(), taskVo.getVariables());
+            log.info("班组成员提交表单数据，taskId={}, variables keys={}", taskVo.getTaskId(),
+                    taskVo.getVariables().keySet());
+        }
     }
 }

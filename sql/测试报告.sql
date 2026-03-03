@@ -3,7 +3,7 @@ CREATE TABLE `report_template` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `template_code` varchar(64) NOT NULL COMMENT '模板唯一编码 ',
   `template_name` varchar(100) NOT NULL COMMENT '模板名称',
-  `template_type` varchar(32) NOT NULL COMMENT '模板引擎类型 (如: FREEMARKER, JASPER, POI)',
+  `template_type` varchar(32) DEFAULT NULL COMMENT '模板引擎类型 (如: FREEMARKER, JASPER, POI)',
   `test_type` varchar(32) DEFAULT NULL COMMENT '业务测试类型 (如: UNIT, INTEGRATION, API)',
   `storage_path` varchar(500) NOT NULL COMMENT '模板文件存储路径/URL',
   `param_config` json DEFAULT NULL COMMENT '模板参数定义(JSON格式，用于前端生成表单)',

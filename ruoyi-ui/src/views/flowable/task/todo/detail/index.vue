@@ -20,7 +20,10 @@
             <!-- 降级：无自定义表单时使用 vForm 渲染 -->
             <v-form-render v-else ref="vFormRef" />
             <div style="margin-left:10%;margin-bottom: 20px;font-size: 14px;">
-              <el-button type="primary" @click="handleComplete">审 批</el-button>
+              <!-- 班组长：显示"审批"按钮，可做审批决定 -->
+              <el-button v-if="isLeader" type="primary" @click="handleComplete">审 批</el-button>
+              <!-- 班组成员：只显示"提交表单"按钮，保存数据但不推进流程 -->
+              <el-button v-else type="success" @click="handleSubmitForm">提交表单</el-button>
             </div>
           </el-col>
         </el-tab-pane>
@@ -93,7 +96,7 @@
           >
             <el-radio-group v-model="taskForm.approvalStatus" @change="onApprovalStatusChange">
               <el-radio label="approved">通过</el-radio>
-              <el-radio label="returned">返回上一节点</el-radio>
+              <el-radio label="returned">退回重审</el-radio>
               <el-radio label="rejected">不通过</el-radio>
             </el-radio-group>
           </el-form-item>
@@ -107,19 +110,19 @@
             <el-input v-model="taskForm.comment" type="textarea" placeholder="请输入处理意见" />
           </el-form-item>
 
-          <!-- 返回上一节点时显示退回节点选择 -->
+          <!-- 退回重审：无需选择节点，直接重置当前节点 -->
+          <!-- 原"返回上一节点"退回节点选择区域已隐藏，代码保留供后续恢复使用 -->
+          <!--
           <el-form-item v-if="taskForm.approvalStatus === 'returned'" label="退回节点" label-width="80px" prop="targetKey">
             <span v-if="loadingReturnList" style="color: #909399; font-size: 12px;">加载中...</span>
             <template v-else-if="returnTaskList.length === 0">
               <span style="color: #ff6b6b; font-size: 12px;">无可退回的节点，当前已是第一个节点</span>
             </template>
             <template v-else-if="returnTaskList.length === 1">
-              <!-- 只有一个节点时自动选中，直接显示节点名 -->
               <el-tag type="info">{{ returnTaskList[0].name }}</el-tag>
               <span style="color: #909399; font-size: 12px; margin-left: 8px;">（已自动选中）</span>
             </template>
             <template v-else>
-              <!-- 多个节点时提供下拉选择 -->
               <el-select v-model="taskForm.targetKey" placeholder="请选择要退回的节点">
                 <el-option
                   v-for="item in returnTaskList"
@@ -130,6 +133,7 @@
               </el-select>
             </template>
           </el-form-item>
+          -->
         </el-form>
         <span slot="footer" class="dialog-footer">
           <el-button @click="completeOpen = false">取 消</el-button>
@@ -190,11 +194,14 @@ import { flowXmlAndNode } from '@/api/flowable/definition'
 import {
   complete,
   rejectTask,
-  returnList,
-  returnTask,
+  returnList, // 返回上一节点功能备用，当前界面不展示
+  returnTask, // 返回上一节点功能备用，当前界面不展示
+  redoTask,
   getNextFlowNode,
   delegate,
-  flowTaskForm
+  flowTaskForm,
+  isLeaderOfTask,
+  saveFormData
 } from '@/api/flowable/todo'
 import BpmnViewer from '@/components/Process/viewer'
 import '@riophae/vue-treeselect/dist/vue-treeselect.css'
@@ -248,7 +255,8 @@ export default {
       formJson: {},
       taskDefinitionKey: '', // 当前节点 key，用于表单数据命名空间隔离
       formComponent: '', // 后端返回的自定义组件名（extensionElements 绑定机制）
-      loadingReturnList: false // 加载退回节点列表状态
+      loadingReturnList: false, // 加载退回节点列表状态
+      isLeader: true // 当前用户是否为班组长（默认 true，避免权限检查延迟期间按钮消失）
     }
   },
   computed: {
@@ -274,6 +282,7 @@ export default {
       // 流程任务获取变量信息
       if (this.taskForm.taskId) {
         this.getFlowTaskForm(this.taskForm.taskId)
+        this.checkIsLeader(this.taskForm.taskId)
       }
       this.getFlowRecordList(this.taskForm.procInsId, this.taskForm.deployId)
     }
@@ -379,6 +388,55 @@ export default {
       })
     },
 
+    /** 检查当前用户是否为班组长 */
+    checkIsLeader(taskId) {
+      isLeaderOfTask(taskId).then(res => {
+        this.isLeader = !!res.data
+      }).catch(() => {
+        // 异常时默认允许审批，避免阻塞用户操作
+        this.isLeader = true
+      })
+    },
+
+    /** 班组成员提交表单数据（不推进流程） */
+    handleSubmitForm() {
+      let getDataPromise
+      if (this.currentFormComponent && this.$refs.taskFormRef) {
+        getDataPromise = this.$refs.taskFormRef.getFormData()
+      } else if (
+        this.formJson &&
+        Array.isArray(this.formJson.widgetList) &&
+        this.formJson.widgetList.length > 0 &&
+        this.$refs.vFormRef
+      ) {
+        getDataPromise = this.$refs.vFormRef.getFormData()
+      } else {
+        getDataPromise = Promise.resolve({})
+      }
+
+      getDataPromise.then(formData => {
+        const variables = {}
+        if (this.taskDefinitionKey) {
+          this.$set(variables, this.taskDefinitionKey + '__formData', formData)
+        } else {
+          Object.assign(variables, formData)
+        }
+        const taskVo = {
+          taskId: this.taskForm.taskId,
+          instanceId: this.taskForm.instanceId,
+          variables: variables
+        }
+        saveFormData(taskVo).then(() => {
+          this.$modal.msgSuccess('表单已提交，等待班组长审批')
+          this.goBack()
+        }).catch(() => {
+          this.$modal.msgError('提交表单失败')
+        })
+      }).catch(() => {
+        this.$message.warning('请先完整填写表单')
+      })
+    },
+
     /** 委派任务 */
     handleDelegate() {
       this.taskForm.delegateTaskShow = true
@@ -479,19 +537,21 @@ export default {
         this.$modal.msgError('请输入处理意见!')
         return
       }
-      if (this.taskForm.approvalStatus === 'returned' && this.returnTaskList.length === 0) {
-        this.$modal.msgError('无可退回的节点，当前已是第一个节点!')
-        return
-      }
-      if (this.taskForm.approvalStatus === 'returned' && this.returnTaskList.length > 1 && !this.taskForm.targetKey) {
-        this.$modal.msgError('请选择要退回的节点!')
-        return
-      }
+      // 退回重审无需校验退回节点（直接重置当前节点）
+      // 原"返回上一节点"校验逻辑保留，供后续恢复使用：
+      // if (this.taskForm.approvalStatus === 'returned' && this.returnTaskList.length === 0) {
+      //   this.$modal.msgError('无可退回的节点，当前已是第一个节点!')
+      //   return
+      // }
+      // if (this.taskForm.approvalStatus === 'returned' && this.returnTaskList.length > 1 && !this.taskForm.targetKey) {
+      //   this.$modal.msgError('请选择要退回的节点!')
+      //   return
+      // }
 
       if (this.taskForm.approvalStatus === 'approved') {
         this.completeTaskSuccess()
       } else if (this.taskForm.approvalStatus === 'returned') {
-        this.returnTaskToNode()
+        this.doRedoTask()
       } else if (this.taskForm.approvalStatus === 'rejected') {
         this.doRejectTask()
       }
@@ -512,22 +572,38 @@ export default {
       })
     },
 
-    /** 返回上一节点 */
-    returnTaskToNode() {
+    /** 退回重审：当前节点重置，由同班组人员重新处理 */
+    doRedoTask() {
       const taskVo = {
         taskId: this.taskForm.taskId,
         instanceId: this.taskForm.instanceId,
-        targetKey: this.taskForm.targetKey,
         comment: this.taskForm.comment
       }
-      returnTask(taskVo).then(() => {
-        this.$modal.msgSuccess('已退回到上一节点!')
+      redoTask(taskVo).then(() => {
+        this.$modal.msgSuccess('已退回重审，等待同班组人员重新处理!')
         this.completeOpen = false
         this.goBack()
       }).catch(() => {
-        this.$modal.msgError('退回失败')
+        this.$modal.msgError('退回重审失败')
       })
     },
+
+    /** 返回上一节点（功能保留，当前界面不展示） */
+    // returnTaskToNode() {
+    //   const taskVo = {
+    //     taskId: this.taskForm.taskId,
+    //     instanceId: this.taskForm.instanceId,
+    //     targetKey: this.taskForm.targetKey,
+    //     comment: this.taskForm.comment
+    //   }
+    //   returnTask(taskVo).then(() => {
+    //     this.$modal.msgSuccess('已退回到上一节点!')
+    //     this.completeOpen = false
+    //     this.goBack()
+    //   }).catch(() => {
+    //     this.$modal.msgError('退回失败')
+    //   })
+    // },
 
     /** 不通过 - 退回到流程发起节点，初始节点时直接终止流程 */
     doRejectTask() {
@@ -542,12 +618,14 @@ export default {
 
     /** 审批结果选择改变事件 */
     onApprovalStatusChange() {
-      if (this.taskForm.approvalStatus === 'returned' && this.returnTaskList.length === 0) {
-        this.loadReturnTaskList()
-      }
+      // 退回重审无需加载退回节点列表，直接重置当前节点
+      // 原"返回上一节点"逻辑保留：
+      // if (this.taskForm.approvalStatus === 'returned' && this.returnTaskList.length === 0) {
+      //   this.loadReturnTaskList()
+      // }
     },
 
-    /** 加载可退回的节点列表 */
+    /** 加载可退回的节点列表（返回上一节点功能备用） */
     loadReturnTaskList() {
       this.loadingReturnList = true
       const params = { taskId: this.taskForm.taskId }

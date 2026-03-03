@@ -28,9 +28,7 @@ public class InventoryLinkageServiceImpl implements IInventoryLinkageService {
     private static final String NODE_STOCK_OUT = "Activity_01xy3yd";
     private static final String NODE_FINAL_IN  = "Activity_1lnd3md";
 
-    private static final String PRODUCT_CATEGORY     = "product";
-    private static final String PRODUCT_SUBCATEGORY  = "finished";
-    private static final String PRODUCT_INBOUND_TYPE = "1";
+    private static final String PRODUCT_INBOUND_TYPE = "4";
 
     @Resource
     private IInventoryService inventoryService;
@@ -104,8 +102,8 @@ public class InventoryLinkageServiceImpl implements IInventoryLinkageService {
         dto.setMaterialName(toStr(form.get("productName")));
         dto.setQuantity(toLong(form.get("inQuantity")));
         dto.setWarehouseArea(toStr(form.get("warehouseArea")));
-        dto.setMaterialCategory(PRODUCT_CATEGORY);
-        dto.setMaterialSubcategory(PRODUCT_SUBCATEGORY);
+        dto.setMaterialCategory(toStr(form.get("materialCategory")));
+        dto.setMaterialSubcategory(toStr(form.get("materialSubcategory")));
         dto.setInboundType(PRODUCT_INBOUND_TYPE);
         log.info("产品入库：productName={}, quantity={}", dto.getMaterialName(), dto.getQuantity());
         int result = inventoryService.insertInventory(dto);

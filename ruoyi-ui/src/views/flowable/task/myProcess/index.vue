@@ -82,8 +82,8 @@
       <el-table-column label="操作" width="150" fixed="right" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button type="text" size="small" @click="handleFlowRecord(scope.row)">详情</el-button>
-          <el-button type="text" size="small" @click="handleStop(scope.row)">取消申请</el-button>
-          <el-button v-hasPermi="['system:deployment:remove']" type="text" size="small" @click="handleDelete(scope.row)">删除</el-button>
+          <el-button v-if="scope.row.procStatus === 'running'" type="text" size="small" style="color:#F56C6C" @click="handleStop(scope.row)">取消申请</el-button>
+          <el-button v-hasPermi="['system:deployment:remove']" type="text" size="small" style="color:#F56C6C" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -311,13 +311,17 @@ export default {
     },
     /**  取消流程申请 */
     handleStop(row) {
-      const params = {
-        instanceId: row.procInsId
-      }
-      stopProcess(params).then(res => {
-        this.$modal.msgSuccess(res.msg)
-        this.getList()
-      })
+      this.$confirm('确认取消该流程申请吗？取消后流程将终止且无法恢复。', '提示', {
+        confirmButtonText: '确认取消',
+        cancelButtonText: '关闭',
+        type: 'warning'
+      }).then(() => {
+        const params = { instanceId: row.procInsId }
+        stopProcess(params).then(res => {
+          this.$modal.msgSuccess('申请已取消')
+          this.getList()
+        })
+      }).catch(() => {})
     },
     /** 流程流转记录 */
     handleFlowRecord(row) {

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build Verification
 
-每次修改 Java / 后端代码后，**必须**运行以下命令验证编译，完成前不得进行下一步：
+**每次编辑单个文件后立即编译**，不等到多个文件都写完才验证——早发现早修复，禁止攒错误。
 
 ```bash
 # 验证单个受影响模块（推荐）
@@ -18,7 +18,10 @@ mvn compile -pl ruoyi-system -am -q
 mvn compile -pl ruoyi-manage -am -q
 ```
 
-若 Maven 无法执行（环境问题），必须明确标注 **"⚠️ 未验证编译"** 并列出所有修改的文件路径，不得假设代码正确。
+**编译失败时的处理规则：**
+- 立即修复当前错误，不得跳过继续写下一个文件
+- 同一个错误修复超过 3 次仍失败，停下来向用户说明卡点
+- 若 Maven 无法执行（环境问题），必须明确标注 **"⚠️ 未验证编译"** 并列出所有修改的文件路径，不得假设代码正确
 
 ## File Generation Rules
 
@@ -27,31 +30,61 @@ mvn compile -pl ruoyi-manage -am -q
 - 如需新建文件，必须先说明原因并获得确认（见 Scope Control）。
 - 不得对需求范围外的文件做重构或"顺手改进"。
 
+## Git Commit Rules
+
+- **不得主动发起 git commit**，除非用户明确要求。
+- 编译验证通过后，只需汇报结果，等待用户决定是否提交。
+
+## Pre-Implementation: Codebase Pattern Check（实现前必读现有代码）
+
+**在写任何新 Java 代码之前**，必须先完成以下核查，禁止凭记忆或猜测：
+
+### 1. 确认 API / 方法名存在
+```bash
+# 查找目标方法/常量是否真实存在
+grep -r "<方法名或常量名>" ruoyi-flowable/src --include="*.java" | head -10
+```
+
+### 2. 读一个同类型的现有实现作为模板
+- 要写 ServiceImpl → 先读一个已有的 ServiceImpl，了解注入方式（`@Resource` vs `@Autowired`）、事务写法、异常抛出方式
+- 要调用 Flowable API → 先在现有代码中找同类调用，确认实际方法签名
+- 要写 Vue 组件 → 先看同目录下已有的同类组件，了解 dict/props/emit 规范
+
+### 3. 实现前一句话说明
+> "我将修改 X、Y、Z 文件，实现 A 功能。"
+获得确认后再动手，不得在确认范围外修改其他文件。
+
+**历史高频错误（禁止再犯）：**
+- `getProcessDefinitionKey()` — 需确认实际方法名
+- `getExecution()` — 需确认实际方法名
+- `CANDIDATE_TEAMS` 常量 — 查看 `ProcessConstants.java` 确认实际常量名
+- fastjson 1.x 的任何 import — 必须用 `com.alibaba.fastjson2`
+- `IdentityLink` — 从 `org.flowable.identitylink.api.IdentityLink` 导入
+
 ## Flowable & RuoYi Conventions
 
 ### Java 导入规范
 - fastjson 使用 `com.alibaba.fastjson2`（**不是** fastjson 1.x）
 - IdentityLink 从 `org.flowable.identitylink.api.IdentityLink` 导入
-- 不得假设 Flowable API 方法名——使用前**必须** grep 现有代码确认签名
-
-### 使用 API 前必做的确认步骤
-在调用任何 Flowable 服务方法或常量之前，先执行：
-```bash
-# 将下方 <方法名>/<常量名> 替换为实际要查找的标识符后执行
-grep -r "<方法名>" ruoyi-flowable/src --include="*.java" | head -10
-grep -r "<常量名>" ruoyi-flowable/src --include="*.java" | head -10
-```
-禁止假设以下内容存在（历史上多次导致编译失败）：
-- `getProcessDefinitionKey()` — 需确认实际方法名
-- `getExecution()` — 需确认实际方法名
-- `CANDIDATE_TEAMS` 常量 — 查看 `ProcessConstants.java` 确认实际常量名
+- 字段注入统一使用 `@Resource`（项目全文约定，不用 `@Autowired`）
 
 ### Vue 前端规范
 - 响应式新增属性使用 `this.$set(obj, 'key', value)`，不得直接赋值
 - 数组更新使用 Vue 数组变异方法（push/splice 等），不得直接替换索引
 - Element-UI 版本为 2.15.14（Vue 2 版本）
+- 自定义表单组件必须声明 `dicts: [...]`（如 `dicts: ['warehouse_area']`）才能使用字典下拉
+
 
 ## Scope Control
+
+### 会话粒度控制（防止 context 溢出）
+- 单次会话**只做一个功能层**（Backend 或 Frontend，不同时做），除非改动总文件数 ≤ 3
+- 涉及超过 **5 个文件**的改动，主动建议拆分为多个会话，并给出拆分方案后等待用户确认
+- 建议拆分方式：
+  - 会话 A：Mapper + XML + Entity（Phase 1，编译通过）
+  - 会话 B：Service 接口 + ServiceImpl（Phase 2，编译通过）
+  - 会话 C：Controller（Phase 3，编译通过）
+  - 会话 D：前端 Vue 组件（Phase 4，lint 通过）
 
 ### 分阶段实现原则
 大型功能**必须**按层分阶段，每阶段独立可编译：
@@ -65,7 +98,6 @@ grep -r "<常量名>" ruoyi-flowable/src --include="*.java" | head -10
 
 - 每阶段完成并**编译通过**后，停下来汇报结果，等待确认再进入下一阶段。
 - **不做一次性端到端实现**（从 mapper 到 Vue 全部写完再编译）。
-- 涉及超过 **5 个文件**的改动，主动建议拆分为多个会话，防止 context 溢出。
 
 ### 开始编码前的确认步骤
 实现任何功能前，先用一句话说明（示例）：
@@ -313,3 +345,106 @@ runtimeService.deleteProcessInstance(instanceId, "STOPPED:" + comment);
 3. **`deleteProcessInstance` 终止的流程** — 最后一个活跃任务没有 `endTime`，`flowTaskForm` 的聚合分支判断必须检查**流程实例**的 `endTime`，而非任务本身。
 4. **流程变量快照不完整** — `HistoricTaskInstance.getProcessVariables()` 只含该任务完成时的快照，后续节点设置的变量不在其中。聚合展示时必须改用 `historyService.createHistoricVariableInstanceQuery().processInstanceId()`。
 5. **退回后候选人丢失** — `changeActivityState` 后重新激活的节点是全新任务实例，原有 candidate/assignee 不会自动继承，必须在退回后重新调用 `injectTeamCandidates`。
+
+---
+
+## 节点自定义表单机制总结
+
+> 本章记录节点自定义表单组件的完整实现方式，区别于基于 SysForm/vform 的动态表单。
+
+### 一、两套表单机制并存
+
+| 机制 | 适用场景 | 绑定方式 |
+|------|----------|---------|
+| SysForm（vform 动态表单） | 通用表单，在 BPMN 设计器中选择 | 节点 `formKey` = 表单 ID |
+| 自定义 Vue 组件 | 需要联动/校验/特定 UI 的业务节点 | `TASK_FORM_MAP`（节点 key → 组件） |
+
+待办页 `todo/detail/index.vue` **优先使用自定义组件**：若 `TASK_FORM_MAP[taskDefinitionKey]` 存在则渲染自定义组件，否则降级为 vform 渲染器。
+
+### 二、自定义表单组件目录与映射
+
+- 组件目录：`ruoyi-ui/src/components/taskForms/`
+- 映射文件：`ruoyi-ui/src/components/taskForms/index.js`
+
+```js
+export const TASK_FORM_MAP = {
+  'Activity_1uqk506': StockInForm,      // 原料检测入库
+  'Activity_01xy3yd': StockOutForm,     // 出库
+  'Activity_0kzrvj3': PreprocessForm,   // 预处理
+  'Activity_17q9igw': VacuumForm,       // 真空处理
+  'Activity_1qot9f7': BakingForm,       // 烘烤
+  'Activity_0tn05o0': TestForm,         // 检测
+  'Activity_1lnd3md': FinalStockInForm  // 产品入库
+}
+```
+
+### 三、自定义表单组件接口约定
+
+每个组件**必须**实现以下三个方法，待办页通过 `ref` 调用：
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `getFormData()` | `() => Promise<Object>` | 校验并返回表单数据（readonly 时直接 resolve） |
+| `setFormData(data)` | `(data: Object) => void` | 回填数据，用 `this.$set` 逐字段赋值 |
+| `setReadonly(val)` | `(val: Boolean) => void` | 切换只读模式 |
+
+### 四、发起流程主表单（send/index.vue）
+
+发起页 Step 1 使用固定主表单（非 vform），字段：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `taskName` | 文本（必填） | 流程名称 |
+| `procName` | 文本（只读） | 流程定义名，自动填入 |
+| `procVersion` | 文本（只读，显示为 vN） | 版本号，从路由参数 `version` 取得 |
+| `procDateRange` | 日期范围（必填） | 提交时拆分为 `procDateStart` / `procDateEnd` |
+| `operator` | 文本（只读） | 当前登录用户名，自动填入 |
+| `remark` | textarea（选填） | 备注 |
+
+Step 2 为各节点分配班组（nodeTeamMap），**不渲染节点自定义表单**（节点表单由待办时各审批人填写）。
+
+### 五、路由参数
+
+`definition/index.vue` → `send/index.vue` 跳转时携带 `version: row.version`，send 页在 `created()` 中读取并用于显示版本号。
+
+---
+
+## 库存联动机制总结
+
+> 本章记录 complete() 审批通过时自动触发库存操作的完整实现。
+
+### 一、架构设计
+
+在 `FlowTaskServiceImpl.complete()` 内，`taskService.complete()` 之后、候选人注入 `try` 块之前，调用：
+
+```java
+inventoryLinkageService.handleNodeCompletion(task.getTaskDefinitionKey(), allVariables);
+```
+
+- 整个 `complete()` 方法已有 `@Transactional(rollbackFor = Exception.class)`，库存操作失败时**整体回滚**，工作流不推进。
+- 无关节点（不在映射表中）直接跳过，无副作用。
+
+### 二、三个联动节点
+
+| 节点 key | 节点名称 | 库存操作 | 数据来源 |
+|---------|---------|---------|---------|
+| `Activity_1uqk506` | 原料检测入库 | `insertInventory()` | 表单变量（materialName / materialCategory / materialSubcategory / warehouseArea / inboundType / quantity） |
+| `Activity_01xy3yd` | 出库 | `processStockOut()` | 表单变量 materialId → `selectInventoryBymaterialId()` 取主键 id，outQuantity / outboundType |
+| `Activity_1lnd3md` | 产品入库 | `insertInventory()` | 表单变量 productName→materialName / inQuantity→quantity / **warehouseArea**→warehouseArea；category/subcategory/inboundType 固定为 product / finished / 1 |
+
+### 三、关键实现细节
+
+- **表单数据提取**：`extractFormData(allVariables, nodeKey)` 从 `allVariables` 取出 `nodeKey + "__formData"` 对应的值，支持 `Map` 和 JSON 字符串两种格式。
+- **出库查库存主键**：`InventoryMapper.selectInventoryBymaterialId(String materialId)` 按物料编码查询，注意方法名中 `m` 小写。
+- **`processStockOut` 返回类型**：返回 `AjaxResult`，失败时内部抛 `ServiceException`，调用方不需判断返回值。
+- **注入规范**：`InventoryLinkageServiceImpl` 中所有字段注入使用 `@Resource`（与项目全文统一）。
+
+### 四、核心文件索引
+
+| 文件 | 职责 |
+|------|------|
+| `ruoyi-flowable/.../service/IInventoryLinkageService.java` | 联动服务接口，单方法 `handleNodeCompletion(key, variables)` |
+| `ruoyi-flowable/.../service/impl/InventoryLinkageServiceImpl.java` | 三节点联动逻辑实现 |
+| `ruoyi-flowable/.../service/impl/FlowTaskServiceImpl.java` | complete() 中注入并调用联动服务 |
+| `ruoyi-manage/.../service/IInventoryService.java` | `insertInventory()` / `processStockOut()` |
+| `ruoyi-manage/.../mapper/InventoryMapper.java` | `selectInventoryBymaterialId(String)` |

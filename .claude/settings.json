@@ -1,10 +1,29 @@
 {
-  "env": {
-    "ANTHROPIC_BASE_URL": "http://localhost:4141",
-    "ANTHROPIC_AUTH_TOKEN": "dummy",
-    "ANTHROPIC_MODEL": "gpt-5.2-codex",
-    "ANTHROPIC_SMALL_FAST_MODEL": "gpt-5-mini",
-    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '\nFILE=\"${CLAUDE_TOOL_INPUT_file_path:-}\"\n\n# ── Java 文件：触发 Maven 编译 ──\nif [[ \"$FILE\" == *.java ]]; then\n  MODULE=$(echo \"$FILE\" | sed -E \"s|.*(ruoyi-[^/]+)/.*|\\1|\")\n  if [ -n \"$MODULE\" ]; then\n    PROJ_ROOT=$(echo \"$FILE\" | sed -E \"s|(.*/)ruoyi-[^/]+/.*|\\1|\")\n    echo \"--- ☕ Maven compile: $MODULE ---\"\n    cd \"$PROJ_ROOT\" || { echo \"❌ 无法进入项目目录: $PROJ_ROOT\"; exit 0; }\n    MVN_OUTPUT=$(mvn compile -pl \"$MODULE\" -am -q 2>&1)\n    EXIT=$?\n    echo \"$MVN_OUTPUT\" | tail -30\n    if [ $EXIT -eq 0 ]; then\n      echo \"✅ 编译通过\"\n    else\n      echo \"❌ 编译失败，请检查上方错误（修复后再继续下一步）\"\n    fi\n  fi\nfi\n\n# ── Vue 文件：触发 ESLint 检查 ──\nif [[ \"$FILE\" == *.vue ]] || [[ \"$FILE\" == *.js && \"$FILE\" == */ruoyi-ui/* ]]; then\n  UI_ROOT=$(echo \"$FILE\" | sed -E \"s|(.*ruoyi-ui/).*|\\1|\")\n  if [ -d \"$UI_ROOT\" ] && [ -f \"$UI_ROOT/package.json\" ]; then\n    REL_FILE=$(echo \"$FILE\" | sed -E \"s|.*ruoyi-ui/||\")\n    echo \"--- 🎨 ESLint: $REL_FILE ---\"\n    cd \"$UI_ROOT\" || exit 0\n    LINT_OUT=$(npx eslint \"$REL_FILE\" --max-warnings=0 2>&1)\n    EXIT=$?\n    echo \"$LINT_OUT\" | tail -20\n    if [ $EXIT -eq 0 ]; then\n      echo \"✅ ESLint 通过\"\n    else\n      echo \"⚠️  ESLint 发现问题，请检查上方输出\"\n    fi\n  fi\nfi\n'"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '\nCMD=\"${CLAUDE_TOOL_INPUT_command:-}\"\n# 拦截危险的 git 操作，提醒确认\nif echo \"$CMD\" | grep -qE \"git (push --force|reset --hard|checkout \\.|clean -f)\"; then\n  echo \"⛔ 检测到危险 git 操作，请用户确认后再执行！\"\n  exit 1\nfi\nexit 0\n'"
+          }
+        ]
+      }
+    ]
   }
 }

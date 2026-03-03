@@ -136,6 +136,7 @@ import { listTeam } from '@/api/manage/team'
 import { getDeployForm } from '@/api/flowable/form'
 import MainForm from '@/components/taskForms/MainForm'
 import { TASK_FORM_COMPONENT_MAP } from '@/components/taskForms/index'
+import store from '@/store'
 
 export default {
   name: 'ProcessSend',
@@ -150,6 +151,7 @@ export default {
       procDefId: '',
       procName: '',
       version: '',
+      fromPath: '', // 来源路径，用于关闭时返回正确页面
       formData: {},
       teamList: [],
       processNodes: [],
@@ -195,6 +197,7 @@ export default {
     this.procDefId = this.$route.query && this.$route.query.procDefId
     this.procName = (this.$route.query && this.$route.query.procName) || ''
     this.version = (this.$route.query && this.$route.query.version) || ''
+    this.fromPath = (this.$route.query && this.$route.query.from) || ''
     this.startForm.businessKey = this.generateBusinessKey()
     this.loadMainFormComponent()
     this.loadTeamList()
@@ -321,8 +324,17 @@ export default {
       }
     },
     goBack() {
-      const obj = { path: '/task/process', query: { t: Date.now() }}
-      this.$tab.closeOpenPage(obj)
+      // 关闭当前 tab，回到上一个已打开的 tab
+      // 若来自外部页面（如库存），直接 go(-1) 返回浏览器历史上一页
+      // 若来自已发任务流程内部，跳回 /task/process
+      if (this.fromPath) {
+        // 关闭当前 tab 后跳回历史上一页
+        store.dispatch('tagsView/delView', this.$route).then(() => {
+          this.$router.go(-1)
+        })
+      } else {
+        this.$tab.closeOpenPage({ path: '/task/process', query: { t: Date.now() }})
+      }
     },
     generateBusinessKey() {
       const now = new Date()

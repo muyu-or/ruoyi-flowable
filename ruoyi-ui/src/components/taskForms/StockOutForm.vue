@@ -60,6 +60,10 @@
       </el-select>
     </el-form-item>
 
+    <el-form-item label="操作人" prop="operator">
+      <el-input v-model="form.operator" :disabled="true" />
+    </el-form-item>
+
     <el-form-item label="备注" prop="remark">
       <el-input
         v-model="form.remark"
@@ -89,6 +93,7 @@ export default {
         warehouseArea: '',
         outQuantity: null,
         outboundType: '',
+        operator: '',
         remark: ''
       },
       rules: {
@@ -118,6 +123,7 @@ export default {
   },
   created() {
     this.loadInventoryList()
+    this.form.operator = this.$store.state.user.name || ''
   },
   methods: {
     loadInventoryList() {

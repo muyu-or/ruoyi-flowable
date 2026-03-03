@@ -17,7 +17,7 @@
       </el-radio-group>
     </el-form-item>
     <el-form-item label="检测人" prop="inspector">
-      <el-input v-model="form.inspector" placeholder="请输入检测人" :disabled="readonly" />
+      <el-input v-model="form.inspector" :disabled="true" />
     </el-form-item>
     <el-form-item label="报告编号" prop="reportNo">
       <el-input v-model="form.reportNo" placeholder="请输入报告编号" :disabled="readonly" />
@@ -51,10 +51,12 @@ export default {
         testItems: [{ required: true, message: '请输入测试项目', trigger: 'blur' }],
         testValue: [{ required: true, message: '请输入测试数值', trigger: 'blur' }],
         qualified: [{ required: true, message: '请选择是否合格', trigger: 'change' }],
-        inspector: [{ required: true, message: '请输入检测人', trigger: 'blur' }],
         reportNo: [{ required: true, message: '请输入报告编号', trigger: 'blur' }]
       }
     }
+  },
+  created() {
+    this.form.inspector = this.$store.state.user.name || ''
   },
   methods: {
     getFormData() {

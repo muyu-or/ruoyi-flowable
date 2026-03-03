@@ -30,7 +30,7 @@
       />
     </el-form-item>
     <el-form-item label="操作人" prop="operator">
-      <el-input v-model="form.operator" placeholder="请输入操作人" :disabled="readonly" />
+      <el-input v-model="form.operator" :disabled="true" />
     </el-form-item>
     <el-form-item label="备注" prop="remark">
       <el-input
@@ -88,10 +88,12 @@ export default {
             }
           },
           trigger: 'change'
-        }],
-        operator: [{ required: true, message: '请输入操作人', trigger: 'blur' }]
+        }]
       }
     }
+  },
+  created() {
+    this.form.operator = this.$store.state.user.name || ''
   },
   methods: {
     getFormData() {
