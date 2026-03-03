@@ -76,26 +76,46 @@ public class InventoryServiceImpl implements IInventoryService
     @Transactional
     public int insertInventory(InventoryDTO inventoryDTO)
     {
-        String materialId = inventoryDTO.getMaterialId();
-        // 查询库存（无需提前new Inventory()）
-        Inventory existingInventory = inventoryMapper.selectInventoryBymaterialId(materialId);
+        String materialName = inventoryDTO.getMaterialName();
+        // 方案A：按物料名称查重，同名物料累加库存，不新建记录
+        Inventory existingInventory = (StringUtils.isNotEmpty(materialName))
+                ? inventoryMapper.selectInventoryByMaterialName(materialName)
+                : null;
 
         if (existingInventory != null) {
-            // 库存已存在，更新数量和时间
-            Long newQuantity = existingInventory.getCurrentQuantity() + inventoryDTO.getQuantity();
+            // 同名物料已存在：累加数量，更新最近入库时间
+            Long existQty = existingInventory.getCurrentQuantity() != null ? existingInventory.getCurrentQuantity() : 0L;
+            Long inQty = inventoryDTO.getQuantity() != null ? inventoryDTO.getQuantity() : 0L;
+            Long newQuantity = existQty + inQty;
             existingInventory.setCurrentQuantity(newQuantity);
-            existingInventory.setUpdateTime(DateUtils.getNowDate()); // 直接用框架工具类
+            existingInventory.setStatus("1"); // 确保状态重置为在库（可能之前已出库完毕）
+            Date now = DateUtils.getNowDate();
+            existingInventory.setLastInboundTime(now);
+            existingInventory.setUpdateTime(now);
+
+            // 记录本次入库流水
+            StockIn stockIn = new StockIn();
+            stockIn.setMaterialId(existingInventory.getMaterialId());
+            stockIn.setMaterialName(existingInventory.getMaterialName());
+            stockIn.setQuantity(inventoryDTO.getQuantity());
+            stockIn.setWarehouseArea(existingInventory.getWarehouseArea());
+            stockIn.setInboundType(inventoryDTO.getInboundType());
+            stockIn.setInboundTime(now);
+            stockIn.setOperator(SecurityUtils.getUsername());
+            stockIn.setCreateTime(now);
+            stockInMapper.insertStockIn(stockIn);
+
             return inventoryMapper.updateInventory(existingInventory);
         } else {
-            // 库存不存在，新增库存
+            // 同名物料不存在：新增库存记录并生成物料编码
             Inventory newInventory = new Inventory();
             BeanUtils.copyProperties(inventoryDTO, newInventory);
-            // 1. 生成物料编码
             String materialCode = generateMaterialCode(inventoryDTO.getMaterialCategory(), inventoryDTO.getMaterialSubcategory());
+            log.info("【insertInventory】生成物料编码: materialCode={}, materialName={}", materialCode, inventoryDTO.getMaterialName());
             newInventory.setMaterialId(materialCode);
             newInventory.setCurrentQuantity(inventoryDTO.getQuantity());
-            newInventory.setStatus("1"); // 可用状态
-            Date now = DateUtils.getNowDate(); // 统一用框架的当前时间
+            newInventory.setStatus("1");
+            Date now = DateUtils.getNowDate();
             newInventory.setOperator(SecurityUtils.getUsername());
             newInventory.setFirstInboundTime(now);
             newInventory.setLastInboundTime(now);
@@ -103,14 +123,17 @@ public class InventoryServiceImpl implements IInventoryService
             newInventory.setUpdateTime(now);
             int inventoryResult = inventoryMapper.insertInventory(newInventory);
 
-            // 新增入库记录
+            // 记录入库流水（手动赋值，避免 copyProperties 漏字段）
             StockIn stockIn = new StockIn();
-            BeanUtils.copyProperties(inventoryDTO, stockIn);
-            //将新生成的 material_id 赋给入库记录
             stockIn.setMaterialId(materialCode);
+            stockIn.setMaterialName(inventoryDTO.getMaterialName());
+            stockIn.setQuantity(inventoryDTO.getQuantity());
+            stockIn.setWarehouseArea(inventoryDTO.getWarehouseArea());
+            stockIn.setInboundType(inventoryDTO.getInboundType());
             stockIn.setInboundTime(now);
-            stockIn.setOperator(SecurityUtils.getUsername()); // SecurityUtils.getUsername()
+            stockIn.setOperator(SecurityUtils.getUsername());
             stockIn.setCreateTime(now);
+            log.info("【insertInventory-StockIn】materialId={}, materialName={}, warehouseArea={}", stockIn.getMaterialId(), stockIn.getMaterialName(), stockIn.getWarehouseArea());
             int stockInResult = stockInMapper.insertStockIn(stockIn);
 
             return inventoryResult + stockInResult;

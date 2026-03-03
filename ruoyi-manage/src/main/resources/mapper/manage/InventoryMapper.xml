@@ -133,6 +133,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectInventoryVo"/>
         where id = #{id}
     </select>
+
+    <select id="selectInventoryBymaterialId" parameterType="java.lang.String" resultMap="InventoryResult">
+        <include refid="selectInventoryVo"/>
+        where i.material_id = #{materialId} limit 1
+    </select>
+
+    <select id="selectInventoryByMaterialName" parameterType="java.lang.String" resultMap="InventoryResult">
+        <include refid="selectInventoryVo"/>
+        where i.material_name = #{materialName} limit 1
+    </select>
     <select id="findMaxCodeByPrefix" parameterType="java.lang.String" resultType="java.lang.String">
         SELECT MAX(material_id)
         FROM inventory -- 你的物料表名

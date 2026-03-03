@@ -41,21 +41,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertStockIn" parameterType="com.ruoyi.manage.domain.StockIn" useGeneratedKeys="true" keyProperty="id">
         insert into stock_in
         <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test="materialId != null and materialId != ''">material_id,</if>
-            <if test="materialName != null and materialName != ''">material_name,</if>
+            material_id,
+            material_name,
             <if test="inboundType != null and inboundType != ''">inbound_type,</if>
             <if test="quantity != null">quantity,</if>
-            <if test="warehouseArea != null and warehouseArea != ''">warehouse_area,</if>
+            warehouse_area,
             <if test="inboundTime != null">inbound_time,</if>
             <if test="operator != null">operator,</if>
             <if test="createTime != null">create_time,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test="materialId != null and materialId != ''">#{materialId},</if>
-            <if test="materialName != null and materialName != ''">#{materialName},</if>
+            #{materialId},
+            #{materialName},
             <if test="inboundType != null and inboundType != ''">#{inboundType},</if>
             <if test="quantity != null">#{quantity},</if>
-            <if test="warehouseArea != null and warehouseArea != ''">#{warehouseArea},</if>
+            #{warehouseArea},
             <if test="inboundTime != null">#{inboundTime},</if>
             <if test="operator != null">#{operator},</if>
             <if test="createTime != null">#{createTime},</if>

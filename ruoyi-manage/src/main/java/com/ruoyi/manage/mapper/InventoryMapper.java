@@ -5,7 +5,6 @@ import com.ruoyi.manage.domain.Inventory;
 import com.ruoyi.manage.domain.dto.InventoryDTO;
 import com.ruoyi.manage.domain.vo.InventoryVO;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -74,8 +73,12 @@ public interface InventoryMapper
     /*
     * 根据物料ID查询库存信息
      */
-    @Select("select * from inventory where material_id = #{materialId} limit 1")
     Inventory selectInventoryBymaterialId(String materialId);
+
+    /**
+     * 根据物料名称精确查询库存信息（用于同名物料合并入库）
+     */
+    Inventory selectInventoryByMaterialName(String materialName);
 
     /*
        获取当日流水号
