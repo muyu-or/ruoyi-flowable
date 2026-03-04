@@ -28,12 +28,17 @@
         :disabled="readonly"
       />
     </el-form-item>
+    <el-form-item label="测试报告">
+      <report-selector v-model="form.reportIds" :readonly="readonly" />
+    </el-form-item>
   </el-form>
 </template>
 
 <script>
+import ReportSelector from './ReportSelector.vue'
 export default {
   name: 'PreprocessForm',
+  components: { ReportSelector },
   data() {
     return {
       readonly: false,
@@ -42,7 +47,8 @@ export default {
         processMethod: '',
         processDuration: 0,
         processResult: '',
-        remark: ''
+        remark: '',
+        reportIds: []
       },
       rules: {
         processMethod: [{ required: true, message: '请输入处理方式', trigger: 'blur' }],

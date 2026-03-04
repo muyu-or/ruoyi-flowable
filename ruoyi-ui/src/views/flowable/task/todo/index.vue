@@ -56,15 +56,28 @@
         </template>
       </el-table-column>
       <el-table-column label="接收时间" align="center" prop="createTime" width="180"/>
+      <el-table-column label="状态" align="center" width="100">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.nodeStatus === 'submitted'" type="warning" size="mini">待审批</el-tag>
+          <el-tag v-else type="info" size="mini">待处理</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
+            v-if="!isLeader && scope.row.nodeStatus === 'submitted'"
+            size="mini"
+            type="text"
+            icon="el-icon-edit"
+            @click="handleProcess(scope.row)"
+          >修改</el-button>
+          <el-button
+            v-else
             size="mini"
             type="text"
             icon="el-icon-edit-outline"
             @click="handleProcess(scope.row)"
-          >处理
-          </el-button>
+          >处理</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -124,11 +137,17 @@ export default {
       // 表单参数
       form: {},
       // 表单校验
-      rules: {}
+      rules: {},
     };
   },
   created() {
-    this.getList();
+    this.getList()
+  },
+  computed: {
+    // 是否为班组长：班组长始终看到「处理」按钮，不区分已提交/未提交
+    isLeader() {
+      return (this.$store.state.user.roles || []).includes('team_leader')
+    }
   },
   methods: {
     /** 查询流程定义列表 */

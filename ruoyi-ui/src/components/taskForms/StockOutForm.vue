@@ -72,14 +72,19 @@
         :disabled="readonly"
       />
     </el-form-item>
+    <el-form-item label="测试报告">
+      <report-selector v-model="form.reportIds" :readonly="readonly" />
+    </el-form-item>
   </el-form>
 </template>
 
 <script>
 import { listInventory } from '@/api/manage/inventory'
+import ReportSelector from './ReportSelector.vue'
 
 export default {
   name: 'StockOutForm',
+  components: { ReportSelector },
   dicts: ['outbound_type'],
   props: {
     initialMaterialId: {
@@ -100,7 +105,8 @@ export default {
         outQuantity: null,
         outboundType: '',
         operator: '',
-        remark: ''
+        remark: '',
+        reportIds: []
       },
       rules: {
         materialId: [

@@ -30,12 +30,17 @@
         :disabled="readonly"
       />
     </el-form-item>
+    <el-form-item label="测试报告">
+      <report-selector v-model="form.reportIds" :readonly="readonly" />
+    </el-form-item>
   </el-form>
 </template>
 
 <script>
+import ReportSelector from './ReportSelector.vue'
 export default {
   name: 'TestForm',
+  components: { ReportSelector },
   data() {
     return {
       readonly: false,
@@ -45,7 +50,8 @@ export default {
         qualified: '',
         inspector: '',
         reportNo: '',
-        remark: ''
+        remark: '',
+        reportIds: []
       },
       rules: {
         testItems: [{ required: true, message: '请输入测试项目', trigger: 'blur' }],

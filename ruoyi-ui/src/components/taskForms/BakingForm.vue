@@ -40,12 +40,17 @@
         :disabled="readonly"
       />
     </el-form-item>
+    <el-form-item label="测试报告">
+      <report-selector v-model="form.reportIds" :readonly="readonly" />
+    </el-form-item>
   </el-form>
 </template>
 
 <script>
+import ReportSelector from './ReportSelector.vue'
 export default {
   name: 'BakingForm',
+  components: { ReportSelector },
   data() {
     return {
       readonly: false,
@@ -55,7 +60,8 @@ export default {
         bakingDuration: 0,
         coatingThickness: 0,
         operator: '',
-        remark: ''
+        remark: '',
+        reportIds: []
       },
       rules: {
         deviceNo: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],

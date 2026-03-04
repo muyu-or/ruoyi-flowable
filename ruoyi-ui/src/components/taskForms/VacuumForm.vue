@@ -31,12 +31,17 @@
         :disabled="readonly"
       />
     </el-form-item>
+    <el-form-item label="测试报告">
+      <report-selector v-model="form.reportIds" :readonly="readonly" />
+    </el-form-item>
   </el-form>
 </template>
 
 <script>
+import ReportSelector from './ReportSelector.vue'
 export default {
   name: 'VacuumForm',
+  components: { ReportSelector },
   data() {
     return {
       readonly: false,
@@ -45,7 +50,8 @@ export default {
         vacuumLevel: 0,
         processDuration: 0,
         operator: '',
-        abnormalRecord: ''
+        abnormalRecord: '',
+        reportIds: []
       },
       rules: {
         deviceNo: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],

@@ -108,4 +108,7 @@ public class FlowTaskDto implements Serializable {
     @ApiModelProperty("流程状态: running=进行中, finished=已完成, rejected=失败(不通过), stopped=已取消")
     private String procStatus;
 
+    @ApiModelProperty("节点执行状态: pending=待处理, claimed=已认领, submitted=已提交待审批, completed=已完成")
+    private String nodeStatus;
+
 }

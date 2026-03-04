@@ -68,12 +68,17 @@
         :disabled="readonly"
       />
     </el-form-item>
+    <el-form-item label="测试报告">
+      <report-selector v-model="form.reportIds" :readonly="readonly" />
+    </el-form-item>
   </el-form>
 </template>
 
 <script>
+import ReportSelector from './ReportSelector.vue'
 export default {
   name: 'FinalStockInForm',
+  components: { ReportSelector },
   dicts: ['warehouse_area', 'material_category', 'material_subcategory'],
   data() {
     return {
@@ -85,7 +90,8 @@ export default {
         inQuantity: 0,
         warehouseArea: '',
         operator: '',
-        remark: ''
+        remark: '',
+        reportIds: []
       },
       rules: {
         productName: [{ required: true, message: '请输入产品名称', trigger: 'blur' }],

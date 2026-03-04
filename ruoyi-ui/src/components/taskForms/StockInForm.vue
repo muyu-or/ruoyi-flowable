@@ -105,12 +105,19 @@
         :disabled="readonly"
       />
     </el-form-item>
+
+    <el-form-item label="测试报告">
+      <report-selector v-model="form.reportIds" :readonly="readonly" />
+    </el-form-item>
   </el-form>
 </template>
 
 <script>
+import ReportSelector from './ReportSelector.vue'
+
 export default {
   name: 'StockInForm',
+  components: { ReportSelector },
   dicts: ['material_category', 'material_subcategory', 'warehouse_area', 'inbound_type'],
   data() {
     return {
@@ -124,7 +131,8 @@ export default {
         quantity: null,
         checkDescription: '',
         operator: '',
-        remark: ''
+        remark: '',
+        reportIds: []
       },
       rules: {
         materialName: [

@@ -26,6 +26,28 @@ public class SysForm extends BaseEntity
     @Excel(name = "表单内容")
     private String formContent;
 
+    /** 表单类型：vform / component */
+    private String formType;
+
+    /** 自定义Vue组件名，formType=component时有效 */
+    private String formComponent;
+
+    public String getFormType() {
+        return formType;
+    }
+
+    public void setFormType(String formType) {
+        this.formType = formType;
+    }
+
+    public String getFormComponent() {
+        return formComponent;
+    }
+
+    public void setFormComponent(String formComponent) {
+        this.formComponent = formComponent;
+    }
+
     public void setFormId(Long formId) 
     {
         this.formId = formId;
@@ -60,6 +82,8 @@ public class SysForm extends BaseEntity
             .append("formId", getFormId())
             .append("formName", getFormName())
             .append("formContent", getFormContent())
+            .append("formType", getFormType())
+            .append("formComponent", getFormComponent())
             .append("createTime", getCreateTime())
             .append("updateTime", getUpdateTime())
             .append("createBy", getCreateBy())

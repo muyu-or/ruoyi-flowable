@@ -51,4 +51,11 @@ public interface IFlowTeamService {
      * @param userId    实际执行该任务的用户ID
      */
     void onTaskCompleted(String taskId, String result, String comment, Long userId);
+
+    /**
+     * 班组成员提交表单（saveFormData，不推进流程）时，更新节点状态为 submitted
+     *
+     * @param taskId 任务ID
+     */
+    void onTaskSubmitted(String taskId);
 }

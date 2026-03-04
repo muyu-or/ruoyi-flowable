@@ -20,6 +20,7 @@ import com.ruoyi.flowable.flow.CustomProcessDiagramGenerator;
 import com.ruoyi.flowable.flow.FindNextNodeUtil;
 import com.ruoyi.flowable.flow.FlowableUtils;
 import com.ruoyi.flowable.service.IFlowTaskService;
+import com.ruoyi.flowable.service.IFlowTeamService;
 import com.ruoyi.flowable.service.IInventoryLinkageService;
 import com.ruoyi.flowable.service.ISysDeployFormService;
 import com.ruoyi.flowable.service.ISysFormService;
@@ -87,6 +88,12 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
     @Resource
     private IInventoryLinkageService inventoryLinkageService;
+
+    @Resource
+    private IFlowTeamService flowTeamService;
+
+    @Resource
+    private com.ruoyi.system.service.ITaskNodeExecutionService taskNodeExecutionService;
 
     /**
      * 完成任务
@@ -856,6 +863,16 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
             log.debug("待办任务: taskId={}, taskName={}, procDefName={}, taskCreateTime={}",
                     task.getId(), task.getName(), pd.getName(), task.getCreateTime());
+
+            // 查询节点执行状态（submitted=已提交待审批，pending=待处理，claimed=已认领）
+            try {
+                com.ruoyi.system.domain.TaskNodeExecution nodeExec = taskNodeExecutionService.selectByTaskId(task.getId());
+                if (nodeExec != null) {
+                    flowTask.setNodeStatus(nodeExec.getStatus());
+                }
+            } catch (Exception e) {
+                log.warn("查询节点执行状态失败，taskId={}", task.getId(), e);
+            }
 
             flowList.add(flowTask);
         }
@@ -2075,5 +2092,7 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             log.info("班组成员提交表单数据，taskId={}, variables keys={}", taskVo.getTaskId(),
                     taskVo.getVariables().keySet());
         }
+        // 标记节点为"已提交待审批"
+        flowTeamService.onTaskSubmitted(taskVo.getTaskId());
     }
 }

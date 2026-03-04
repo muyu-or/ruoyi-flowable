@@ -187,6 +187,29 @@ public class FlowTeamServiceImpl extends FlowServiceFactory implements IFlowTeam
     }
 
     /**
+     * 班组成员提交表单（saveFormData，不推进流程）时，更新节点状态为 submitted
+     */
+    @Override
+    public void onTaskSubmitted(String taskId) {
+        try {
+            TaskNodeExecution nodeExec = taskNodeExecutionService.selectByTaskId(taskId);
+            if (nodeExec == null) {
+                log.warn("无法找到节点执行记录，taskId={}", taskId);
+                return;
+            }
+            if ("completed".equals(nodeExec.getStatus()) || "rejected".equals(nodeExec.getStatus())) {
+                log.warn("节点已完成，不允许变更为submitted，taskId={}, status={}", taskId, nodeExec.getStatus());
+                return;
+            }
+            nodeExec.setStatus("submitted");
+            taskNodeExecutionService.updateTaskNodeExecution(nodeExec);
+            log.info("已更新节点执行记录为submitted状态，taskId={}", taskId);
+        } catch (Exception e) {
+            log.error("更新任务提交状态时出错，taskId={}", taskId, e);
+        }
+    }
+
+    /**
      * 任务完成时：更新 task_node_execution 状态
      */
     @Override
