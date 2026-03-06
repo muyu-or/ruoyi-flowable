@@ -107,17 +107,23 @@
     </el-form-item>
 
     <el-form-item label="测试报告">
-      <report-selector v-model="form.reportIds" :readonly="readonly" />
+      <report-uploader
+        v-model="form.reports"
+        :readonly="readonly"
+        :material-name="form.materialName"
+        :material-quantity="form.quantity"
+        node-name="原料检测入库"
+      />
     </el-form-item>
   </el-form>
 </template>
 
 <script>
-import ReportSelector from './ReportSelector.vue'
+import ReportUploader from './ReportUploader.vue'
 
 export default {
   name: 'StockInForm',
-  components: { ReportSelector },
+  components: { ReportUploader },
   dicts: ['material_category', 'material_subcategory', 'warehouse_area', 'inbound_type'],
   data() {
     return {
@@ -132,7 +138,8 @@ export default {
         checkDescription: '',
         operator: '',
         remark: '',
-        reportIds: []
+        reportIds: [],
+        reports: []
       },
       rules: {
         materialName: [

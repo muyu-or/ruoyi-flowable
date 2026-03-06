@@ -173,4 +173,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         join sys_user leader on leader.user_id = pt.leader_id
         where leader.user_name = #{leaderUsername}
     </select>
+
+    <!-- 根据用户ID查询其所属的班组ID列表 -->
+    <select id="selectTeamIdsByUserId" resultType="Long">
+        select ptu.team_id
+        from production_team_user ptu
+        inner join production_team pt on pt.id = ptu.team_id
+        where ptu.user_id = #{userId}
+          and pt.team_status = '1'
+    </select>
 </mapper>

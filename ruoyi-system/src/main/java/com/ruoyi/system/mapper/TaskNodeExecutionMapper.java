@@ -99,4 +99,9 @@ public interface TaskNodeExecutionMapper
      * @param execRecordId 流程执行记录ID
      */
     void cancelByExecRecordId(@org.apache.ibatis.annotations.Param("execRecordId") Long execRecordId);
+
+    /**
+     * 按班组统计成员任务状态
+     */
+    List<java.util.Map<String, Object>> countMemberStatsByTeam(@org.apache.ibatis.annotations.Param("teamId") Long teamId);
 }

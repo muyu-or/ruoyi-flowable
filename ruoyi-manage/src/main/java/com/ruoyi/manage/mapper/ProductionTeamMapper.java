@@ -109,4 +109,9 @@ public interface ProductionTeamMapper
      * 查询指定班组长所在班组的所有成员用户名
      */
     List<String> selectMemberUsernamesByLeaderUsername(@Param("leaderUsername") String leaderUsername);
+
+    /**
+     * 根据用户ID查询其所属的班组ID列表（通过 production_team_user 关联表）
+     */
+    List<Long> selectTeamIdsByUserId(@Param("userId") Long userId);
 }

@@ -22,6 +22,7 @@ import com.ruoyi.flowable.flow.FlowableUtils;
 import com.ruoyi.flowable.service.IFlowTaskService;
 import com.ruoyi.flowable.service.IFlowTeamService;
 import com.ruoyi.flowable.service.IInventoryLinkageService;
+import com.ruoyi.flowable.service.IReportLinkageService;
 import com.ruoyi.flowable.service.ISysDeployFormService;
 import com.ruoyi.flowable.service.ISysFormService;
 import com.ruoyi.system.domain.SysForm;
@@ -74,6 +75,24 @@ import java.util.stream.Collectors;
 @Slf4j
 public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTaskService {
 
+    /**
+     * 节点 taskDefinitionKey → 自定义 Vue 组件名 兜底映射。
+     * 当 BPMN 模型未通过 extensionElements 绑定 formComponent 时，
+     * 用此映射识别自定义组件节点（与前端 TASK_FORM_MAP 对应）。
+     */
+    private static final Map<String, String> FALLBACK_COMPONENT_MAP;
+    static {
+        Map<String, String> m = new HashMap<>();
+        m.put("Activity_1uqk506", "StockInForm");
+        m.put("Activity_01xy3yd", "StockOutForm");
+        m.put("Activity_0kzrvj3", "PreprocessForm");
+        m.put("Activity_17q9igw", "VacuumForm");
+        m.put("Activity_1qot9f7", "BakingForm");
+        m.put("Activity_0tn05o0", "TestForm");
+        m.put("Activity_1lnd3md", "FinalStockInForm");
+        FALLBACK_COMPONENT_MAP = Collections.unmodifiableMap(m);
+    }
+
     @Resource
     private ISysUserService sysUserService;
     @Resource
@@ -88,6 +107,9 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
     @Resource
     private IInventoryLinkageService inventoryLinkageService;
+
+    @Resource
+    private IReportLinkageService reportLinkageService;
 
     @Resource
     private IFlowTeamService flowTeamService;
@@ -138,6 +160,13 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
             // 库存联动：根据节点 key 自动执行入库/出库操作（失败时事务回滚）
             inventoryLinkageService.handleNodeCompletion(task.getTaskDefinitionKey(), allVariables);
+
+            // 测试报告联动：审批通过后，将表单中暂存的测试报告元数据写入 report_record 表
+            try {
+                reportLinkageService.handleReportOnCompletion(task.getTaskDefinitionKey(), allVariables);
+            } catch (Exception e) {
+                log.warn("测试报告写入 report_record 时出错，节点={}", task.getTaskDefinitionKey(), e);
+            }
 
             // 任务完成后，为后续新创建的任务注入班组候选人
             // 这是为了处理任务监听器可能未被触发的情况
@@ -1457,8 +1486,11 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                 // 从 BPMN 模型映射中取 formKey，而非 ht.getFormKey()（历史实例该字段为空）
                 String htFormKey = nodeFormKeyMap.get(ht.getTaskDefinitionKey());
                 if (StringUtils.isBlank(htFormKey)) {
-                    // 没有 vForm 绑定，检查是否绑定了自定义 Vue 组件
+                    // 没有 vForm 绑定，检查是否绑定了自定义 Vue 组件（优先 extensionElements，兜底硬编码映射）
                     String compName = nodeComponentMap.get(ht.getTaskDefinitionKey());
+                    if (StringUtils.isBlank(compName)) {
+                        compName = FALLBACK_COMPONENT_MAP.get(ht.getTaskDefinitionKey());
+                    }
                     if (StringUtils.isNotBlank(compName)) {
                         String nsKey = ht.getTaskDefinitionKey() + "__formData";
                         Object nsData = parameters.get(nsKey);
@@ -1589,6 +1621,44 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             log.warn("读取节点 {} 自定义表单组件名失败", taskDefKey, e);
         }
 
+        // ── 查询最新一条退回意见，仅当当前任务是由退回操作产生时才放入 parameters ──
+        // 判断依据：退回评论时间与当前任务创建时间在 10 秒以内（同一事务中先 addComment 再 changeActivityState 创建新任务）
+        if (!isFinished && Objects.nonNull(task) && StringUtils.isNotBlank(procInsId4Form)) {
+            try {
+                List<Comment> allComments = taskService.getProcessInstanceComments(procInsId4Form);
+                Comment latestReback = null;
+                for (Comment c : allComments) {
+                    if (FlowComment.REBACK.getType().equals(c.getType())) {
+                        if (latestReback == null || c.getTime().after(latestReback.getTime())) {
+                            latestReback = c;
+                        }
+                    }
+                }
+                if (latestReback != null) {
+                    // 退回评论时间应在当前任务创建时间之前（且间隔不超过 10 秒），
+                    // 说明当前任务是由这次退回操作产生的
+                    long commentTime = latestReback.getTime().getTime();
+                    long taskCreateTime = task.getCreateTime().getTime();
+                    long diffMs = taskCreateTime - commentTime;
+                    if (diffMs >= 0 && diffMs <= 10000) {
+                        Map<String, Object> rebackInfo = new HashMap<>();
+                        rebackInfo.put("comment", latestReback.getFullMessage());
+                        rebackInfo.put("time", latestReback.getTime());
+                        // 获取退回操作人昵称
+                        String rebackUserName = "";
+                        if (StringUtils.isNotBlank(latestReback.getUserId())) {
+                            SysUser rebackUser = sysUserService.selectUserById(Long.parseLong(latestReback.getUserId()));
+                            rebackUserName = Objects.nonNull(rebackUser) ? rebackUser.getNickName() : latestReback.getUserId();
+                        }
+                        rebackInfo.put("userName", rebackUserName);
+                        parameters.put("_latestReturnComment", rebackInfo);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("查询退回意见失败，procInsId: {}", procInsId4Form, e);
+            }
+        }
+
         log.info("获取任务表单 {}，formKey: {}，nodeKey: {}，已完成: {}", taskId,
                 Objects.nonNull(task) ? task.getFormKey() : "(historic)", taskDefKey, isFinished);
         return AjaxResult.success(parameters);
@@ -1661,8 +1731,11 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             }
             String htFormKey = nodeFormKeyMap.get(ht.getTaskDefinitionKey());
             if (StringUtils.isBlank(htFormKey)) {
-                // 检查是否绑定了自定义 Vue 组件
+                // 检查是否绑定了自定义 Vue 组件（优先 extensionElements，兜底硬编码映射）
                 String compName = nodeComponentMap.get(ht.getTaskDefinitionKey());
+                if (StringUtils.isBlank(compName)) {
+                    compName = FALLBACK_COMPONENT_MAP.get(ht.getTaskDefinitionKey());
+                }
                 if (StringUtils.isNotBlank(compName)) {
                     String nsKey = ht.getTaskDefinitionKey() + "__formData";
                     Object nsData = parameters.get(nsKey);

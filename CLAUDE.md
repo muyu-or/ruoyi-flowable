@@ -7,21 +7,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **每次编辑单个文件后立即编译**，不等到多个文件都写完才验证——早发现早修复，禁止攒错误。
 
 ```bash
-# 验证单个受影响模块（推荐）
-mvn compile -pl <受影响模块> -am -q
+# 验证单个受影响模块（推荐），用 tail 截取关键输出
+mvn compile -pl <受影响模块> -am -q 2>&1 | tail -50
 
 # 例：修改了 ruoyi-flowable 模块
-mvn compile -pl ruoyi-flowable -am -q
+mvn compile -pl ruoyi-flowable -am -q 2>&1 | tail -50
 
 # 例：修改了 ruoyi-system 或 ruoyi-manage
-mvn compile -pl ruoyi-system -am -q
-mvn compile -pl ruoyi-manage -am -q
+mvn compile -pl ruoyi-system -am -q 2>&1 | tail -50
+mvn compile -pl ruoyi-manage -am -q 2>&1 | tail -50
 ```
 
 **编译失败时的处理规则：**
 - 立即修复当前错误，不得跳过继续写下一个文件
 - 同一个错误修复超过 3 次仍失败，停下来向用户说明卡点
 - 若 Maven 无法执行（环境问题），必须明确标注 **"⚠️ 未验证编译"** 并列出所有修改的文件路径，不得假设代码正确
+- **不得在编译未通过的情况下声称任务完成** — 编译通过是"完成"的最低标准
+- **每次修改 Java 文件后必须立即编译验证**，不允许积攒多个文件改动后再统一验证
 
 ## File Generation Rules
 
@@ -35,15 +37,32 @@ mvn compile -pl ruoyi-manage -am -q
 - **不得主动发起 git commit**，除非用户明确要求。
 - 编译验证通过后，只需汇报结果，等待用户决定是否提交。
 
+## Exploration Discipline（搜索纪律）
+
+- 用户问"X 在哪"、"Y 怎么实现"等直接问题时，**先用 Grep/Glob 定位**，再只读相关文件。禁止逐个打开无关文件"碰运气"。
+- 定位顺序：`Grep 关键字 → Glob 文件名模式 → 只读命中文件`。
+- **禁止**在定位阶段大量读取与问题无关的文件，浪费 context。
+
+## Clarification Before Implementation（实现前澄清）
+
+开始任何非平凡功能前，**主动向用户问 3 个澄清问题**：
+1. 想沿用代码库中哪个现有模式 / 参考文件？
+2. 失败 / 边界情况应如何处理？
+3. 有无禁止改动的文件或模块？
+
+等用户回答后再提出实现方案，避免"方向搞错后推翻重来"。
+
 ## Pre-Implementation: Codebase Pattern Check（实现前必读现有代码）
 
 **在写任何新 Java 代码之前**，必须先完成以下核查，禁止凭记忆或猜测：
 
 ### 1. 确认 API / 方法名存在
 ```bash
-# 查找目标方法/常量是否真实存在
-grep -r "<方法名或常量名>" ruoyi-flowable/src --include="*.java" | head -10
+# 查找目标方法/常量是否真实存在（使用 Grep 工具，不要用 bash grep）
+# 搜索范围覆盖所有 Java 源码
+Grep pattern="<方法名或常量名>" glob="*.java"
 ```
+**调用任何之前未在本次会话中见过的方法/常量前，必须先搜索确认其存在并核实签名。禁止凭猜测使用 API。**
 
 ### 2. 读一个同类型的现有实现作为模板
 - 要写 ServiceImpl → 先读一个已有的 ServiceImpl，了解注入方式（`@Resource` vs `@Autowired`）、事务写法、异常抛出方式
@@ -60,6 +79,8 @@ grep -r "<方法名或常量名>" ruoyi-flowable/src --include="*.java" | head -
 - `CANDIDATE_TEAMS` 常量 — 查看 `ProcessConstants.java` 确认实际常量名
 - fastjson 1.x 的任何 import — 必须用 `com.alibaba.fastjson2`
 - `IdentityLink` — 从 `org.flowable.identitylink.api.IdentityLink` 导入
+- lambda 中使用外部变量 — 必须确保是 effectively final，否则先提取为局部 final 变量
+- 类型转换 — 从流程变量取值后必须做 null 检查和类型判断，不得直接强转
 
 ## Flowable & RuoYi Conventions
 
@@ -77,7 +98,16 @@ grep -r "<方法名或常量名>" ruoyi-flowable/src --include="*.java" | head -
 
 ## Scope Control
 
-### 会话粒度控制（防止 context 溢出）
+### Context Management（防止 context 溢出）
+
+- 感知到 context 已经较长（大量文件读取、多轮修改）时，**主动停下来**：
+  1. 总结当前已完成的内容（文件列表 + 编译状态）
+  2. 列出剩余未完成的工作
+  3. 给出一段**交接说明**（可直接粘贴到下次会话的开头）
+  4. 建议用户开启新会话继续
+- **禁止**在 context 接近极限时仍尝试塞入更多代码，宁可少做一步也不要做到一半被截断。
+
+### 会话粒度控制
 - 单次会话**只做一个功能层**（Backend 或 Frontend，不同时做），除非改动总文件数 ≤ 3
 - 涉及超过 **5 个文件**的改动，主动建议拆分为多个会话，并给出拆分方案后等待用户确认
 - 建议拆分方式：

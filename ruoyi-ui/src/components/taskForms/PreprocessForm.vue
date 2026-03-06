@@ -29,30 +29,39 @@
       />
     </el-form-item>
     <el-form-item label="测试报告">
-      <report-selector v-model="form.reportIds" :readonly="readonly" />
+      <report-uploader
+        v-model="form.reports"
+        :readonly="readonly"
+        :material-name="extraContext.materialName"
+        :material-quantity="extraContext.materialQuantity"
+        node-name="预处理"
+      />
     </el-form-item>
   </el-form>
 </template>
 
 <script>
-import ReportSelector from './ReportSelector.vue'
+import ReportUploader from './ReportUploader.vue'
 export default {
   name: 'PreprocessForm',
-  components: { ReportSelector },
+  components: { ReportUploader },
   data() {
     return {
       readonly: false,
+      extraContext: { materialName: '', materialQuantity: null },
       form: {
         operator: '',
         processMethod: '',
         processDuration: 0,
         processResult: '',
         remark: '',
-        reportIds: []
+        reportIds: [],
+        reports: []
       },
       rules: {
         processMethod: [{ required: true, message: '请输入处理方式', trigger: 'blur' }],
         processDuration: [{
+          required: true,
           validator: (rule, value, callback) => {
             if (value === undefined || value === null || value <= 0) {
               callback(new Error('请输入大于0的处理时长'))
@@ -94,6 +103,9 @@ export default {
     },
     setReadonly(val) {
       this.readonly = val
+    },
+    setExtraContext(ctx) {
+      this.extraContext = ctx || { materialName: '', materialQuantity: null }
     }
   }
 }

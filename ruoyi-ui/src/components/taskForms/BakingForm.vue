@@ -41,19 +41,26 @@
       />
     </el-form-item>
     <el-form-item label="测试报告">
-      <report-selector v-model="form.reportIds" :readonly="readonly" />
+      <report-uploader
+        v-model="form.reports"
+        :readonly="readonly"
+        :material-name="extraContext.materialName"
+        :material-quantity="extraContext.materialQuantity"
+        node-name="烘烤"
+      />
     </el-form-item>
   </el-form>
 </template>
 
 <script>
-import ReportSelector from './ReportSelector.vue'
+import ReportUploader from './ReportUploader.vue'
 export default {
   name: 'BakingForm',
-  components: { ReportSelector },
+  components: { ReportUploader },
   data() {
     return {
       readonly: false,
+      extraContext: { materialName: '', materialQuantity: null },
       form: {
         deviceNo: '',
         bakingTemp: 0,
@@ -61,11 +68,13 @@ export default {
         coatingThickness: 0,
         operator: '',
         remark: '',
-        reportIds: []
+        reportIds: [],
+        reports: []
       },
       rules: {
         deviceNo: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
         bakingTemp: [{
+          required: true,
           validator: (rule, value, callback) => {
             if (value === undefined || value === null || value <= 0) {
               callback(new Error('请输入大于0的烘烤温度'))
@@ -76,6 +85,7 @@ export default {
           trigger: 'change'
         }],
         bakingDuration: [{
+          required: true,
           validator: (rule, value, callback) => {
             if (value === undefined || value === null || value <= 0) {
               callback(new Error('请输入大于0的烘烤时长'))
@@ -86,6 +96,7 @@ export default {
           trigger: 'change'
         }],
         coatingThickness: [{
+          required: true,
           validator: (rule, value, callback) => {
             if (value === undefined || value === null || value <= 0) {
               callback(new Error('请输入大于0的镀膜厚度'))
@@ -126,6 +137,9 @@ export default {
     },
     setReadonly(val) {
       this.readonly = val
+    },
+    setExtraContext(ctx) {
+      this.extraContext = ctx || { materialName: '', materialQuantity: null }
     }
   }
 }

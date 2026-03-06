@@ -11,6 +11,15 @@
         <!--表单信息-->
         <el-tab-pane label="表单信息" name="1">
           <el-col :span="16" :offset="4">
+            <!-- 退回意见提示 -->
+            <el-alert
+              v-if="latestReturnComment"
+              :title="'退回意见' + (latestReturnComment.userName ? '（' + latestReturnComment.userName + '）' : '') + '：' + latestReturnComment.comment"
+              type="warning"
+              show-icon
+              :closable="false"
+              style="margin-bottom: 16px;"
+            />
             <!-- 自定义节点表单（根据 taskDefinitionKey 动态渲染） -->
             <component
               :is="currentFormComponent"
@@ -256,7 +265,8 @@ export default {
       taskDefinitionKey: '', // 当前节点 key，用于表单数据命名空间隔离
       formComponent: '', // 后端返回的自定义组件名（extensionElements 绑定机制）
       loadingReturnList: false, // 加载退回节点列表状态
-      isLeader: true // 当前用户是否为班组长（默认 true，避免权限检查延迟期间按钮消失）
+      isLeader: true, // 当前用户是否为班组长（默认 true，避免权限检查延迟期间按钮消失）
+      latestReturnComment: null // 最新退回意见（班组长退回时的处理意见）
     }
   },
   computed: {
@@ -351,6 +361,8 @@ export default {
       flowTaskForm({ taskId: taskId }).then(res => {
         this.taskDefinitionKey = res.data._taskDefinitionKey || ''
         this.formComponent = res.data._formComponent || ''
+        // 读取最新退回意见
+        this.latestReturnComment = res.data._latestReturnComment || null
 
         if (this.currentFormComponent) {
           // 有自定义表单组件：只回填数据，不走 vFormRef
@@ -359,6 +371,14 @@ export default {
               const nsKey = this.taskDefinitionKey + '__formData'
               const nsData = res.data[nsKey] || {}
               this.$refs.taskFormRef.setFormData(nsData)
+              // 传递出库节点的物料信息给中间节点表单（预处理/真空/烘烤/检测）
+              if (this.$refs.taskFormRef.setExtraContext) {
+                const stockOutData = res.data['Activity_01xy3yd__formData'] || {}
+                this.$refs.taskFormRef.setExtraContext({
+                  materialName: stockOutData.materialName || '',
+                  materialQuantity: stockOutData.outQuantity || null
+                })
+              }
             }
           })
         } else {

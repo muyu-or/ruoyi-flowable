@@ -210,9 +210,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteInventoryByIds" parameterType="java.lang.String">
-        delete from inventory where id in 
+        delete from inventory where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
+
+    <!-- 按时间周期统计物料类别数量 -->
+    <select id="countByCategoryAndPeriod" resultType="java.util.HashMap">
+        SELECT material_category, SUM(current_quantity) AS total_quantity
+        FROM inventory
+        WHERE create_time BETWEEN #{startDate} AND #{endDate}
+        <if test="materialCategory != null and materialCategory != ''">
+            AND material_category = #{materialCategory}
+        </if>
+        GROUP BY material_category
+    </select>
+
+    <!-- 按时间周期分段统计物料类别数量（用于柱状图） -->
+    <select id="countBarsByPeriod" resultType="java.util.HashMap">
+        SELECT DATE_FORMAT(create_time, #{dateFormat}) AS label,
+               material_category,
+               SUM(current_quantity) AS qty
+        FROM inventory
+        WHERE create_time BETWEEN #{startDate} AND #{endDate}
+        GROUP BY label, material_category
+        ORDER BY label
+    </select>
 </mapper>

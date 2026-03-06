@@ -31,19 +31,26 @@
       />
     </el-form-item>
     <el-form-item label="测试报告">
-      <report-selector v-model="form.reportIds" :readonly="readonly" />
+      <report-uploader
+        v-model="form.reports"
+        :readonly="readonly"
+        :material-name="extraContext.materialName"
+        :material-quantity="extraContext.materialQuantity"
+        node-name="检测"
+      />
     </el-form-item>
   </el-form>
 </template>
 
 <script>
-import ReportSelector from './ReportSelector.vue'
+import ReportUploader from './ReportUploader.vue'
 export default {
   name: 'TestForm',
-  components: { ReportSelector },
+  components: { ReportUploader },
   data() {
     return {
       readonly: false,
+      extraContext: { materialName: '', materialQuantity: null },
       form: {
         testItems: '',
         testValue: '',
@@ -51,7 +58,8 @@ export default {
         inspector: '',
         reportNo: '',
         remark: '',
-        reportIds: []
+        reportIds: [],
+        reports: []
       },
       rules: {
         testItems: [{ required: true, message: '请输入测试项目', trigger: 'blur' }],
@@ -89,6 +97,9 @@ export default {
     },
     setReadonly(val) {
       this.readonly = val
+    },
+    setExtraContext(ctx) {
+      this.extraContext = ctx || { materialName: '', materialQuantity: null }
     }
   }
 }

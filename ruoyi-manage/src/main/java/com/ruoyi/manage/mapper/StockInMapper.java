@@ -3,8 +3,11 @@ package com.ruoyi.manage.mapper;
 
 import com.ruoyi.manage.domain.StockIn;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 入库记录Mapper接口
@@ -62,4 +65,16 @@ public interface StockInMapper
      * @return 结果
      */
     public int deleteStockInByIds(Long[] ids);
+
+    /**
+     * 按时间段分组统计入库数量
+     *
+     * @param startDate  开始时间
+     * @param endDate    结束时间
+     * @param dateFormat MySQL DATE_FORMAT 格式串
+     * @return 每行含 label（时间段标签）和 qty（数量）
+     */
+    List<Map<String, Object>> sumQuantityGroupByPeriod(@Param("startDate") Date startDate,
+                                                       @Param("endDate") Date endDate,
+                                                       @Param("dateFormat") String dateFormat);
 }

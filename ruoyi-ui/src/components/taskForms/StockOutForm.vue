@@ -73,18 +73,24 @@
       />
     </el-form-item>
     <el-form-item label="测试报告">
-      <report-selector v-model="form.reportIds" :readonly="readonly" />
+      <report-uploader
+        v-model="form.reports"
+        :readonly="readonly"
+        :material-name="form.materialName"
+        :material-quantity="form.outQuantity"
+        node-name="出库"
+      />
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 import { listInventory } from '@/api/manage/inventory'
-import ReportSelector from './ReportSelector.vue'
+import ReportUploader from './ReportUploader.vue'
 
 export default {
   name: 'StockOutForm',
-  components: { ReportSelector },
+  components: { ReportUploader },
   dicts: ['outbound_type'],
   props: {
     initialMaterialId: {
@@ -106,7 +112,8 @@ export default {
         outboundType: '',
         operator: '',
         remark: '',
-        reportIds: []
+        reportIds: [],
+        reports: []
       },
       rules: {
         materialId: [

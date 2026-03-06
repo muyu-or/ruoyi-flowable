@@ -69,16 +69,22 @@
       />
     </el-form-item>
     <el-form-item label="测试报告">
-      <report-selector v-model="form.reportIds" :readonly="readonly" />
+      <report-uploader
+        v-model="form.reports"
+        :readonly="readonly"
+        :material-name="form.productName"
+        :material-quantity="form.inQuantity"
+        node-name="产品入库"
+      />
     </el-form-item>
   </el-form>
 </template>
 
 <script>
-import ReportSelector from './ReportSelector.vue'
+import ReportUploader from './ReportUploader.vue'
 export default {
   name: 'FinalStockInForm',
-  components: { ReportSelector },
+  components: { ReportUploader },
   dicts: ['warehouse_area', 'material_category', 'material_subcategory'],
   data() {
     return {
@@ -91,13 +97,15 @@ export default {
         warehouseArea: '',
         operator: '',
         remark: '',
-        reportIds: []
+        reportIds: [],
+        reports: []
       },
       rules: {
         productName: [{ required: true, message: '请输入产品名称', trigger: 'blur' }],
         materialCategory: [{ required: true, message: '请选择物料大类', trigger: 'change' }],
         materialSubcategory: [{ required: true, message: '请选择物料子类', trigger: 'change' }],
         inQuantity: [{
+          required: true,
           validator: (rule, value, callback) => {
             if (value === undefined || value === null || value <= 0) {
               callback(new Error('请输入大于0的入库数量'))

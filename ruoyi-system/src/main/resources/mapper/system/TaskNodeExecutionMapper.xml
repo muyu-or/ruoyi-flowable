@@ -173,4 +173,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE exec_record_id = #{execRecordId}
           AND status IN ('pending', 'claimed')
     </update>
+
+    <!-- 按班组统计成员任务状态 -->
+    <select id="countMemberStatsByTeam" resultType="java.util.HashMap">
+        SELECT tne.claim_user_id AS userId,
+               u.user_name AS userName,
+               SUM(CASE WHEN tne.status = 'pending' THEN 1 ELSE 0 END) AS pending,
+               SUM(CASE WHEN tne.status = 'claimed' THEN 1 ELSE 0 END) AS running,
+               SUM(CASE WHEN tne.status = 'completed' THEN 1 ELSE 0 END) AS finished,
+               COUNT(*) AS total
+        FROM task_node_execution tne
+        LEFT JOIN sys_user u ON u.user_id = tne.claim_user_id
+        WHERE tne.assigned_team_id = #{teamId}
+          AND tne.status != 'cancelled'
+        GROUP BY tne.claim_user_id, u.user_name
+    </select>
 </mapper>

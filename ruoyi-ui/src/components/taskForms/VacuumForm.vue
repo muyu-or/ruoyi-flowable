@@ -32,30 +32,39 @@
       />
     </el-form-item>
     <el-form-item label="测试报告">
-      <report-selector v-model="form.reportIds" :readonly="readonly" />
+      <report-uploader
+        v-model="form.reports"
+        :readonly="readonly"
+        :material-name="extraContext.materialName"
+        :material-quantity="extraContext.materialQuantity"
+        node-name="真空处理"
+      />
     </el-form-item>
   </el-form>
 </template>
 
 <script>
-import ReportSelector from './ReportSelector.vue'
+import ReportUploader from './ReportUploader.vue'
 export default {
   name: 'VacuumForm',
-  components: { ReportSelector },
+  components: { ReportUploader },
   data() {
     return {
       readonly: false,
+      extraContext: { materialName: '', materialQuantity: null },
       form: {
         deviceNo: '',
         vacuumLevel: 0,
         processDuration: 0,
         operator: '',
         abnormalRecord: '',
-        reportIds: []
+        reportIds: [],
+        reports: []
       },
       rules: {
         deviceNo: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
         vacuumLevel: [{
+          required: true,
           validator: (rule, value, callback) => {
             if (value === undefined || value === null || value <= 0) {
               callback(new Error('请输入大于0的真空度'))
@@ -66,6 +75,7 @@ export default {
           trigger: 'change'
         }],
         processDuration: [{
+          required: true,
           validator: (rule, value, callback) => {
             if (value === undefined || value === null || value <= 0) {
               callback(new Error('请输入大于0的处理时长'))
@@ -106,6 +116,9 @@ export default {
     },
     setReadonly(val) {
       this.readonly = val
+    },
+    setExtraContext(ctx) {
+      this.extraContext = ctx || { materialName: '', materialQuantity: null }
     }
   }
 }

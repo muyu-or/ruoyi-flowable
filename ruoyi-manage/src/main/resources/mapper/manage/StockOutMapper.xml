@@ -82,9 +82,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteStockOutByIds" parameterType="java.lang.String">
-        delete from stock_out where id in 
+        delete from stock_out where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
+
+    <!-- 按时间范围统计出库总量 -->
+    <select id="sumQuantityByPeriod" resultType="Long">
+        SELECT IFNULL(SUM(quantity), 0)
+        FROM stock_out
+        WHERE create_time BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <!-- 按时间段分组统计出库数量 -->
+    <select id="sumQuantityGroupByPeriod" resultType="java.util.Map">
+        SELECT DATE_FORMAT(outbound_time, #{dateFormat}) AS label,
+               IFNULL(SUM(quantity), 0) AS qty
+        FROM stock_out
+        WHERE outbound_time BETWEEN #{startDate} AND #{endDate}
+        GROUP BY label
+        ORDER BY label
+    </select>
 </mapper>

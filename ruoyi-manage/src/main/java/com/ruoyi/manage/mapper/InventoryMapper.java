@@ -84,4 +84,14 @@ public interface InventoryMapper
        获取当日流水号
      */
     String findMaxCodeByPrefix(String codePrefix);
+
+    /**
+     * 按时间周期统计物料类别数量
+     */
+    List<java.util.Map<String, Object>> countByCategoryAndPeriod(@org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate, @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate, @org.apache.ibatis.annotations.Param("materialCategory") String materialCategory);
+
+    /**
+     * 按时间周期分段统计物料类别数量（用于柱状图）
+     */
+    List<java.util.Map<String, Object>> countBarsByPeriod(@org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate, @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate, @org.apache.ibatis.annotations.Param("dateFormat") String dateFormat);
 }
