@@ -146,7 +146,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="模板文件" prop="storagePath">
-          <file-upload v-model="form.storagePath" :is-show-tip="false" />
+          <file-upload v-model="form.storagePath" :is-show-tip="false" :limit="1" />
         </el-form-item>
         <el-form-item label="参数定义" prop="paramConfig">
           <el-input

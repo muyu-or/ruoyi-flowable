@@ -94,4 +94,13 @@ public interface InventoryMapper
      * 按时间周期分段统计物料类别数量（用于柱状图）
      */
     List<java.util.Map<String, Object>> countBarsByPeriod(@org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate, @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate, @org.apache.ibatis.annotations.Param("dateFormat") String dateFormat);
+
+    /**
+     * 按物料大类汇总时间段内入库数量（首页库存总览饼图）
+     *
+     * @param startDate 开始时间
+     * @param endDate   结束时间
+     * @return 每行含 category（物料大类）和 totalQty（数量合计）
+     */
+    List<java.util.Map<String, Object>> sumInboundByCategory(@org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate, @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate);
 }

@@ -75,6 +75,7 @@
         :material-name="form.productName"
         :material-quantity="form.inQuantity"
         node-name="产品入库"
+        test-type="产品入库"
       />
     </el-form-item>
   </el-form>

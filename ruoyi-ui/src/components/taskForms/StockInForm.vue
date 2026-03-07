@@ -113,6 +113,7 @@
         :material-name="form.materialName"
         :material-quantity="form.quantity"
         node-name="原料检测入库"
+        test-type="原料检测入库"
       />
     </el-form-item>
   </el-form>

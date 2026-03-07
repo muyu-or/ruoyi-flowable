@@ -104,4 +104,18 @@ public interface TaskNodeExecutionMapper
      * 按班组统计成员任务状态
      */
     List<java.util.Map<String, Object>> countMemberStatsByTeam(@org.apache.ibatis.annotations.Param("teamId") Long teamId);
+
+    /**
+     * 查询最近完成的节点任务（用于首页展示）
+     *
+     * @param userId 用户ID（普通成员传值，班组长传 null）
+     * @param teamId 班组ID（班组长传值，普通成员传 null）
+     * @param limit  最大返回条数
+     * @return 最近完成任务列表
+     */
+    List<java.util.Map<String, Object>> selectRecentCompleted(
+        @org.apache.ibatis.annotations.Param("userId") Long userId,
+        @org.apache.ibatis.annotations.Param("teamId") Long teamId,
+        @org.apache.ibatis.annotations.Param("limit") int limit
+    );
 }

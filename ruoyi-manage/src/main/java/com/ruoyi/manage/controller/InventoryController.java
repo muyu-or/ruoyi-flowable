@@ -56,6 +56,8 @@ public class InventoryController extends BaseController
     public void export(HttpServletResponse response, Inventory inventory)
     {
         List<Inventory> list = inventoryService.selectInventoryList(inventory);
+        // 排除已出库（status=2）的数据，只导出当前有效库存
+        list.removeIf(item -> "2".equals(item.getStatus()));
         ExcelUtil<Inventory> util = new ExcelUtil<Inventory>(Inventory.class);
         util.exportExcel(response, list, "库存信息数据");
     }

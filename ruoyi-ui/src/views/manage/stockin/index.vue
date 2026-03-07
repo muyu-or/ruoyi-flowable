@@ -40,13 +40,15 @@
 
       <el-row :gutter="16" type="flex" align="middle">
         <el-col :xs="24" :sm="24" :md="8">
-          <el-form-item label="入库时间" prop="inboundTime">
+          <el-form-item label="入库时间" prop="inboundTimeRange">
             <el-date-picker
               clearable
-              v-model="queryParams.inboundTime"
-              type="date"
+              v-model="queryParams.inboundTimeRange"
+              type="daterange"
               value-format="yyyy-MM-dd"
-              placeholder="请选择入库时间"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
               style="width:100%">
             </el-date-picker>
           </el-form-item>
@@ -233,7 +235,7 @@ export default {
         materialName: null,
         inboundType: null,
         warehouseArea: null,
-        inboundTime: null,
+        inboundTimeRange: null,
         operator: null,
       },
       // 表单参数
@@ -265,7 +267,14 @@ export default {
     /** 查询入库记录列表 */
     getList() {
       this.loading = true;
-      listStockin(this.queryParams).then(response => {
+      var payload = Object.assign({}, this.queryParams);
+      // 日期范围拆分
+      var range = payload.inboundTimeRange;
+      delete payload.inboundTimeRange;
+      if (range && range.length === 2) {
+        payload.params = { beginInboundTime: range[0], endInboundTime: range[1] };
+      }
+      listStockin(payload).then(response => {
         // 兼容 RuoYi-Vue 不同版本的返回结构
         this.stockinList = response.rows || response.data;
         this.total = response.total;

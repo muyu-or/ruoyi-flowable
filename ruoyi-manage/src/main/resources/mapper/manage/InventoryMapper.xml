@@ -53,9 +53,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="firstInboundTime != null">
                 AND DATE(i.first_inbound_time) = #{firstInboundTime}
             </if>
+            <if test="params != null and params.beginFirstInboundTime != null and params.beginFirstInboundTime != ''">
+                AND DATE(i.first_inbound_time) &gt;= #{params.beginFirstInboundTime}
+            </if>
+            <if test="params != null and params.endFirstInboundTime != null and params.endFirstInboundTime != ''">
+                AND DATE(i.first_inbound_time) &lt;= #{params.endFirstInboundTime}
+            </if>
 
             <if test="lastInboundTime != null">
                 AND DATE(i.last_inbound_time) = #{lastInboundTime}
+            </if>
+            <if test="params != null and params.beginLastInboundTime != null and params.beginLastInboundTime != ''">
+                AND DATE(i.last_inbound_time) &gt;= #{params.beginLastInboundTime}
+            </if>
+            <if test="params != null and params.endLastInboundTime != null and params.endLastInboundTime != ''">
+                AND DATE(i.last_inbound_time) &lt;= #{params.endLastInboundTime}
             </if>
         </where>
         ORDER BY i.create_time DESC
@@ -236,5 +248,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE create_time BETWEEN #{startDate} AND #{endDate}
         GROUP BY label, material_category
         ORDER BY label
+    </select>
+
+    <!-- 按物料大类汇总时间段内入库数量（首页饼图） -->
+    <select id="sumInboundByCategory" resultType="java.util.HashMap">
+        SELECT i.material_category AS category,
+               IFNULL(SUM(s.quantity), 0) AS totalQty
+        FROM stock_in s
+        LEFT JOIN inventory i ON i.material_id = s.material_id
+        WHERE s.inbound_time BETWEEN #{startDate} AND #{endDate}
+        GROUP BY i.material_category
     </select>
 </mapper>

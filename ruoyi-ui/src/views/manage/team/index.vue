@@ -143,7 +143,7 @@
         <el-form-item label="状态" prop="teamStatus">
           <el-radio-group v-model="form.teamStatus">
             <el-radio
-              v-for="dict in dict.type.team_status"
+              v-for="dict in teamStatusOptions"
               :key="dict.value"
               :label="parseInt(dict.value)"
             >{{dict.label}}</el-radio>
@@ -359,6 +359,13 @@ export default {
         ],
       }
     };
+  },
+  computed: {
+    teamStatusOptions: function() {
+      var list = this.dict.type.team_status || []
+      if (this.form.id != null) return list
+      return list.filter(function(d) { return d.value !== '2' })
+    }
   },
   created() {
     this.getList();

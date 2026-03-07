@@ -177,7 +177,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 按班组统计成员任务状态 -->
     <select id="countMemberStatsByTeam" resultType="java.util.HashMap">
         SELECT tne.claim_user_id AS userId,
-               u.user_name AS userName,
+               u.nick_name AS userName,
                SUM(CASE WHEN tne.status = 'pending' THEN 1 ELSE 0 END) AS pending,
                SUM(CASE WHEN tne.status = 'claimed' THEN 1 ELSE 0 END) AS running,
                SUM(CASE WHEN tne.status = 'completed' THEN 1 ELSE 0 END) AS finished,
@@ -186,6 +186,32 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN sys_user u ON u.user_id = tne.claim_user_id
         WHERE tne.assigned_team_id = #{teamId}
           AND tne.status != 'cancelled'
-        GROUP BY tne.claim_user_id, u.user_name
+          AND tne.claim_user_id IS NOT NULL
+        GROUP BY tne.claim_user_id, u.nick_name
+    </select>
+
+    <!-- 查询最近完成的节点任务（首页展示） -->
+    <select id="selectRecentCompleted" resultType="java.util.HashMap">
+        SELECT
+            tne.id,
+            tne.node_name      AS nodeName,
+            tne.node_key       AS nodeKey,
+            ter.remark         AS procName,
+            tne.complete_time  AS completeTime,
+            tne.process_duration AS processDuration,
+            u.nick_name        AS claimUserName,
+            ter.proc_inst_id   AS procInstId
+        FROM task_node_execution tne
+        LEFT JOIN task_execution_record ter ON ter.id = tne.exec_record_id
+        LEFT JOIN sys_user u ON u.user_id = tne.claim_user_id
+        WHERE tne.status = 'completed'
+        <if test="userId != null">
+            AND tne.claim_user_id = #{userId}
+        </if>
+        <if test="teamId != null">
+            AND tne.assigned_team_id = #{teamId}
+        </if>
+        ORDER BY tne.complete_time DESC
+        LIMIT #{limit}
     </select>
 </mapper>

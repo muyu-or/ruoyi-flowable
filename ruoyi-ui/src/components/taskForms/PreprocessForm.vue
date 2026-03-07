@@ -35,6 +35,7 @@
         :material-name="extraContext.materialName"
         :material-quantity="extraContext.materialQuantity"
         node-name="预处理"
+        test-type="预处理"
       />
     </el-form-item>
   </el-form>

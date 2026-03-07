@@ -79,6 +79,7 @@
         :material-name="form.materialName"
         :material-quantity="form.outQuantity"
         node-name="出库"
+        test-type="出库"
       />
     </el-form-item>
   </el-form>

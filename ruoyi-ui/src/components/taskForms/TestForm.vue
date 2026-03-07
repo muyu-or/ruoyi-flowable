@@ -37,6 +37,7 @@
         :material-name="extraContext.materialName"
         :material-quantity="extraContext.materialQuantity"
         node-name="检测"
+        test-type="检测"
       />
     </el-form-item>
   </el-form>

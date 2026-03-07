@@ -28,6 +28,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="inboundType != null  and inboundType != ''"> and inbound_type = #{inboundType}</if>
             <if test="warehouseArea != null  and warehouseArea != ''"> and warehouse_area = #{warehouseArea}</if>
             <if test="inboundTime != null "> and DATE(inbound_time) = #{inboundTime}</if>
+            <if test="params != null and params.beginInboundTime != null and params.beginInboundTime != ''"> and DATE(inbound_time) &gt;= #{params.beginInboundTime}</if>
+            <if test="params != null and params.endInboundTime != null and params.endInboundTime != ''"> and DATE(inbound_time) &lt;= #{params.endInboundTime}</if>
             <if test="operator != null  and operator != ''"> and operator = #{operator}</if>
         </where>
         order by create_time desc

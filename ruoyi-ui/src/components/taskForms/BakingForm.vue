@@ -47,6 +47,7 @@
         :material-name="extraContext.materialName"
         :material-quantity="extraContext.materialQuantity"
         node-name="烘烤"
+        test-type="烘烤"
       />
     </el-form-item>
   </el-form>

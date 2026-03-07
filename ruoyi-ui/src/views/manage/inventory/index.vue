@@ -47,13 +47,13 @@
 
       <el-row :gutter="16" type="flex" align="middle">
         <el-col :xs="24" :sm="24" :md="8">
-          <el-form-item label="首次入库时间" prop="firstInboundTime">
-            <el-date-picker v-model="queryParams.firstInboundTime" clearable type="date" value-format="yyyy-MM-dd" placeholder="请选择首次入库时间" style="width:100%" />
+          <el-form-item label="首次入库时间" prop="firstInboundTimeRange">
+            <el-date-picker v-model="queryParams.firstInboundTimeRange" clearable type="daterange" value-format="yyyy-MM-dd" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width:100%" />
           </el-form-item>
         </el-col>
         <el-col :xs="24" :sm="24" :md="8">
-          <el-form-item label="上次入库时间" prop="lastInboundTime">
-            <el-date-picker v-model="queryParams.lastInboundTime" clearable type="date" value-format="yyyy-MM-dd" placeholder="请选择上次入库时间" style="width:100%" />
+          <el-form-item label="上次入库时间" prop="lastInboundTimeRange">
+            <el-date-picker v-model="queryParams.lastInboundTimeRange" clearable type="daterange" value-format="yyyy-MM-dd" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width:100%" />
           </el-form-item>
         </el-col>
         <el-col :xs="24" :sm="24" :md="8" style="text-align:right;">
@@ -103,15 +103,6 @@
           icon="el-icon-download"
           @click="handleExport"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-s-promotion"
-          :disabled="multiple"
-          @click="handleBatchStartFlow"
-        >批量发起流程</el-button>
       </el-col>
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
@@ -168,7 +159,7 @@
               :style="isPending(scope.row) ? 'color:#67C23A' : 'color:#E6A23C'"
               @click="handleToggle(scope.row)"
             >{{ isPending(scope.row) ? '启用' : '禁用' }}</el-button>
-            <el-button type="text" icon="el-icon-s-promotion" style="color:#409EFF" @click="handleStartFlow(scope.row)">发起流程</el-button>
+            <el-button v-hasPermi="['manage:inventory:startFlow']" type="text" icon="el-icon-s-promotion" style="color:#409EFF" @click="handleStartFlow(scope.row)">发起流程</el-button>
           </div>
         </template>
       </el-table-column>
@@ -605,8 +596,8 @@ export default {
         warehouseArea: null,
         status: null,
         inboundType: null,
-        firstInboundTime: null,
-        lastInboundTime: null
+        firstInboundTimeRange: null,
+        lastInboundTimeRange: null
       },
 
       // 表单参数
@@ -722,11 +713,23 @@ export default {
     buildQueryPayload() {
       const source = this.queryParams || {}
       const payload = {}
+      const rangeMap = {
+        firstInboundTimeRange: ['beginFirstInboundTime', 'endFirstInboundTime'],
+        lastInboundTimeRange: ['beginLastInboundTime', 'endLastInboundTime']
+      }
       Object.keys(source).forEach(key => {
         const value = source[key]
         if (value === null || value === undefined) return
         if (typeof value === 'string' && value.trim() === '') return
         if (Array.isArray(value) && value.length === 0) return
+
+        // 日期范围字段 → 拆为 params[beginXxx] / params[endXxx]
+        if (rangeMap[key] && Array.isArray(value) && value.length === 2) {
+          if (!payload['params']) payload['params'] = {}
+          payload['params'][rangeMap[key][0]] = value[0]
+          payload['params'][rangeMap[key][1]] = value[1]
+          return
+        }
 
         const numericKeys = ['pageNum', 'pageSize']
         if (numericKeys.includes(key) && typeof value === 'string' && /^-?\d+(?:\.\d+)?$/.test(value)) {

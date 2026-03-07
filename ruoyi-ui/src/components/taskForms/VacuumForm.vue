@@ -38,6 +38,7 @@
         :material-name="extraContext.materialName"
         :material-quantity="extraContext.materialQuantity"
         node-name="真空处理"
+        test-type="真空处理"
       />
     </el-form-item>
   </el-form>
