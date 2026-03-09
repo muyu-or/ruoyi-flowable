@@ -1,6 +1,7 @@
 import { login, logout, getInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { isHttp, isEmpty } from "@/utils/validate"
+import { generateAvatar } from '@/utils/avatar'
 import defAva from '@/assets/images/profile.jpg'
 
 const user = {
@@ -8,6 +9,7 @@ const user = {
     token: getToken(),
     id: '',
     name: '',
+    nickName: '',
     avatar: '',
     roles: [],
     permissions: []
@@ -22,6 +24,9 @@ const user = {
     },
     SET_NAME: (state, name) => {
       state.name = name
+    },
+    SET_NICKNAME: (state, nickName) => {
+      state.nickName = nickName
     },
     SET_AVATAR: (state, avatar) => {
       state.avatar = avatar
@@ -57,9 +62,15 @@ const user = {
       return new Promise((resolve, reject) => {
         getInfo().then(res => {
           const user = res.user
+          const nickName = user.nickName || user.userName || ''
           let avatar = user.avatar || ""
           if (!isHttp(avatar)) {
-            avatar = (isEmpty(avatar)) ? defAva : process.env.VUE_APP_BASE_API + avatar
+            if (isEmpty(avatar)) {
+              // 没有自定义头像，用昵称生成
+              avatar = nickName ? generateAvatar(nickName) : defAva
+            } else {
+              avatar = process.env.VUE_APP_BASE_API + avatar
+            }
           }
           if (res.roles && res.roles.length > 0) { // 验证返回的roles是否是一个非空数组
             commit('SET_ROLES', res.roles)
@@ -69,6 +80,7 @@ const user = {
           }
           commit('SET_ID', user.userId)
           commit('SET_NAME', user.userName)
+          commit('SET_NICKNAME', nickName)
           commit('SET_AVATAR', avatar)
           resolve(res)
         }).catch(error => {
