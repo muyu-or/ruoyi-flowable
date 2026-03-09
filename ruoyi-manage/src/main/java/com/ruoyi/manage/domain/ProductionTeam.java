@@ -41,6 +41,9 @@ public class ProductionTeam extends BaseEntity
     /** 班组成员对象列表 */
     private List<SysUser> userList;
 
+    /** 班组成员列表（含职位，用于前端提交） */
+    private List<ProductionTeamUser> memberList;
+
     public void setUserIds(Long[] userIds)
     {
         this.userIds = userIds;
@@ -59,6 +62,16 @@ public class ProductionTeam extends BaseEntity
     public List<SysUser> getUserList()
     {
         return userList;
+    }
+
+    public void setMemberList(List<ProductionTeamUser> memberList)
+    {
+        this.memberList = memberList;
+    }
+
+    public List<ProductionTeamUser> getMemberList()
+    {
+        return memberList;
     }
 
     public void setId(Long id)

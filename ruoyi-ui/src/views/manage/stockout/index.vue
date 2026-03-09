@@ -108,14 +108,14 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="出库记录ID" align="center" prop="id" />
       <el-table-column label="物料ID" align="center" prop="materialId" />
-      <el-table-column label="物料名称" align="center" prop="materialName" />
-      <el-table-column label="出库类型" align="center" prop="outboundType">
+      <el-table-column label="物料名称" align="center" prop="materialName" sortable />
+      <el-table-column label="出库类型" align="center" prop="outboundType" sortable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.outbound_type" :value="scope.row.outboundType"/>
         </template>
       </el-table-column>
-      <el-table-column label="出库数量" align="center" prop="quantity" />
-      <el-table-column label="库区" align="center" prop="warehouseArea">
+      <el-table-column label="出库数量" align="center" prop="quantity" sortable />
+      <el-table-column label="库区" align="center" prop="warehouseArea" sortable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.warehouse_area" :value="scope.row.warehouseArea"/>
         </template>

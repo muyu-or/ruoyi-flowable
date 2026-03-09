@@ -108,19 +108,19 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="入库记录ID" align="center" prop="id" />
       <el-table-column label="物料ID" align="center" prop="materialId" />
-      <el-table-column label="物料名称" align="center" prop="materialName" />
-      <el-table-column label="入库类型" align="center" prop="inboundType">
+      <el-table-column label="物料名称" align="center" prop="materialName" sortable />
+      <el-table-column label="入库类型" align="center" prop="inboundType" sortable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.inbound_type" :value="scope.row.inboundType"/>
         </template>
       </el-table-column>
-      <el-table-column label="库区" align="center" prop="warehouseArea">
+      <el-table-column label="库区" align="center" prop="warehouseArea" sortable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.warehouse_area" :value="scope.row.warehouseArea"/>
         </template>
       </el-table-column>
-      <el-table-column label="入库数量" align="center" prop="quantity" />
-      <el-table-column label="入库时间" align="center" prop="inboundTime" width="180">
+      <el-table-column label="入库数量" align="center" prop="quantity" sortable />
+      <el-table-column label="入库时间" align="center" prop="inboundTime" width="180" sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.inboundTime, '{y}-{m}-{d}') }}</span>
         </template>

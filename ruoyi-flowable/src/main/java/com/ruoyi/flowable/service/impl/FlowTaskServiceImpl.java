@@ -12,6 +12,7 @@ import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.flowable.common.enums.FlowComment;
 import com.ruoyi.common.exception.CustomException;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.DictUtils;
 import com.ruoyi.flowable.domain.dto.*;
 import com.ruoyi.flowable.domain.vo.FlowQueryVo;
 import com.ruoyi.flowable.domain.vo.FlowTaskVo;
@@ -1045,7 +1046,13 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                         if ("candidate".equals(identityLink.getType())) {
                             if (StringUtils.isNotBlank(identityLink.getUserId())) {
                                 SysUser sysUser = sysUserService.selectUserById(Long.parseLong(identityLink.getUserId()));
-                                stringBuilder.append(sysUser.getNickName()).append(",");
+                                String position = productionTeamMapper.selectPositionByUserId(sysUser.getUserId());
+                                String positionLabel = StringUtils.isNotBlank(position) ? DictUtils.getDictLabel("team_position", position) : null;
+                                if (StringUtils.isNotBlank(positionLabel)) {
+                                    stringBuilder.append(sysUser.getNickName()).append("(").append(positionLabel).append(")").append(",");
+                                } else {
+                                    stringBuilder.append(sysUser.getNickName()).append(",");
+                                }
                             }
                             if (StringUtils.isNotBlank(identityLink.getGroupId())) {
                                 SysRole sysRole = sysRoleService.selectRoleById(Long.parseLong(identityLink.getGroupId()));
@@ -1859,7 +1866,13 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             if ("candidate".equals(identityLink.getType())) {
                 if (StringUtils.isNotBlank(identityLink.getUserId())) {
                     SysUser sysUser = sysUserService.selectUserById(Long.parseLong(identityLink.getUserId()));
-                    stringBuilder.append(sysUser.getNickName()).append(",");
+                    String position = productionTeamMapper.selectPositionByUserId(sysUser.getUserId());
+                    String positionLabel = StringUtils.isNotBlank(position) ? DictUtils.getDictLabel("team_position", position) : null;
+                    if (StringUtils.isNotBlank(positionLabel)) {
+                        stringBuilder.append(sysUser.getNickName()).append("(").append(positionLabel).append(")").append(",");
+                    } else {
+                        stringBuilder.append(sysUser.getNickName()).append(",");
+                    }
                 }
                 if (StringUtils.isNotBlank(identityLink.getGroupId())) {
                     SysRole sysRole = sysRoleService.selectRoleById(Long.parseLong(identityLink.getGroupId()));

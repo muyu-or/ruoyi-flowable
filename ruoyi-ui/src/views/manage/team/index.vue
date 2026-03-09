@@ -152,13 +152,28 @@
         <el-form-item label="班组成员">
           <el-button type="primary" size="mini" icon="el-icon-plus" @click="handleSelectUser('member')" style="margin-bottom: 10px;">添加成员</el-button>
           <el-table :data="selectedMembers" border style="width: 100%">
-            <el-table-column prop="nickName" label="用户名称" align="center"/>
-            <el-table-column prop="roleNames" label="角色" align="center" :show-overflow-tooltip="true"/>
+            <el-table-column label="用户名称" align="center">
+              <template slot-scope="scope">
+                {{ scope.row.nickName }}
+                <el-tag v-if="scope.row.userId === form.leaderId" type="warning" size="mini" style="margin-left: 5px">班组长</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="职位" align="center" width="150">
+              <template slot-scope="scope">
+                <el-select v-model="scope.row.position" placeholder="请选择职位" size="mini" clearable>
+                  <el-option
+                    v-for="dict in dict.type.team_position"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  />
+                </el-select>
+              </template>
+            </el-table-column>
             <el-table-column prop="dept.deptName" label="部门" align="center"/>
             <el-table-column label="操作" align="center" width="80">
               <template slot-scope="scope">
-                 <el-tag v-if="scope.row.userId === form.leaderId" type="warning" size="mini">班组长</el-tag>
-                 <el-button v-else type="text" icon="el-icon-delete" @click="handleRemoveMember(scope.$index)">移除</el-button>
+                <el-button type="text" icon="el-icon-delete" @click="handleRemoveMember(scope.$index)">移除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -202,7 +217,11 @@
                 <el-tag v-if="scope.row.userId === viewForm.leaderId" type="warning" size="mini" style="margin-left: 5px">班组长</el-tag>
              </template>
           </el-table-column>
-          <el-table-column prop="roleNames" label="角色" align="center" :show-overflow-tooltip="true"/>
+          <el-table-column label="职位" align="center" width="120">
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.team_position" :value="scope.row.params && scope.row.params.position ? scope.row.params.position : ''"/>
+            </template>
+          </el-table-column>
           <el-table-column prop="dept.deptName" label="部门" align="center"/>
         </el-table>
       </el-form>
@@ -285,7 +304,7 @@ import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 
 export default {
   name: "Team",
-  dicts: ['team_status'],
+  dicts: ['team_status', 'team_position'],
   components: { Treeselect },
   data() {
     return {
@@ -445,9 +464,13 @@ export default {
       const id = row.id || this.ids
       getTeam(id).then(response => {
         this.form = response.data;
-        // 回显成员
+        // 回显成员，并从 params.position 回填 position 字段
         if (response.data.userList) {
-           this.selectedMembers = response.data.userList;
+           this.selectedMembers = response.data.userList.map(u => {
+             var pos = (u.params && u.params.position) ? u.params.position : '';
+             this.$set(u, 'position', pos);
+             return u;
+           });
         }
         // 处理状态回显（字符串转数字）
         if (this.form.teamStatus !== null) {
@@ -479,9 +502,12 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          // 处理userIds
-          this.form.userIds = this.selectedMembers.map(u => u.userId);
-          
+          // 构建 memberList（含 userId + position）
+          this.form.memberList = this.selectedMembers.map(u => ({
+            userId: u.userId,
+            position: u.position || null
+          }));
+
           if (this.form.id != null) {
             updateTeam(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -564,19 +590,21 @@ export default {
         this.form.leaderId = row.userId;
         this.form.leaderName = row.nickName;
         this.openUser = false;
-        
-        // 如果新选的班组长已经是成员，不需要做额外处理，因为“标记”是显示层逻辑
+
+        // 如果新选的班组长已经是成员，不需要做额外处理，因为”标记”是显示层逻辑
         // 如果新选的班组长不在成员列表中，是否自动添加为成员？
         // 通常班组长也是成员之一，这里可以选择自动加入
         if (!this.selectedMembers.some(m => m.userId === row.userId)) {
+           this.$set(row, 'position', '');
            this.selectedMembers.push(row);
         }
       } else {
         // 添加成员（去重）
         if (!this.selectedMembers.some(m => m.userId === row.userId)) {
+          this.$set(row, 'position', '');
           this.selectedMembers.push(row);
         }
-        this.$modal.msgSuccess("已添加成员：" + row.nickName);
+        this.$modal.msgSuccess('已添加成员：' + row.nickName);
       }
     },
     /** 移除成员 */

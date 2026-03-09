@@ -110,40 +110,40 @@
     <el-table v-loading="loading" :data="inventoryList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="物料唯一标识码" align="center" prop="materialId" />
-      <el-table-column label="物料名称" align="center" prop="materialName" />
-      <el-table-column label="物料大类" align="center" prop="materialCategory">
+      <el-table-column label="物料唯一标识码" align="center" prop="materialId" sortable />
+      <el-table-column label="物料名称" align="center" prop="materialName" sortable />
+      <el-table-column label="物料大类" align="center" prop="materialCategory" sortable>
         <template slot-scope="scope">
           <span>{{ displayLabel(dict.type.material_category, scope.row.materialCategory) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="物料子类" align="center" prop="materialSubcategory">
+      <el-table-column label="物料子类" align="center" prop="materialSubcategory" sortable>
         <template slot-scope="scope">
           <span>{{ displayLabel(dict.type.material_subcategory, scope.row.materialSubcategory) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="当前库存" align="center" prop="currentQuantity" />
-      <el-table-column label="库房区域" align="center" prop="warehouseArea">
+      <el-table-column label="当前库存" align="center" prop="currentQuantity" sortable />
+      <el-table-column label="库房区域" align="center" prop="warehouseArea" sortable>
         <template slot-scope="scope">
           <span>{{ displayLabel(dict.type.warehouse_area, scope.row.warehouseArea) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="入库类型" align="center" prop="inboundType" width="120">
+      <el-table-column label="入库类型" align="center" prop="inboundType" width="120" sortable>
         <template slot-scope="scope">
           <span>{{ displayLabel(dict.type.inbound_type, scope.row.inboundType) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="库存状态" align="center" prop="status">
+      <el-table-column label="库存状态" align="center" prop="status" sortable>
         <template slot-scope="scope">
           <span>{{ displayLabel(dict.type.inventory_status, scope.row.status) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="首次入库时间" align="center" prop="firstInboundTime" width="140">
+      <el-table-column label="首次入库时间" align="center" prop="firstInboundTime" width="140" sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.firstInboundTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="上次入库时间" align="center" prop="lastInboundTime" width="140">
+      <el-table-column label="上次入库时间" align="center" prop="lastInboundTime" width="140" sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.lastInboundTime, '{y}-{m}-{d}') }}</span>
         </template>

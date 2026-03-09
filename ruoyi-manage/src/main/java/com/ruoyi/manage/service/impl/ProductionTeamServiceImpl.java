@@ -9,6 +9,7 @@ import com.ruoyi.manage.domain.ProductionTeam;
 import com.ruoyi.manage.service.IProductionTeamService;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.manage.domain.ProductionTeamUser;
 
@@ -50,7 +51,24 @@ public class ProductionTeamServiceImpl implements IProductionTeamService
         ProductionTeam team = productionTeamMapper.selectProductionTeamById(id);
         if (team != null)
         {
-            team.setUserList(productionTeamMapper.selectUserListByTeamId(id));
+            List<SysUser> userList = productionTeamMapper.selectUserListByTeamId(id);
+            // 将 searchValue 中暂存的 position 转移到 params["position"]
+            if (userList != null)
+            {
+                for (SysUser user : userList)
+                {
+                    if (StringUtils.isNotEmpty(user.getSearchValue()))
+                    {
+                        if (user.getParams() == null)
+                        {
+                            user.setParams(new HashMap<>());
+                        }
+                        user.getParams().put("position", user.getSearchValue());
+                        user.setSearchValue(null);
+                    }
+                }
+            }
+            team.setUserList(userList);
         }
         return team;
     }
@@ -92,8 +110,8 @@ public class ProductionTeamServiceImpl implements IProductionTeamService
     public int updateProductionTeam(ProductionTeam productionTeam)
     {
         productionTeam.setUpdateTime(DateUtils.getNowDate());
-        // 如果传入了userIds（不为null），则更新成员列表；否则（为null）不修改成员
-        if (productionTeam.getUserIds() != null) {
+        // 优先使用 memberList（含职位），其次使用 userIds（兼容旧逻辑）
+        if (productionTeam.getMemberList() != null || productionTeam.getUserIds() != null) {
             productionTeamMapper.deleteProductionTeamUserByTeamId(productionTeam.getId());
             insertProductionTeamUser(productionTeam);
         }
@@ -127,24 +145,38 @@ public class ProductionTeamServiceImpl implements IProductionTeamService
     }
 
     /**
-     * 新增班组用户关联信息
+     * 新增班组用户关联信息（优先使用 memberList 含职位，兼容旧 userIds）
      */
     public void insertProductionTeamUser(ProductionTeam productionTeam)
     {
-        Long[] userIds = productionTeam.getUserIds();
-        if (StringUtils.isNotNull(userIds))
+        List<ProductionTeamUser> memberList = productionTeam.getMemberList();
+        if (memberList != null && memberList.size() > 0)
         {
-            List<ProductionTeamUser> list = new ArrayList<ProductionTeamUser>();
-            for (Long userId : userIds)
+            // 使用 memberList（含 userId + position）
+            for (ProductionTeamUser member : memberList)
             {
-                ProductionTeamUser tu = new ProductionTeamUser();
-                tu.setTeamId(productionTeam.getId());
-                tu.setUserId(userId);
-                list.add(tu);
+                member.setTeamId(productionTeam.getId());
             }
-            if (list.size() > 0)
+            productionTeamMapper.batchProductionTeamUser(memberList);
+        }
+        else
+        {
+            // 兼容旧方式：仅传 userIds（无 position）
+            Long[] userIds = productionTeam.getUserIds();
+            if (StringUtils.isNotNull(userIds))
             {
-                productionTeamMapper.batchProductionTeamUser(list);
+                List<ProductionTeamUser> list = new ArrayList<ProductionTeamUser>();
+                for (Long userId : userIds)
+                {
+                    ProductionTeamUser tu = new ProductionTeamUser();
+                    tu.setTeamId(productionTeam.getId());
+                    tu.setUserId(userId);
+                    list.add(tu);
+                }
+                if (list.size() > 0)
+                {
+                    productionTeamMapper.batchProductionTeamUser(list);
+                }
             }
         }
     }

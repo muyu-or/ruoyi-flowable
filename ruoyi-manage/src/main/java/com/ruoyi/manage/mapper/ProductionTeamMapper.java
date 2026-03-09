@@ -114,4 +114,9 @@ public interface ProductionTeamMapper
      * 根据用户ID查询其所属的班组ID列表（通过 production_team_user 关联表）
      */
     List<Long> selectTeamIdsByUserId(@Param("userId") Long userId);
+
+    /**
+     * 根据用户ID查询其在班组中的职位（取第一个非空职位）
+     */
+    String selectPositionByUserId(@Param("userId") Long userId);
 }

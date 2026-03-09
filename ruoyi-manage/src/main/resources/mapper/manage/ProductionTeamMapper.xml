@@ -30,6 +30,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </association>
     </resultMap>
 
+    <resultMap type="SysUser" id="SysUserWithPositionResult" extends="SysUserResult">
+        <result property="searchValue"  column="position" />
+    </resultMap>
+
     <select id="selectUserListForTeam" parameterType="SysUser" resultMap="SysUserResult">
         select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.phonenumber,
         d.dept_name,
@@ -81,11 +85,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </select>
 
-    <select id="selectUserListByTeamId" parameterType="Long" resultMap="SysUserResult">
+    <select id="selectUserListByTeamId" parameterType="Long" resultMap="SysUserWithPositionResult">
         select u.user_id, u.dept_id, u.nick_name, u.user_name, u.phonenumber, d.dept_name,
-        (SELECT GROUP_CONCAT(r.role_name SEPARATOR ',') 
-         FROM sys_role r 
-         LEFT JOIN sys_user_role ur ON r.role_id = ur.role_id 
+        tu.position,
+        (SELECT GROUP_CONCAT(r.role_name SEPARATOR ',')
+         FROM sys_role r
+         LEFT JOIN sys_user_role ur ON r.role_id = ur.role_id
          WHERE ur.user_id = u.user_id) as role_names
         from sys_user u
         left join sys_dept d on u.dept_id = d.dept_id
@@ -158,9 +163,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <insert id="batchProductionTeamUser">
-        insert into production_team_user(team_id, user_id) values
+        insert into production_team_user(team_id, user_id, position) values
         <foreach item="item" index="index" collection="list" separator=",">
-            (#{item.teamId}, #{item.userId})
+            (#{item.teamId}, #{item.userId}, #{item.position})
         </foreach>
     </insert>
 
@@ -181,5 +186,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         inner join production_team pt on pt.id = ptu.team_id
         where ptu.user_id = #{userId}
           and pt.team_status = '1'
+    </select>
+
+    <!-- 根据用户ID查询其在班组中的职位（取第一个非空职位） -->
+    <select id="selectPositionByUserId" resultType="String">
+        select ptu.position
+        from production_team_user ptu
+        inner join production_team pt on pt.id = ptu.team_id
+        where ptu.user_id = #{userId}
+          and pt.team_status = '1'
+          and ptu.position is not null
+          and ptu.position != ''
+        limit 1
     </select>
 </mapper>

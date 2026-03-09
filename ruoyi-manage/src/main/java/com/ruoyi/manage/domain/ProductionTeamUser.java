@@ -14,6 +14,9 @@ public class ProductionTeamUser
     /** 用户ID */
     private Long userId;
 
+    /** 班组职位 */
+    private String position;
+
     public Long getTeamId()
     {
         return teamId;
@@ -32,5 +35,15 @@ public class ProductionTeamUser
     public void setUserId(Long userId)
     {
         this.userId = userId;
+    }
+
+    public String getPosition()
+    {
+        return position;
+    }
+
+    public void setPosition(String position)
+    {
+        this.position = position;
     }
 }
