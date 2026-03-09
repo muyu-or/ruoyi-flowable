@@ -111,4 +111,10 @@ public class FlowTaskDto implements Serializable {
     @ApiModelProperty("节点执行状态: pending=待处理, claimed=已认领, submitted=已提交待审批, completed=已完成")
     private String nodeStatus;
 
+    @ApiModelProperty("节点计划开始日期 yyyy-MM-dd")
+    private String planStartDate;
+
+    @ApiModelProperty("节点计划结束日期 yyyy-MM-dd")
+    private String planEndDate;
+
 }

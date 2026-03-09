@@ -24,6 +24,7 @@ import com.ruoyi.flowable.service.IFlowTaskService;
 import com.ruoyi.flowable.service.IFlowTeamService;
 import com.ruoyi.flowable.service.IInventoryLinkageService;
 import com.ruoyi.flowable.service.IReportLinkageService;
+import com.ruoyi.flowable.service.ITaskWarningService;
 import com.ruoyi.flowable.service.ISysDeployFormService;
 import com.ruoyi.flowable.service.ISysFormService;
 import com.ruoyi.system.domain.SysForm;
@@ -118,6 +119,9 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
     @Resource
     private com.ruoyi.system.service.ITaskNodeExecutionService taskNodeExecutionService;
 
+    @Resource
+    private ITaskWarningService taskWarningService;
+
     /**
      * 完成任务
      *
@@ -210,6 +214,18 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                         .onTaskCompleted(taskVo.getTaskId(), "completed", comment, userId);
             } catch (Exception e) {
                 log.warn("更新任务完成状态时出错", e);
+            }
+
+            // 任务完成后，自动将该节点的未读预警标为已读
+            try {
+                String procInstId = task.getProcessInstanceId();
+                String nodeKey = task.getTaskDefinitionKey();
+                int updated = taskWarningService.markReadByProcInstAndNodeKey(procInstId, nodeKey);
+                if (updated > 0) {
+                    log.info("任务 {} 完成，已自动标记 {} 条预警为已读，节点: {}", taskVo.getTaskId(), updated, nodeKey);
+                }
+            } catch (Exception e) {
+                log.warn("自动标记预警已读时出错", e);
             }
         }
 
@@ -1008,6 +1024,27 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                     .orderByHistoricActivityInstanceStartTime()
                     .desc().list();
             List<FlowTaskDto> hisFlowList = new ArrayList<>();
+
+            // 读取 nodeTimeMap（节点计划时间范围），用于在流转记录中显示
+            Map<String, Object> nodeTimeMap = null;
+            try {
+                List<org.flowable.variable.api.history.HistoricVariableInstance> varList =
+                    historyService.createHistoricVariableInstanceQuery()
+                        .processInstanceId(procInsId)
+                        .variableName("nodeTimeMap")
+                        .list();
+                if (varList != null && !varList.isEmpty()) {
+                    Object ntmObj = varList.get(0).getValue();
+                    if (ntmObj instanceof Map) {
+                        nodeTimeMap = (Map<String, Object>) ntmObj;
+                    } else if (ntmObj != null) {
+                        nodeTimeMap = JSON.parseObject(ntmObj.toString(), Map.class);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("flowRecord: 读取 nodeTimeMap 失败, procInsId={}", procInsId, e);
+            }
+
             for (HistoricActivityInstance histIns : list) {
                 // 展示开始节点
 //                if ("startEvent".equals(histIns.getActivityType())) {
@@ -1030,8 +1067,20 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                     FlowTaskDto flowTask = new FlowTaskDto();
                     flowTask.setTaskId(histIns.getTaskId());
                     flowTask.setTaskName(histIns.getActivityName());
+                    flowTask.setTaskDefKey(histIns.getActivityId());
                     flowTask.setCreateTime(histIns.getStartTime());
                     flowTask.setFinishTime(histIns.getEndTime());
+                    // 填入节点计划起止日期
+                    if (nodeTimeMap != null) {
+                        Object nodeTime = nodeTimeMap.get(histIns.getActivityId());
+                        if (nodeTime instanceof Map) {
+                            Map<?, ?> nt = (Map<?, ?>) nodeTime;
+                            Object sd = nt.get("startDate");
+                            Object ed = nt.get("endDate");
+                            if (sd != null) flowTask.setPlanStartDate(sd.toString());
+                            if (ed != null) flowTask.setPlanEndDate(ed.toString());
+                        }
+                    }
                     if (StringUtils.isNotBlank(histIns.getAssignee())) {
                         SysUser sysUser = sysUserService.selectUserById(Long.parseLong(histIns.getAssignee()));
                         flowTask.setAssigneeId(sysUser.getUserId());

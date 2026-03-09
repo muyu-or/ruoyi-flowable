@@ -28,6 +28,15 @@
       <!-- Step 2：分配班组 -->
       <div v-show="activeStep === 1">
         <el-col :span="16" :offset="4">
+          <!-- 流程时间范围提示 -->
+          <el-alert
+            v-if="formData.procDateStart && formData.procDateEnd"
+            :title="'流程时间范围：' + formData.procDateStart + ' 至 ' + formData.procDateEnd"
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 16px"
+          />
           <!-- 业务单号（只读） -->
           <el-form :model="startForm" label-width="120px" size="small">
             <el-form-item label="业务单号">
@@ -68,27 +77,42 @@
               节点班组分配（{{ processNodes.length }} 个任务节点）
             </h4>
             <el-form label-width="120px" size="small">
-              <el-form-item
+              <div
                 v-for="(node, index) in processNodes"
                 :key="node.id"
-                :label="node.name"
+                style="border: 1px solid #EBEEF5; border-radius: 4px; padding: 12px 16px; margin-bottom: 12px"
               >
-                <el-select
-                  :value="nodeTeamMapArray[index]"
-                  placeholder="选择处理班组"
-                  clearable
-                  filterable
-                  style="width: 100%"
-                  @change="val => $set(nodeTeamMapArray, index, val)"
-                >
-                  <el-option
-                    v-for="team in teamList"
-                    :key="team.id"
-                    :label="team.teamName"
-                    :value="team.id"
+                <el-form-item :label="node.name" style="margin-bottom: 8px">
+                  <el-select
+                    :value="nodeTeamMapArray[index]"
+                    placeholder="选择处理班组"
+                    clearable
+                    filterable
+                    style="width: 100%"
+                    @change="val => $set(nodeTeamMapArray, index, val)"
+                  >
+                    <el-option
+                      v-for="team in teamList"
+                      :key="team.id"
+                      :label="team.teamName"
+                      :value="team.id"
+                    />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="计划日期" style="margin-bottom: 0">
+                  <el-date-picker
+                    :value="getNodeDateRange(index)"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    value-format="yyyy-MM-dd"
+                    style="width: 100%"
+                    :picker-options="nodeDatePickerOptions"
+                    @input="val => setNodeDateRange(index, val)"
                   />
-                </el-select>
-              </el-form-item>
+                </el-form-item>
+              </div>
             </el-form>
           </div>
           <el-alert
@@ -114,6 +138,18 @@
               <template slot-scope="scope">
                 <el-tag v-if="scope.row.teamName" type="success">{{ scope.row.teamName }}</el-tag>
                 <el-tag v-else type="warning">未配置</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="计划开始" prop="startDate" width="120">
+              <template slot-scope="scope">
+                <span v-if="scope.row.startDate">{{ scope.row.startDate }}</span>
+                <el-tag v-else type="warning" size="mini">未填写</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="计划结束" prop="endDate" width="120">
+              <template slot-scope="scope">
+                <span v-if="scope.row.endDate">{{ scope.row.endDate }}</span>
+                <el-tag v-else type="warning" size="mini">未填写</el-tag>
               </template>
             </el-table-column>
           </el-table>
@@ -157,6 +193,7 @@ export default {
       teamList: [],
       processNodes: [],
       nodeTeamMapArray: [],
+      nodeDateArray: [],
       startForm: {
         businessKey: '',
         mainTeamId: null
@@ -174,9 +211,12 @@ export default {
       return this.processNodes.map((node, index) => {
         const teamId = this.nodeTeamMapArray[index]
         const team = this.teamList.find(t => t.id === teamId)
+        const dateInfo = this.nodeDateArray[index] || {}
         return {
           nodeName: node.name,
-          teamName: team ? team.teamName : ''
+          teamName: team ? team.teamName : '',
+          startDate: dateInfo.startDate || '',
+          endDate: dateInfo.endDate || ''
         }
       })
     },
@@ -188,6 +228,18 @@ export default {
     },
     mainFormComponent() {
       return TASK_FORM_COMPONENT_MAP[this.mainFormComponentName] || MainForm
+    },
+    nodeDatePickerOptions() {
+      const procStart = this.formData.procDateStart
+      const procEnd = this.formData.procDateEnd
+      if (!procStart || !procEnd) return {}
+      const minTime = new Date(procStart).getTime() - 86400000
+      const maxTime = new Date(procEnd).getTime()
+      return {
+        disabledDate(time) {
+          return time.getTime() < minTime || time.getTime() > maxTime
+        }
+      }
     }
   },
   watch: {
@@ -252,6 +304,7 @@ export default {
         }
         this.processNodes = nodes
         this.nodeTeamMapArray = new Array(nodes.length).fill(null)
+        this.nodeDateArray = nodes.map(() => ({ startDate: '', endDate: '' }))
       }).catch((err) => {
         console.error('流程节点加载失败', err)
         this.$message.error('流程节点加载失败，请刷新重试')
@@ -278,6 +331,29 @@ export default {
           this.$message.warning('请为所有节点分配班组')
           return
         }
+        // 验证所有节点已填日期
+        const allDatesConfigured = this.nodeDateArray.every(d => d.startDate && d.endDate)
+        if (!allDatesConfigured) {
+          this.$message.warning('请为所有节点填写计划开始和结束日期')
+          return
+        }
+        // 验证单节点内 startDate <= endDate
+        for (let i = 0; i < this.nodeDateArray.length; i++) {
+          const { startDate, endDate } = this.nodeDateArray[i]
+          if (startDate > endDate) {
+            this.$message.warning(`节点「${this.processNodes[i].name}」的开始日期不能晚于结束日期`)
+            return
+          }
+        }
+        // 验证顺序约束：节点 i 的 startDate >= 节点 i-1 的 endDate
+        for (let i = 1; i < this.nodeDateArray.length; i++) {
+          if (this.nodeDateArray[i].startDate < this.nodeDateArray[i - 1].endDate) {
+            this.$message.warning(
+              `节点「${this.processNodes[i].name}」的开始日期不能早于上一节点「${this.processNodes[i - 1].name}」的结束日期`
+            )
+            return
+          }
+        }
         this.activeStep++
       }
     },
@@ -303,6 +379,14 @@ export default {
             vars.procDateEnd = vars.procDateRange[1]
           }
           delete vars.procDateRange
+          const nodeTimeMap = {}
+          this.processNodes.forEach((node, index) => {
+            const d = this.nodeDateArray[index]
+            if (d && d.startDate && d.endDate) {
+              nodeTimeMap[node.id] = { startDate: d.startDate, endDate: d.endDate }
+            }
+          })
+          vars.nodeTimeMap = nodeTimeMap
           return vars
         })()
       }
@@ -322,6 +406,7 @@ export default {
       this.startForm.mainTeamId = null
       this.startForm.businessKey = this.generateBusinessKey()
       this.nodeTeamMapArray = new Array(this.processNodes.length).fill(null)
+      this.nodeDateArray = this.processNodes.map(() => ({ startDate: '', endDate: '' }))
       if (this.$refs.mainFormRef && this.$refs.mainFormRef.setFormData) {
         this.$refs.mainFormRef.setFormData({
           taskName: '',
@@ -342,6 +427,22 @@ export default {
         })
       } else {
         this.$tab.closeOpenPage({ path: '/task/process', query: { t: Date.now() }})
+      }
+    },
+    getNodeDateRange(index) {
+      const d = this.nodeDateArray[index]
+      if (d && d.startDate && d.endDate) {
+        return [d.startDate, d.endDate]
+      }
+      return null
+    },
+    setNodeDateRange(index, val) {
+      if (Array.isArray(val) && val.length === 2) {
+        this.$set(this.nodeDateArray[index], 'startDate', val[0] || '')
+        this.$set(this.nodeDateArray[index], 'endDate', val[1] || '')
+      } else {
+        this.$set(this.nodeDateArray[index], 'startDate', '')
+        this.$set(this.nodeDateArray[index], 'endDate', '')
       }
     },
     generateBusinessKey() {

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.manage.mapper.MonitorDeviceMapper">
+
+    <resultMap type="MonitorDevice" id="MonitorDeviceResult">
+        <result property="id"          column="id"           />
+        <result property="deviceName"  column="device_name"  />
+        <result property="deviceNo"    column="device_no"    />
+        <result property="location"    column="location"     />
+        <result property="areaType"    column="area_type"    />
+        <result property="deviceType"  column="device_type"  />
+        <result property="brand"       column="brand"        />
+        <result property="ipAddress"   column="ip_address"   />
+        <result property="streamUrl"   column="stream_url"   />
+        <result property="status"      column="status"       />
+        <result property="installDate" column="install_date" />
+        <result property="manager"     column="manager"      />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"  column="update_time"  />
+        <result property="remark"      column="remark"       />
+    </resultMap>
+
+    <sql id="selectMonitorDeviceVo">
+        select id, device_name, device_no, location, area_type, device_type, brand,
+               ip_address, stream_url, status, install_date, manager,
+               create_by, create_time, update_by, update_time, remark
+        from monitor_device
+    </sql>
+
+    <select id="selectMonitorDeviceList" parameterType="MonitorDevice" resultMap="MonitorDeviceResult">
+        <include refid="selectMonitorDeviceVo"/>
+        <where>
+            <if test="deviceName != null and deviceName != ''"> and device_name like concat('%', #{deviceName}, '%')</if>
+            <if test="deviceNo != null and deviceNo != ''"> and device_no = #{deviceNo}</if>
+            <if test="location != null and location != ''"> and location like concat('%', #{location}, '%')</if>
+            <if test="areaType != null and areaType != ''"> and area_type = #{areaType}</if>
+            <if test="deviceType != null and deviceType != ''"> and device_type = #{deviceType}</if>
+            <if test="status != null and status != ''"> and status = #{status}</if>
+            <if test="manager != null and manager != ''"> and manager like concat('%', #{manager}, '%')</if>
+        </where>
+    </select>
+
+    <select id="selectMonitorDeviceById" parameterType="Long" resultMap="MonitorDeviceResult">
+        <include refid="selectMonitorDeviceVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertMonitorDevice" parameterType="MonitorDevice" useGeneratedKeys="true" keyProperty="id">
+        insert into monitor_device
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="deviceName != null and deviceName != ''">device_name,</if>
+            <if test="deviceNo != null and deviceNo != ''">device_no,</if>
+            <if test="location != null">location,</if>
+            <if test="areaType != null">area_type,</if>
+            <if test="deviceType != null">device_type,</if>
+            <if test="brand != null">brand,</if>
+            <if test="ipAddress != null">ip_address,</if>
+            <if test="streamUrl != null">stream_url,</if>
+            <if test="status != null">status,</if>
+            <if test="installDate != null">install_date,</if>
+            <if test="manager != null">manager,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="deviceName != null and deviceName != ''">#{deviceName},</if>
+            <if test="deviceNo != null and deviceNo != ''">#{deviceNo},</if>
+            <if test="location != null">#{location},</if>
+            <if test="areaType != null">#{areaType},</if>
+            <if test="deviceType != null">#{deviceType},</if>
+            <if test="brand != null">#{brand},</if>
+            <if test="ipAddress != null">#{ipAddress},</if>
+            <if test="streamUrl != null">#{streamUrl},</if>
+            <if test="status != null">#{status},</if>
+            <if test="installDate != null">#{installDate},</if>
+            <if test="manager != null">#{manager},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateMonitorDevice" parameterType="MonitorDevice">
+        update monitor_device
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="deviceName != null and deviceName != ''">device_name = #{deviceName},</if>
+            <if test="deviceNo != null and deviceNo != ''">device_no = #{deviceNo},</if>
+            <if test="location != null">location = #{location},</if>
+            <if test="areaType != null">area_type = #{areaType},</if>
+            <if test="deviceType != null">device_type = #{deviceType},</if>
+            <if test="brand != null">brand = #{brand},</if>
+            <if test="ipAddress != null">ip_address = #{ipAddress},</if>
+            <if test="streamUrl != null">stream_url = #{streamUrl},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="installDate != null">install_date = #{installDate},</if>
+            <if test="manager != null">manager = #{manager},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteMonitorDeviceById" parameterType="Long">
+        delete from monitor_device where id = #{id}
+    </delete>
+
+    <delete id="deleteMonitorDeviceByIds" parameterType="String">
+        delete from monitor_device where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

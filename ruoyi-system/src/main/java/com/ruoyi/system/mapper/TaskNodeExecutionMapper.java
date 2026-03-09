@@ -118,4 +118,14 @@ public interface TaskNodeExecutionMapper
         @org.apache.ibatis.annotations.Param("teamId") Long teamId,
         @org.apache.ibatis.annotations.Param("limit") int limit
     );
+
+    /**
+     * 更新超时标记
+     *
+     * @param id          主键
+     * @param timeoutFlag 超时标记: 0=正常,1=已超时
+     * @return 结果
+     */
+    int updateTimeoutFlag(@org.apache.ibatis.annotations.Param("id") Long id,
+                          @org.apache.ibatis.annotations.Param("timeoutFlag") int timeoutFlag);
 }

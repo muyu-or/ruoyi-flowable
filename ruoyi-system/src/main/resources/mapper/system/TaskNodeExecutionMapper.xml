@@ -21,6 +21,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="result"          column="result"           />
         <result property="approveComment"  column="approve_comment"  />
         <result property="processDuration" column="process_duration" />
+        <result property="timeoutFlag"    column="timeout_flag"    />
+        <result property="planEndDate"    column="plan_end_date"   />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -29,7 +31,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectTaskNodeExecutionVo">
-        select id, exec_record_id, task_id, node_key, node_name, assigned_team_id, assigned_user_id, claim_user_id, status, start_time, claim_time, complete_time, form_data, result, approve_comment, process_duration, create_by, create_time, update_by, update_time, remark from task_node_execution
+        select id, exec_record_id, task_id, node_key, node_name, assigned_team_id, assigned_user_id, claim_user_id, status, start_time, claim_time, complete_time, form_data, result, approve_comment, process_duration, timeout_flag, plan_end_date, create_by, create_time, update_by, update_time, remark from task_node_execution
     </sql>
 
     <select id="selectTaskNodeExecutionList" parameterType="TaskNodeExecution" resultMap="TaskNodeExecutionResult">
@@ -79,6 +81,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="result != null">result,</if>
             <if test="approveComment != null">approve_comment,</if>
             <if test="processDuration != null">process_duration,</if>
+            <if test="timeoutFlag != null">timeout_flag,</if>
+            <if test="planEndDate != null">plan_end_date,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -101,6 +105,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="result != null">#{result},</if>
             <if test="approveComment != null">#{approveComment},</if>
             <if test="processDuration != null">#{processDuration},</if>
+            <if test="timeoutFlag != null">#{timeoutFlag},</if>
+            <if test="planEndDate != null">#{planEndDate},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -127,6 +133,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="result != null and result != ''">result = #{result},</if>
             <if test="approveComment != null and approveComment != ''">approve_comment = #{approveComment},</if>
             <if test="processDuration != null">process_duration = #{processDuration},</if>
+            <if test="timeoutFlag != null">timeout_flag = #{timeoutFlag},</if>
+            <if test="planEndDate != null">plan_end_date = #{planEndDate},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -214,4 +222,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY tne.complete_time DESC
         LIMIT #{limit}
     </select>
+
+    <!-- 更新超时标记 -->
+    <update id="updateTimeoutFlag">
+        UPDATE task_node_execution
+        SET timeout_flag = #{timeoutFlag}
+        WHERE id = #{id}
+    </update>
 </mapper>

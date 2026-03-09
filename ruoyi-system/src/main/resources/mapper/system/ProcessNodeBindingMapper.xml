@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ProcessNodeBindingMapper">
+
+    <resultMap type="ProcessNodeBinding" id="ProcessNodeBindingResult">
+        <result property="id"    column="id"    />
+        <result property="procDefKey"    column="proc_def_key"    />
+        <result property="procDefVersion"    column="proc_def_version"    />
+        <result property="nodeKey"    column="node_key"    />
+        <result property="nodeName"    column="node_name"    />
+        <result property="allowTeamSelection"    column="allow_team_selection"    />
+        <result property="defaultTeamId"    column="default_team_id"    />
+        <result property="formFieldName"    column="form_field_name"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectProcessNodeBindingVo">
+        select id, proc_def_key, proc_def_version, node_key, node_name, allow_team_selection, default_team_id, form_field_name, create_by, create_time, update_by, update_time, remark from process_node_binding
+    </sql>
+
+    <select id="selectProcessNodeBindingList" parameterType="ProcessNodeBinding" resultMap="ProcessNodeBindingResult">
+        <include refid="selectProcessNodeBindingVo"/>
+        <where>
+            <if test="procDefKey != null and procDefKey != ''"> and proc_def_key = #{procDefKey}</if>
+            <if test="procDefVersion != null"> and proc_def_version = #{procDefVersion}</if>
+            <if test="nodeKey != null and nodeKey != ''"> and node_key = #{nodeKey}</if>
+            <if test="defaultTeamId != null"> and default_team_id = #{defaultTeamId}</if>
+        </where>
+        order by proc_def_key, proc_def_version, node_key
+    </select>
+
+    <select id="selectProcessNodeBindingById" parameterType="Long" resultMap="ProcessNodeBindingResult">
+        <include refid="selectProcessNodeBindingVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectByNodeKey" resultMap="ProcessNodeBindingResult">
+        <include refid="selectProcessNodeBindingVo"/>
+        where proc_def_key = #{procDefKey} and proc_def_version = #{procDefVersion} and node_key = #{nodeKey}
+    </select>
+
+    <insert id="insertProcessNodeBinding" parameterType="ProcessNodeBinding" useGeneratedKeys="true" keyProperty="id">
+        insert into process_node_binding
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="procDefKey != null">proc_def_key,</if>
+            <if test="procDefVersion != null">proc_def_version,</if>
+            <if test="nodeKey != null">node_key,</if>
+            <if test="nodeName != null">node_name,</if>
+            <if test="allowTeamSelection != null">allow_team_selection,</if>
+            <if test="defaultTeamId != null">default_team_id,</if>
+            <if test="formFieldName != null">form_field_name,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="procDefKey != null">#{procDefKey},</if>
+            <if test="procDefVersion != null">#{procDefVersion},</if>
+            <if test="nodeKey != null">#{nodeKey},</if>
+            <if test="nodeName != null">#{nodeName},</if>
+            <if test="allowTeamSelection != null">#{allowTeamSelection},</if>
+            <if test="defaultTeamId != null">#{defaultTeamId},</if>
+            <if test="formFieldName != null">#{formFieldName},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateProcessNodeBinding" parameterType="ProcessNodeBinding">
+        update process_node_binding
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="procDefKey != null">proc_def_key = #{procDefKey},</if>
+            <if test="procDefVersion != null">proc_def_version = #{procDefVersion},</if>
+            <if test="nodeKey != null">node_key = #{nodeKey},</if>
+            <if test="nodeName != null">node_name = #{nodeName},</if>
+            <if test="allowTeamSelection != null">allow_team_selection = #{allowTeamSelection},</if>
+            <if test="defaultTeamId != null">default_team_id = #{defaultTeamId},</if>
+            <if test="formFieldName != null">form_field_name = #{formFieldName},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteProcessNodeBindingById" parameterType="Long">
+        delete from process_node_binding where id = #{id}
+    </delete>
+
+    <delete id="deleteProcessNodeBindingByIds" parameterType="String">
+        delete from process_node_binding where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

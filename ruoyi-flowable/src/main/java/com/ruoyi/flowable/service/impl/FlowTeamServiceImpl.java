@@ -114,6 +114,29 @@ public class FlowTeamServiceImpl extends FlowServiceFactory implements IFlowTeam
             nodeExec.setStatus("pending");
             nodeExec.setStartTime(LocalDateTime.now().format(DATE_TIME_FORMATTER));
 
+            // 从 nodeTimeMap 读取计划结束日期写入 planEndDate
+            try {
+                Object ntmObj = vars.get("nodeTimeMap");
+                if (ntmObj != null) {
+                    Map<String, Object> ntm;
+                    if (ntmObj instanceof Map) {
+                        ntm = (Map<String, Object>) ntmObj;
+                    } else {
+                        ntm = JSON.parseObject(ntmObj.toString(), Map.class);
+                    }
+                    Object nodeTime = ntm.get(nodeKey);
+                    if (nodeTime instanceof Map) {
+                        Object endDate = ((Map<?, ?>) nodeTime).get("endDate");
+                        if (endDate != null) {
+                            nodeExec.setPlanEndDate(endDate.toString());
+                            log.info("节点 {} 计划结束日期: {}", nodeKey, endDate);
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("读取 nodeTimeMap 计划结束日期时出错，nodeKey={}", nodeKey, ex);
+            }
+
             log.info("即将插入task_node_execution: {}", nodeExec);
             taskNodeExecutionService.insertTaskNodeExecution(nodeExec);
             log.info("✅ 成功为任务{}创建节点执行记录，班组ID={}，角色数量={}", taskId, teamId, roleIds.size());

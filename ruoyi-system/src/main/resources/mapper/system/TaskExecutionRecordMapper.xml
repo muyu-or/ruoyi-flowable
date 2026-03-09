@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.TaskExecutionRecordMapper">
+
+    <resultMap type="TaskExecutionRecord" id="TaskExecutionRecordResult">
+        <result property="id"    column="id"    />
+        <result property="procInstId"    column="proc_inst_id"    />
+        <result property="procDefKey"    column="proc_def_key"    />
+        <result property="procDefVersion"    column="proc_def_version"    />
+        <result property="initiatorId"    column="initiator_id"    />
+        <result property="mainTeamId"    column="main_team_id"    />
+        <result property="status"    column="status"    />
+        <result property="completeTime"  column="complete_time"  />
+        <result property="totalDuration" column="total_duration" />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectTaskExecutionRecordVo">
+        select id, proc_inst_id, proc_def_key, proc_def_version, initiator_id, main_team_id, status, complete_time, total_duration, create_by, create_time, update_by, update_time, remark from task_execution_record
+    </sql>
+
+    <select id="selectTaskExecutionRecordList" parameterType="TaskExecutionRecord" resultMap="TaskExecutionRecordResult">
+        <include refid="selectTaskExecutionRecordVo"/>
+        <where>
+            <if test="procInstId != null and procInstId != ''"> and proc_inst_id = #{procInstId}</if>
+            <if test="procDefKey != null and procDefKey != ''"> and proc_def_key = #{procDefKey}</if>
+            <if test="initiatorId != null"> and initiator_id = #{initiatorId}</if>
+            <if test="mainTeamId != null"> and main_team_id = #{mainTeamId}</if>
+            <if test="status != null and status != ''"> and status = #{status}</if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectTaskExecutionRecordById" parameterType="Long" resultMap="TaskExecutionRecordResult">
+        <include refid="selectTaskExecutionRecordVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectByProcInstId" parameterType="String" resultMap="TaskExecutionRecordResult">
+        <include refid="selectTaskExecutionRecordVo"/>
+        where proc_inst_id = #{procInstId}
+    </select>
+
+    <insert id="insertTaskExecutionRecord" parameterType="TaskExecutionRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into task_execution_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="procInstId != null">proc_inst_id,</if>
+            <if test="procDefKey != null">proc_def_key,</if>
+            <if test="procDefVersion != null">proc_def_version,</if>
+            <if test="initiatorId != null">initiator_id,</if>
+            <if test="mainTeamId != null">main_team_id,</if>
+            <if test="status != null">status,</if>
+            <if test="completeTime != null and completeTime != ''">complete_time,</if>
+            <if test="totalDuration != null">total_duration,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="procInstId != null">#{procInstId},</if>
+            <if test="procDefKey != null">#{procDefKey},</if>
+            <if test="procDefVersion != null">#{procDefVersion},</if>
+            <if test="initiatorId != null">#{initiatorId},</if>
+            <if test="mainTeamId != null">#{mainTeamId},</if>
+            <if test="status != null">#{status},</if>
+            <if test="completeTime != null and completeTime != ''">#{completeTime},</if>
+            <if test="totalDuration != null">#{totalDuration},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTaskExecutionRecord" parameterType="TaskExecutionRecord">
+        update task_execution_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="procInstId != null">proc_inst_id = #{procInstId},</if>
+            <if test="procDefKey != null">proc_def_key = #{procDefKey},</if>
+            <if test="procDefVersion != null">proc_def_version = #{procDefVersion},</if>
+            <if test="initiatorId != null">initiator_id = #{initiatorId},</if>
+            <if test="mainTeamId != null">main_team_id = #{mainTeamId},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="completeTime != null and completeTime != ''">complete_time = #{completeTime},</if>
+            <if test="totalDuration != null">total_duration = #{totalDuration},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteTaskExecutionRecordById" parameterType="Long">
+        delete from task_execution_record where id = #{id}
+    </delete>
+
+    <delete id="deleteTaskExecutionRecordByIds" parameterType="String">
+        delete from task_execution_record where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,11 +1,12 @@
 import router from './router'
 import store from './store'
-import { Message } from 'element-ui'
+import { Message, MessageBox } from 'element-ui'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { getToken } from '@/utils/auth'
 import { isPathMatch } from '@/utils/validate'
 import { isRelogin } from '@/utils/request'
+import { getUnreadWarningCount } from '@/api/flowable/warning'
 
 NProgress.configure({ showSpinner: false })
 
@@ -35,13 +36,24 @@ router.beforeEach((to, from, next) => {
             // 根据roles权限生成可访问的路由表
             router.addRoutes(accessRoutes) // 动态添加可访问路由表
             next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+            // 登录后异步检查未读预警
+            getUnreadWarningCount().then(res => {
+              const count = res.data && res.data.count
+              if (count > 0) {
+                MessageBox.alert(
+                  `您有 <strong>${count}</strong> 条未处理的任务预警，请及时查看。`,
+                  '任务预警提醒',
+                  { type: 'warning', confirmButtonText: '知道了', dangerouslyUseHTMLString: true }
+                )
+              }
+            }).catch(() => {})
           })
         }).catch(err => {
-            store.dispatch('LogOut').then(() => {
-              Message.error(err)
-              next({ path: '/' })
-            })
+          store.dispatch('LogOut').then(() => {
+            Message.error(err)
+            next({ path: '/' })
           })
+        })
       } else {
         next()
       }

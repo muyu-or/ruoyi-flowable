@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.manage.mapper.ReportRecordMapper">
+
+    <resultMap type="com.ruoyi.manage.domain.ReportRecord" id="ReportRecordResult">
+        <result property="id"               column="id"/>
+        <result property="reportCode"       column="report_code"/>
+        <result property="reportName"       column="report_name"/>
+        <result property="testType"         column="test_type"/>
+        <result property="storagePath"      column="storage_path"/>
+        <result property="materialName"     column="material_name"/>
+        <result property="materialQuantity" column="material_quantity"/>
+        <result property="nodeName"         column="node_name"/>
+        <result property="remark"           column="remark"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+    </resultMap>
+
+    <sql id="selectReportRecordVo">
+        select id, report_code, report_name, test_type, storage_path,
+               material_name, material_quantity, node_name,
+               remark, create_by, create_time, update_by, update_time
+        from report_record
+    </sql>
+
+    <!-- 普通用户/admin 查询（过滤条件在 Service 层追加 createBy） -->
+    <select id="selectReportRecordList" parameterType="com.ruoyi.manage.domain.ReportRecord"
+            resultMap="ReportRecordResult">
+        <include refid="selectReportRecordVo"/>
+        <where>
+            <if test="reportCode != null and reportCode != ''">and report_code = #{reportCode}</if>
+            <if test="reportName != null and reportName != ''">and report_name like concat('%', #{reportName}, '%')</if>
+            <if test="testType != null and testType != ''">and test_type = #{testType}</if>
+            <if test="materialName != null and materialName != ''">and material_name like concat('%', #{materialName}, '%')</if>
+            <if test="nodeName != null and nodeName != ''">and node_name = #{nodeName}</if>
+            <if test="createBy != null and createBy != ''">and create_by = #{createBy}</if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <!-- 班组长：按可见用户名列表查询 -->
+    <select id="selectReportRecordListByUsers" resultMap="ReportRecordResult">
+        <include refid="selectReportRecordVo"/>
+        <where>
+            <if test="record.reportCode != null and record.reportCode != ''">and report_code = #{record.reportCode}</if>
+            <if test="record.reportName != null and record.reportName != ''">and report_name like concat('%', #{record.reportName}, '%')</if>
+            <if test="record.testType != null and record.testType != ''">and test_type = #{record.testType}</if>
+            <if test="record.materialName != null and record.materialName != ''">and material_name like concat('%', #{record.materialName}, '%')</if>
+            <if test="record.nodeName != null and record.nodeName != ''">and node_name = #{record.nodeName}</if>
+            <if test="visibleUsers != null and visibleUsers.size() > 0">
+                and create_by in
+                <foreach collection="visibleUsers" item="u" open="(" separator="," close=")">
+                    #{u}
+                </foreach>
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectReportRecordById" parameterType="Long" resultMap="ReportRecordResult">
+        <include refid="selectReportRecordVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="countByIdAndCreateBy" resultType="int">
+        select count(1) from report_record where id = #{id} and create_by = #{createBy}
+    </select>
+
+    <insert id="insertReportRecord" parameterType="com.ruoyi.manage.domain.ReportRecord"
+            useGeneratedKeys="true" keyProperty="id">
+        insert into report_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="reportCode != null and reportCode != ''">report_code,</if>
+            <if test="reportName != null and reportName != ''">report_name,</if>
+            <if test="testType != null">test_type,</if>
+            <if test="storagePath != null and storagePath != ''">storage_path,</if>
+            <if test="materialName != null and materialName != ''">material_name,</if>
+            <if test="materialQuantity != null">material_quantity,</if>
+            <if test="nodeName != null and nodeName != ''">node_name,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="reportCode != null and reportCode != ''">#{reportCode},</if>
+            <if test="reportName != null and reportName != ''">#{reportName},</if>
+            <if test="testType != null">#{testType},</if>
+            <if test="storagePath != null and storagePath != ''">#{storagePath},</if>
+            <if test="materialName != null and materialName != ''">#{materialName},</if>
+            <if test="materialQuantity != null">#{materialQuantity},</if>
+            <if test="nodeName != null and nodeName != ''">#{nodeName},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateReportRecord" parameterType="com.ruoyi.manage.domain.ReportRecord">
+        update report_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="reportName != null and reportName != ''">report_name = #{reportName},</if>
+            <if test="testType != null">test_type = #{testType},</if>
+            <if test="storagePath != null and storagePath != ''">storage_path = #{storagePath},</if>
+            <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
+            <if test="materialQuantity != null">material_quantity = #{materialQuantity},</if>
+            <if test="nodeName != null and nodeName != ''">node_name = #{nodeName},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteReportRecordById" parameterType="Long">
+        delete from report_record where id = #{id}
+    </delete>
+
+    <delete id="deleteReportRecordByIds" parameterType="String">
+        delete from report_record where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

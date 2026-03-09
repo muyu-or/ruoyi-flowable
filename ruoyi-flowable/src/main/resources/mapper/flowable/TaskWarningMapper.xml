@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.flowable.mapper.TaskWarningMapper">
+
+    <resultMap type="com.ruoyi.flowable.domain.TaskWarning" id="TaskWarningResult">
+        <result property="id"          column="id"           />
+        <result property="userId"      column="user_id"      />
+        <result property="warnType"    column="warn_type"    />
+        <result property="procInstId"  column="proc_inst_id" />
+        <result property="nodeKey"     column="node_key"     />
+        <result property="nodeName"    column="node_name"    />
+        <result property="endDate"     column="end_date"     />
+        <result property="isRead"      column="is_read"      />
+        <result property="createTime"  column="create_time"  />
+    </resultMap>
+
+    <insert id="insertTaskWarning" parameterType="com.ruoyi.flowable.domain.TaskWarning" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO task_warning (user_id, warn_type, proc_inst_id, node_key, node_name, end_date, is_read, create_time)
+        VALUES (#{userId}, #{warnType}, #{procInstId}, #{nodeKey}, #{nodeName}, #{endDate}, #{isRead}, #{createTime})
+    </insert>
+
+    <select id="selectByUserId" resultMap="TaskWarningResult">
+        SELECT id, user_id, warn_type, proc_inst_id, node_key, node_name, end_date, is_read, create_time
+        FROM task_warning
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countUnreadByUserId" resultType="int">
+        SELECT COUNT(*)
+        FROM task_warning
+        WHERE user_id = #{userId} AND is_read = 0
+    </select>
+
+    <update id="markAllReadByUserId">
+        UPDATE task_warning
+        SET is_read = 1
+        WHERE user_id = #{userId} AND is_read = 0
+    </update>
+
+    <update id="markReadById">
+        UPDATE task_warning
+        SET is_read = 1
+        WHERE id = #{id}
+    </update>
+
+    <select id="countByUserNodeType" resultType="int">
+        SELECT COUNT(*)
+        FROM task_warning
+        WHERE user_id = #{userId}
+          AND proc_inst_id = #{procInstId}
+          AND node_key = #{nodeKey}
+          AND warn_type = #{warnType}
+    </select>
+
+    <update id="markReadByProcInstAndNodeKey">
+        UPDATE task_warning
+        SET is_read = 1
+        WHERE proc_inst_id = #{procInstId}
+          AND node_key = #{nodeKey}
+          AND is_read = 0
+    </update>
+
+</mapper>

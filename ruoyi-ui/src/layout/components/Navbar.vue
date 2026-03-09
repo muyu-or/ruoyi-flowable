@@ -15,6 +15,7 @@
           <size-select id="size-select" class="right-menu-item hover-effect" />
         </el-tooltip>
 
+        <notification-bell class="right-menu-item hover-effect" />
       </template>
 
       <el-dropdown class="avatar-container right-menu-item hover-effect" trigger="click">
@@ -46,6 +47,7 @@ import Hamburger from '@/components/Hamburger'
 import Screenfull from '@/components/Screenfull'
 import SizeSelect from '@/components/SizeSelect'
 import Search from '@/components/HeaderSearch'
+import NotificationBell from '@/components/NotificationBell'
 
 export default {
   components: {
@@ -54,7 +56,8 @@ export default {
     Hamburger,
     Screenfull,
     SizeSelect,
-    Search
+    Search,
+    NotificationBell
   },
   computed: {
     ...mapGetters([

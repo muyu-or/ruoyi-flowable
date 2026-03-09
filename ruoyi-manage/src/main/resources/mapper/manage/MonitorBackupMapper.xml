@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.manage.mapper.MonitorBackupMapper">
+
+    <resultMap type="MonitorBackup" id="MonitorBackupResult">
+        <result property="id"           column="id"            />
+        <result property="deviceId"     column="device_id"     />
+        <result property="deviceName"   column="device_name"   />
+        <result property="recordDate"   column="record_date"   />
+        <result property="startTime"    column="start_time"    />
+        <result property="endTime"      column="end_time"      />
+        <result property="fileName"     column="file_name"     />
+        <result property="filePath"     column="file_path"     />
+        <result property="fileSize"     column="file_size"     />
+        <result property="backupStatus" column="backup_status" />
+        <result property="createBy"     column="create_by"     />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateBy"     column="update_by"     />
+        <result property="updateTime"   column="update_time"   />
+        <result property="remark"       column="remark"        />
+    </resultMap>
+
+    <sql id="selectMonitorBackupVo">
+        select id, device_id, device_name, record_date, start_time, end_time,
+               file_name, file_path, file_size, backup_status,
+               create_by, create_time, update_by, update_time, remark
+        from monitor_backup
+    </sql>
+
+    <select id="selectMonitorBackupList" parameterType="MonitorBackup" resultMap="MonitorBackupResult">
+        <include refid="selectMonitorBackupVo"/>
+        <where>
+            <if test="deviceId != null"> and device_id = #{deviceId}</if>
+            <if test="deviceName != null and deviceName != ''"> and device_name like concat('%', #{deviceName}, '%')</if>
+            <if test="recordDate != null"> and record_date = #{recordDate}</if>
+            <if test="backupStatus != null and backupStatus != ''"> and backup_status = #{backupStatus}</if>
+            <if test="params.beginRecordDate != null and params.beginRecordDate != ''"> and record_date &gt;= #{params.beginRecordDate}</if>
+            <if test="params.endRecordDate != null and params.endRecordDate != ''"> and record_date &lt;= #{params.endRecordDate}</if>
+        </where>
+    </select>
+
+    <select id="selectMonitorBackupById" parameterType="Long" resultMap="MonitorBackupResult">
+        <include refid="selectMonitorBackupVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertMonitorBackup" parameterType="MonitorBackup" useGeneratedKeys="true" keyProperty="id">
+        insert into monitor_backup
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="deviceId != null">device_id,</if>
+            <if test="deviceName != null">device_name,</if>
+            <if test="recordDate != null">record_date,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="fileName != null">file_name,</if>
+            <if test="filePath != null">file_path,</if>
+            <if test="fileSize != null">file_size,</if>
+            <if test="backupStatus != null">backup_status,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="deviceId != null">#{deviceId},</if>
+            <if test="deviceName != null">#{deviceName},</if>
+            <if test="recordDate != null">#{recordDate},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="fileName != null">#{fileName},</if>
+            <if test="filePath != null">#{filePath},</if>
+            <if test="fileSize != null">#{fileSize},</if>
+            <if test="backupStatus != null">#{backupStatus},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateMonitorBackup" parameterType="MonitorBackup">
+        update monitor_backup
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="deviceId != null">device_id = #{deviceId},</if>
+            <if test="deviceName != null">device_name = #{deviceName},</if>
+            <if test="recordDate != null">record_date = #{recordDate},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="filePath != null">file_path = #{filePath},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="backupStatus != null">backup_status = #{backupStatus},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteMonitorBackupById" parameterType="Long">
+        delete from monitor_backup where id = #{id}
+    </delete>
+
+    <delete id="deleteMonitorBackupByIds" parameterType="String">
+        delete from monitor_backup where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

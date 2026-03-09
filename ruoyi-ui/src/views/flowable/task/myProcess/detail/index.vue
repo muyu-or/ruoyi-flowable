@@ -34,10 +34,14 @@
                 <el-timeline-item
                   v-for="(item,index ) in flowRecordList"
                   :key="index"
-                  :icon="setIcon(item.finishTime)"
-                  :color="setColor(item.finishTime)"
+                  :icon="setIcon(item)"
+                  :color="setColor(item)"
                 >
-                  <p style="font-weight: 700">{{ item.taskName }}</p>
+                  <p style="font-weight: 700">
+                    {{ item.taskName }}
+                    <el-tag v-if="item.comment && item.comment.type === '2'" type="warning" size="mini" style="margin-left:6px">退回重审</el-tag>
+                    <el-tag v-else-if="item.comment && item.comment.type === '3'" type="danger" size="mini" style="margin-left:6px">不通过</el-tag>
+                  </p>
                   <el-card :body-style="{ padding: '10px' }">
                     <el-descriptions class="margin-top" :column="1" size="small" border>
                       <el-descriptions-item v-if="item.assigneeName" label-class-name="my-label">
@@ -48,6 +52,10 @@
                       <el-descriptions-item v-if="item.candidate" label-class-name="my-label">
                         <template slot="label"><i class="el-icon-user" />候选办理</template>
                         {{ item.candidate }}
+                      </el-descriptions-item>
+                      <el-descriptions-item v-if="item.planStartDate || item.planEndDate" label-class-name="my-label">
+                        <template slot="label"><i class="el-icon-date" />计划时间</template>
+                        {{ item.planStartDate || '?' }} ~ {{ item.planEndDate || '?' }}
                       </el-descriptions-item>
                       <el-descriptions-item label-class-name="my-label">
                         <template slot="label"><i class="el-icon-date" />接收时间</template>
@@ -63,7 +71,7 @@
                       </el-descriptions-item>
                       <el-descriptions-item v-if="item.comment" label-class-name="my-label">
                         <template slot="label"><i class="el-icon-tickets" />处理意见</template>
-                        {{ item.comment.comment }}
+                        <span :style="{ color: getCommentColor(item.comment.type) }">{{ item.comment.comment }}</span>
                       </el-descriptions-item>
                     </el-descriptions>
                   </el-card>
@@ -136,11 +144,26 @@ export default {
         })
       }
     },
-    setIcon(val) {
-      return val ? 'el-icon-check' : 'el-icon-time'
+    setIcon(item) {
+      if (!item.finishTime) return 'el-icon-time'
+      if (item.comment) {
+        if (item.comment.type === '2') return 'el-icon-refresh-left'
+        if (item.comment.type === '3') return 'el-icon-close'
+      }
+      return 'el-icon-check'
     },
-    setColor(val) {
-      return val ? '#2bc418' : '#b3bdbb'
+    setColor(item) {
+      if (!item.finishTime) return '#b3bdbb'
+      if (item.comment) {
+        if (item.comment.type === '2') return '#e6a23c'
+        if (item.comment.type === '3') return '#f56c6c'
+      }
+      return '#2bc418'
+    },
+    getCommentColor(type) {
+      if (type === '2') return '#e6a23c'
+      if (type === '3') return '#f56c6c'
+      return ''
     },
     /** 根据组件名查找对应的 Vue 组件 */
     getNodeComponent(formComponent) {

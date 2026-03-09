@@ -5,6 +5,12 @@
         <span class="el-icon-document">待办任务</span>
         <el-tag style="margin-left:10px">发起人:{{ startUser }}</el-tag>
         <el-tag>任务节点:{{ taskName }}</el-tag>
+        <el-tag v-if="nodeStartDate || nodeEndDate" :type="nodeTimeTagType">
+          <i class="el-icon-date" />
+          {{ nodeStartDate || '?' }} ~ {{ nodeEndDate || '?' }}
+          <span v-if="nodeOverdue" style="margin-left:4px;font-weight:bold">（已超时）</span>
+          <span v-else-if="nodeDeadlineSoon" style="margin-left:4px;font-weight:bold">（即将到期）</span>
+        </el-tag>
         <el-button style="float: right;" size="mini" type="danger" @click="goBack">关闭</el-button>
       </div>
       <el-tabs v-model="activeName" tab-position="top" @tab-click="handleClick">
@@ -46,10 +52,14 @@
                 <el-timeline-item
                   v-for="(item,index ) in flowRecordList"
                   :key="index"
-                  :icon="setIcon(item.finishTime)"
-                  :color="setColor(item.finishTime)"
+                  :icon="setIcon(item)"
+                  :color="setColor(item)"
                 >
-                  <p style="font-weight: 700">{{ item.taskName }}</p>
+                  <p style="font-weight: 700">
+                    {{ item.taskName }}
+                    <el-tag v-if="item.comment && item.comment.type === '2'" type="warning" size="mini" style="margin-left:6px">退回重审</el-tag>
+                    <el-tag v-else-if="item.comment && item.comment.type === '3'" type="danger" size="mini" style="margin-left:6px">不通过</el-tag>
+                  </p>
                   <el-card :body-style="{ padding: '10px' }">
                     <el-descriptions class="margin-top" :column="1" size="small" border>
                       <el-descriptions-item v-if="item.assigneeName" label-class-name="my-label">
@@ -60,6 +70,10 @@
                       <el-descriptions-item v-if="item.candidate" label-class-name="my-label">
                         <template slot="label"><i class="el-icon-user" />候选办理</template>
                         {{ item.candidate }}
+                      </el-descriptions-item>
+                      <el-descriptions-item v-if="item.planStartDate || item.planEndDate" label-class-name="my-label">
+                        <template slot="label"><i class="el-icon-date" />计划时间</template>
+                        {{ item.planStartDate || '?' }} ~ {{ item.planEndDate || '?' }}
                       </el-descriptions-item>
                       <el-descriptions-item label-class-name="my-label">
                         <template slot="label"><i class="el-icon-date" />接收时间</template>
@@ -75,7 +89,7 @@
                       </el-descriptions-item>
                       <el-descriptions-item v-if="item.comment" label-class-name="my-label">
                         <template slot="label"><i class="el-icon-tickets" />处理意见</template>
-                        {{ item.comment.comment }}
+                        <span :style="{ color: getCommentColor(item.comment.type) }">{{ item.comment.comment }}</span>
                       </el-descriptions-item>
                     </el-descriptions>
                   </el-card>
@@ -266,7 +280,9 @@ export default {
       formComponent: '', // 后端返回的自定义组件名（extensionElements 绑定机制）
       loadingReturnList: false, // 加载退回节点列表状态
       isLeader: true, // 当前用户是否为班组长（默认 true，避免权限检查延迟期间按钮消失）
-      latestReturnComment: null // 最新退回意见（班组长退回时的处理意见）
+      latestReturnComment: null, // 最新退回意见（班组长退回时的处理意见）
+      nodeStartDate: '', // 当前节点计划开始日期
+      nodeEndDate: '' // 当前节点计划结束日期
     }
   },
   computed: {
@@ -278,6 +294,21 @@ export default {
       // 兼容：旧的节点 key 硬编码映射
       if (!this.taskDefinitionKey) return null
       return TASK_FORM_MAP[this.taskDefinitionKey] || null
+    },
+    nodeOverdue() {
+      if (!this.nodeEndDate) return false
+      const today = new Date().toISOString().slice(0, 10)
+      return this.nodeEndDate < today
+    },
+    nodeDeadlineSoon() {
+      if (!this.nodeEndDate || this.nodeOverdue) return false
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+      return this.nodeEndDate <= tomorrow
+    },
+    nodeTimeTagType() {
+      if (this.nodeOverdue) return 'danger'
+      if (this.nodeDeadlineSoon) return 'warning'
+      return 'info'
     }
   },
   created() {
@@ -305,19 +336,30 @@ export default {
         })
       }
     },
-    setIcon(val) {
-      if (val) {
-        return 'el-icon-check'
-      } else {
+    setIcon(item) {
+      if (!item.finishTime) {
         return 'el-icon-time'
       }
+      if (item.comment) {
+        if (item.comment.type === '2') return 'el-icon-refresh-left' // 退回重审
+        if (item.comment.type === '3') return 'el-icon-close' // 不通过
+      }
+      return 'el-icon-check'
     },
-    setColor(val) {
-      if (val) {
-        return '#2bc418'
-      } else {
+    setColor(item) {
+      if (!item.finishTime) {
         return '#b3bdbb'
       }
+      if (item.comment) {
+        if (item.comment.type === '2') return '#e6a23c' // 退回重审-橙色
+        if (item.comment.type === '3') return '#f56c6c' // 不通过-红色
+      }
+      return '#2bc418'
+    },
+    getCommentColor(type) {
+      if (type === '2') return '#e6a23c'
+      if (type === '3') return '#f56c6c'
+      return ''
     },
     // 用户信息选中数据
     handleUserSelect(selection) {
@@ -363,6 +405,16 @@ export default {
         this.formComponent = res.data._formComponent || ''
         // 读取最新退回意见
         this.latestReturnComment = res.data._latestReturnComment || null
+
+        // 读取当前节点的计划时间范围（从流程变量 nodeTimeMap 提取）
+        const nodeTimeMap = res.data.nodeTimeMap
+        if (nodeTimeMap && this.taskDefinitionKey) {
+          const nodeTime = nodeTimeMap[this.taskDefinitionKey]
+          if (nodeTime) {
+            this.nodeStartDate = nodeTime.startDate || ''
+            this.nodeEndDate = nodeTime.endDate || ''
+          }
+        }
 
         if (this.currentFormComponent) {
           // 有自定义表单组件：只回填数据，不走 vFormRef
