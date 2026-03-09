@@ -998,6 +998,12 @@ export default {
 
     /** 点击"发起流程"按钮 */
     handleStartFlow(row) {
+      if (!row) return
+      const inStock = this.findDictValueByLabel(this.dict.type.inventory_status, '在库') ?? '1'
+      if (String(row.status) !== String(inStock)) {
+        this.$modal.msgWarning('仅"在库"状态可发起流程')
+        return
+      }
       this.flowCurrentRow = row
       this.flowQueryParams.pageNum = 1
       this.flowQueryParams.name = null
