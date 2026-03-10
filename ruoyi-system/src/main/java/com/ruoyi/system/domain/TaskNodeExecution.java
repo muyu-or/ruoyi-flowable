@@ -83,6 +83,9 @@ public class TaskNodeExecution extends BaseEntity
     /** 计划结束日期 yyyy-MM-dd */
     private String planEndDate;
 
+    /** 计划开始日期 yyyy-MM-dd */
+    private String planStartDate;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -263,6 +266,16 @@ public class TaskNodeExecution extends BaseEntity
         return planEndDate;
     }
 
+    public void setPlanStartDate(String planStartDate)
+    {
+        this.planStartDate = planStartDate;
+    }
+
+    public String getPlanStartDate()
+    {
+        return planStartDate;
+    }
+
     @Override
     public String toString()
     {
@@ -285,6 +298,7 @@ public class TaskNodeExecution extends BaseEntity
             .append("processDuration", getProcessDuration())
             .append("timeoutFlag", getTimeoutFlag())
             .append("planEndDate", getPlanEndDate())
+            .append("planStartDate", getPlanStartDate())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

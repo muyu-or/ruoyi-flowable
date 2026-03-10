@@ -143,4 +143,22 @@ public interface TaskNodeExecutionMapper
      * @return 每行含 userId, userName, finished 字段
      */
     List<java.util.Map<String, Object>> countUserFinishedTop(@org.apache.ibatis.annotations.Param("limit") int limit);
+
+    /**
+     * 查询日历看板事件（按月份范围 + 角色过滤）
+     *
+     * @param monthStart   月份起始日期 yyyy-MM-dd
+     * @param monthEnd     月份结束日期 yyyy-MM-dd
+     * @param userId       当前用户ID
+     * @param teamIds      组长所管班组ID列表（组长视图）
+     * @param filterByUser 是否按用户/班组过滤（Admin=false）
+     * @return 日历事件列表
+     */
+    List<java.util.Map<String, Object>> selectCalendarEvents(
+        @org.apache.ibatis.annotations.Param("monthStart") String monthStart,
+        @org.apache.ibatis.annotations.Param("monthEnd") String monthEnd,
+        @org.apache.ibatis.annotations.Param("userId") Long userId,
+        @org.apache.ibatis.annotations.Param("teamIds") java.util.List<Long> teamIds,
+        @org.apache.ibatis.annotations.Param("filterByUser") boolean filterByUser
+    );
 }

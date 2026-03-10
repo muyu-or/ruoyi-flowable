@@ -114,7 +114,7 @@ public class FlowTeamServiceImpl extends FlowServiceFactory implements IFlowTeam
             nodeExec.setStatus("pending");
             nodeExec.setStartTime(LocalDateTime.now().format(DATE_TIME_FORMATTER));
 
-            // 从 nodeTimeMap 读取计划结束日期写入 planEndDate
+            // 从 nodeTimeMap 读取计划开始日期和结束日期
             try {
                 Object ntmObj = vars.get("nodeTimeMap");
                 if (ntmObj != null) {
@@ -126,6 +126,11 @@ public class FlowTeamServiceImpl extends FlowServiceFactory implements IFlowTeam
                     }
                     Object nodeTime = ntm.get(nodeKey);
                     if (nodeTime instanceof Map) {
+                        Object startDate = ((Map<?, ?>) nodeTime).get("startDate");
+                        if (startDate != null) {
+                            nodeExec.setPlanStartDate(startDate.toString());
+                            log.info("节点 {} 计划开始日期: {}", nodeKey, startDate);
+                        }
                         Object endDate = ((Map<?, ?>) nodeTime).get("endDate");
                         if (endDate != null) {
                             nodeExec.setPlanEndDate(endDate.toString());
@@ -134,7 +139,7 @@ public class FlowTeamServiceImpl extends FlowServiceFactory implements IFlowTeam
                     }
                 }
             } catch (Exception ex) {
-                log.warn("读取 nodeTimeMap 计划结束日期时出错，nodeKey={}", nodeKey, ex);
+                log.warn("读取 nodeTimeMap 计划日期时出错，nodeKey={}", nodeKey, ex);
             }
 
             log.info("即将插入task_node_execution: {}", nodeExec);

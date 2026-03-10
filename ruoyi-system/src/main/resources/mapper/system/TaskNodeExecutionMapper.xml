@@ -23,6 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="processDuration" column="process_duration" />
         <result property="timeoutFlag"    column="timeout_flag"    />
         <result property="planEndDate"    column="plan_end_date"   />
+        <result property="planStartDate"  column="plan_start_date" />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -31,7 +32,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectTaskNodeExecutionVo">
-        select id, exec_record_id, task_id, node_key, node_name, assigned_team_id, assigned_user_id, claim_user_id, status, start_time, claim_time, complete_time, form_data, result, approve_comment, process_duration, timeout_flag, plan_end_date, create_by, create_time, update_by, update_time, remark from task_node_execution
+        select id, exec_record_id, task_id, node_key, node_name, assigned_team_id, assigned_user_id, claim_user_id, status, start_time, claim_time, complete_time, form_data, result, approve_comment, process_duration, timeout_flag, plan_end_date, plan_start_date, create_by, create_time, update_by, update_time, remark from task_node_execution
     </sql>
 
     <select id="selectTaskNodeExecutionList" parameterType="TaskNodeExecution" resultMap="TaskNodeExecutionResult">
@@ -83,6 +84,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="processDuration != null">process_duration,</if>
             <if test="timeoutFlag != null">timeout_flag,</if>
             <if test="planEndDate != null">plan_end_date,</if>
+            <if test="planStartDate != null">plan_start_date,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -107,6 +109,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="processDuration != null">#{processDuration},</if>
             <if test="timeoutFlag != null">#{timeoutFlag},</if>
             <if test="planEndDate != null">#{planEndDate},</if>
+            <if test="planStartDate != null">#{planStartDate},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -135,6 +138,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="processDuration != null">process_duration = #{processDuration},</if>
             <if test="timeoutFlag != null">timeout_flag = #{timeoutFlag},</if>
             <if test="planEndDate != null">plan_end_date = #{planEndDate},</if>
+            <if test="planStartDate != null">plan_start_date = #{planStartDate},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -250,5 +254,52 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         GROUP BY tne.claim_user_id, u.nick_name
         ORDER BY finished DESC
         LIMIT #{limit}
+    </select>
+
+    <!-- 日历看板事件查询：displayDate = 优先 plan_end_date，回退 start_time 日期 -->
+    <select id="selectCalendarEvents" resultType="java.util.HashMap">
+        SELECT
+            tne.id,
+            tne.node_key        AS nodeKey,
+            tne.node_name       AS nodeName,
+            tne.status,
+            tne.start_time      AS startTime,
+            tne.complete_time   AS completeTime,
+            tne.plan_start_date AS planStartDate,
+            tne.plan_end_date   AS planEndDate,
+            COALESCE(
+                NULLIF(tne.plan_end_date, ''),
+                DATE_FORMAT(tne.start_time, '%Y-%m-%d')
+            )                   AS displayDate,
+            tne.timeout_flag    AS timeoutFlag,
+            tne.process_duration AS processDuration,
+            pt.team_name        AS teamName,
+            ter.proc_inst_id    AS procInstId,
+            hv.TEXT_             AS taskName,
+            u.nick_name         AS claimUserName
+        FROM task_node_execution tne
+        LEFT JOIN task_execution_record ter ON ter.id = tne.exec_record_id
+        LEFT JOIN production_team pt ON pt.id = tne.assigned_team_id
+        LEFT JOIN ACT_HI_VARINST hv ON hv.PROC_INST_ID_ = ter.proc_inst_id AND hv.NAME_ = 'taskName'
+        LEFT JOIN sys_user u ON u.user_id = tne.claim_user_id
+        WHERE tne.status != 'cancelled'
+          AND COALESCE(
+                NULLIF(tne.plan_end_date, ''),
+                DATE_FORMAT(tne.start_time, '%Y-%m-%d')
+              ) &gt;= #{monthStart}
+          AND COALESCE(
+                NULLIF(tne.plan_end_date, ''),
+                DATE_FORMAT(tne.start_time, '%Y-%m-%d')
+              ) &lt;= #{monthEnd}
+        <choose>
+            <when test="filterByUser == true and teamIds != null and teamIds.size() > 0">
+                AND tne.assigned_team_id IN
+                <foreach item="tid" collection="teamIds" open="(" separator="," close=")">#{tid}</foreach>
+            </when>
+            <when test="filterByUser == true and (teamIds == null or teamIds.size() == 0)">
+                AND (tne.claim_user_id = #{userId} OR tne.assigned_user_id = #{userId})
+            </when>
+        </choose>
+        ORDER BY displayDate ASC, tne.status ASC
     </select>
 </mapper>
