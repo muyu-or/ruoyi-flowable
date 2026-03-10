@@ -27,6 +27,12 @@ public class HomeStatDto {
     // ⑤ leader + 成员 可见（最近完成任务）
     private List<RecentTaskDto> recentTasks = new ArrayList<>();
 
+    // ⑥ admin 专属（全员任务汇总统计，供 BI 大屏指标卡片使用）
+    private MyStatsDto companyStats;
+
+    // ⑦ admin 专属（个人完成数量 Top5，供 BI 大屏使用）
+    private List<UserTopDto> userTop5;
+
     // Getters/Setters
     public MyStatsDto getMyStats() { return myStats; }
     public void setMyStats(MyStatsDto myStats) { this.myStats = myStats; }
@@ -42,6 +48,10 @@ public class HomeStatDto {
     public void setMemberStats(List<MemberStatDto> memberStats) { this.memberStats = memberStats; }
     public List<RecentTaskDto> getRecentTasks() { return recentTasks; }
     public void setRecentTasks(List<RecentTaskDto> recentTasks) { this.recentTasks = recentTasks; }
+    public MyStatsDto getCompanyStats() { return companyStats; }
+    public void setCompanyStats(MyStatsDto companyStats) { this.companyStats = companyStats; }
+    public List<UserTopDto> getUserTop5() { return userTop5; }
+    public void setUserTop5(List<UserTopDto> userTop5) { this.userTop5 = userTop5; }
 
     // MyStatsDto（复用 DashboardStatsDto.MyStatsDto 或重新定义）
     public static class MyStatsDto {
@@ -209,5 +219,20 @@ public class HomeStatDto {
         public void setClaimUserName(String claimUserName) { this.claimUserName = claimUserName; }
         public String getProcInstId() { return procInstId; }
         public void setProcInstId(String procInstId) { this.procInstId = procInstId; }
+    }
+
+    // UserTopDto（个人完成数量排名）
+    public static class UserTopDto {
+        private Long userId;
+        private String userName;
+        private Long finished;
+
+        // Getters/Setters
+        public Long getUserId() { return userId; }
+        public void setUserId(Long userId) { this.userId = userId; }
+        public String getUserName() { return userName; }
+        public void setUserName(String userName) { this.userName = userName; }
+        public Long getFinished() { return finished; }
+        public void setFinished(Long finished) { this.finished = finished; }
     }
 }

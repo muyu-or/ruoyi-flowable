@@ -22,6 +22,15 @@ public class TaskWarning
     /** 流程实例ID */
     private String procInstId;
 
+    /** 流程名称（流程定义名） */
+    private String procName;
+
+    /** 任务名称（用户填写的流程名称） */
+    private String taskName;
+
+    /** 执行班组名称 */
+    private String teamName;
+
     /** 节点key(BPMN ID) */
     private String nodeKey;
 
@@ -33,6 +42,9 @@ public class TaskWarning
 
     /** 是否已读: 0=未读, 1=已读 */
     private Integer isRead;
+
+    /** 是否已处理: 0=未处理, 1=已处理（节点任务完成后自动标记） */
+    private Integer resolved;
 
     /** 创建时间 */
     private Date createTime;
@@ -77,6 +89,36 @@ public class TaskWarning
         return procInstId;
     }
 
+    public void setProcName(String procName)
+    {
+        this.procName = procName;
+    }
+
+    public String getProcName()
+    {
+        return procName;
+    }
+
+    public void setTaskName(String taskName)
+    {
+        this.taskName = taskName;
+    }
+
+    public String getTaskName()
+    {
+        return taskName;
+    }
+
+    public void setTeamName(String teamName)
+    {
+        this.teamName = teamName;
+    }
+
+    public String getTeamName()
+    {
+        return teamName;
+    }
+
     public void setNodeKey(String nodeKey)
     {
         this.nodeKey = nodeKey;
@@ -117,6 +159,16 @@ public class TaskWarning
         return isRead;
     }
 
+    public void setResolved(Integer resolved)
+    {
+        this.resolved = resolved;
+    }
+
+    public Integer getResolved()
+    {
+        return resolved;
+    }
+
     public void setCreateTime(Date createTime)
     {
         this.createTime = createTime;
@@ -135,10 +187,14 @@ public class TaskWarning
             ", userId=" + userId +
             ", warnType='" + warnType + '\'' +
             ", procInstId='" + procInstId + '\'' +
+            ", procName='" + procName + '\'' +
+            ", taskName='" + taskName + '\'' +
+            ", teamName='" + teamName + '\'' +
             ", nodeKey='" + nodeKey + '\'' +
             ", nodeName='" + nodeName + '\'' +
             ", endDate='" + endDate + '\'' +
             ", isRead=" + isRead +
+            ", resolved=" + resolved +
             ", createTime=" + createTime +
             '}';
     }

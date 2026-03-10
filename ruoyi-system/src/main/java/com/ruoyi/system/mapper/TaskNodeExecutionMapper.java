@@ -128,4 +128,19 @@ public interface TaskNodeExecutionMapper
      */
     int updateTimeoutFlag(@org.apache.ibatis.annotations.Param("id") Long id,
                           @org.apache.ibatis.annotations.Param("timeoutFlag") int timeoutFlag);
+
+    /**
+     * 统计全公司所有成员的任务数量（不区分用户，排除已取消）
+     *
+     * @return 状态→数量的 Map 列表，每行含 status 和 cnt 字段
+     */
+    List<java.util.Map<String, Object>> countAllStats();
+
+    /**
+     * 全公司个人完成数量 Top N（按 claim_user_id 分组，排除已取消）
+     *
+     * @param limit 最大返回条数
+     * @return 每行含 userId, userName, finished 字段
+     */
+    List<java.util.Map<String, Object>> countUserFinishedTop(@org.apache.ibatis.annotations.Param("limit") int limit);
 }

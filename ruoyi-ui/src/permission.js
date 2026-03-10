@@ -36,17 +36,21 @@ router.beforeEach((to, from, next) => {
             // 根据roles权限生成可访问的路由表
             router.addRoutes(accessRoutes) // 动态添加可访问路由表
             next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
-            // 登录后异步检查未读预警
-            getUnreadWarningCount().then(res => {
-              const count = res.data && res.data.count
-              if (count > 0) {
-                MessageBox.alert(
-                  `您有 <strong>${count}</strong> 条未处理的任务预警，请及时查看。`,
-                  '任务预警提醒',
-                  { type: 'warning', confirmButtonText: '知道了', dangerouslyUseHTMLString: true }
-                )
-              }
-            }).catch(() => {})
+            // 登录后异步检查未读预警（admin不弹窗，admin在BI大屏查看预警）
+            var roles = store.getters.roles || []
+            var isAdmin = roles.indexOf('admin') !== -1
+            if (!isAdmin) {
+              getUnreadWarningCount().then(res => {
+                const count = res.data && res.data.count
+                if (count > 0) {
+                  MessageBox.alert(
+                    `您有 <strong>${count}</strong> 条未处理的任务预警，请及时查看。`,
+                    '任务预警提醒',
+                    { type: 'warning', confirmButtonText: '知道了', dangerouslyUseHTMLString: true }
+                  )
+                }
+              }).catch(() => {})
+            }
           })
         }).catch(err => {
           store.dispatch('LogOut').then(() => {

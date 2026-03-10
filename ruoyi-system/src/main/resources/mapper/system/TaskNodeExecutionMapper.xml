@@ -229,4 +229,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SET timeout_flag = #{timeoutFlag}
         WHERE id = #{id}
     </update>
+
+    <!-- 全公司任务按状态统计（排除已取消） -->
+    <select id="countAllStats" resultType="java.util.HashMap">
+        SELECT status, COUNT(*) AS cnt
+        FROM task_node_execution
+        WHERE status != 'cancelled'
+        GROUP BY status
+    </select>
+
+    <!-- 全公司个人完成数量 Top N -->
+    <select id="countUserFinishedTop" resultType="java.util.HashMap">
+        SELECT tne.claim_user_id AS userId,
+               u.nick_name       AS userName,
+               COUNT(*)          AS finished
+        FROM task_node_execution tne
+        LEFT JOIN sys_user u ON u.user_id = tne.claim_user_id
+        WHERE tne.status = 'completed'
+          AND tne.claim_user_id IS NOT NULL
+        GROUP BY tne.claim_user_id, u.nick_name
+        ORDER BY finished DESC
+        LIMIT #{limit}
+    </select>
 </mapper>

@@ -9,20 +9,32 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="userId"      column="user_id"      />
         <result property="warnType"    column="warn_type"    />
         <result property="procInstId"  column="proc_inst_id" />
+        <result property="procName"    column="proc_name"    />
+        <result property="taskName"    column="task_name"    />
+        <result property="teamName"    column="team_name"    />
         <result property="nodeKey"     column="node_key"     />
         <result property="nodeName"    column="node_name"    />
         <result property="endDate"     column="end_date"     />
         <result property="isRead"      column="is_read"      />
+        <result property="resolved"    column="resolved"     />
         <result property="createTime"  column="create_time"  />
     </resultMap>
 
+    <sql id="allColumns">
+        id, user_id, warn_type, proc_inst_id, proc_name, task_name, team_name,
+        node_key, node_name, end_date, is_read, resolved, create_time
+    </sql>
+
     <insert id="insertTaskWarning" parameterType="com.ruoyi.flowable.domain.TaskWarning" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO task_warning (user_id, warn_type, proc_inst_id, node_key, node_name, end_date, is_read, create_time)
-        VALUES (#{userId}, #{warnType}, #{procInstId}, #{nodeKey}, #{nodeName}, #{endDate}, #{isRead}, #{createTime})
+        INSERT INTO task_warning (user_id, warn_type, proc_inst_id, proc_name, task_name, team_name,
+            node_key, node_name, end_date, is_read, resolved, create_time)
+        VALUES (#{userId}, #{warnType}, #{procInstId}, #{procName}, #{taskName}, #{teamName},
+            #{nodeKey}, #{nodeName}, #{endDate}, #{isRead}, #{resolved}, #{createTime})
     </insert>
 
+    <!-- 普通用户：分页查询自己的预警 -->
     <select id="selectByUserId" resultMap="TaskWarningResult">
-        SELECT id, user_id, warn_type, proc_inst_id, node_key, node_name, end_date, is_read, create_time
+        SELECT <include refid="allColumns" />
         FROM task_warning
         WHERE user_id = #{userId}
         ORDER BY create_time DESC
@@ -56,12 +68,52 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND warn_type = #{warnType}
     </select>
 
+    <!-- 任务完成时：同时标记已读 + 已处理 -->
     <update id="markReadByProcInstAndNodeKey">
         UPDATE task_warning
-        SET is_read = 1
+        SET is_read = 1, resolved = 1
         WHERE proc_inst_id = #{procInstId}
           AND node_key = #{nodeKey}
-          AND is_read = 0
+          AND (is_read = 0 OR resolved = 0)
+    </update>
+
+    <!-- Admin专用：按 proc_inst_id + node_key + warn_type 去重，每个节点只返回一条 -->
+    <select id="selectAllDistinct" resultMap="TaskWarningResult">
+        SELECT t1.*
+        FROM task_warning t1
+        INNER JOIN (
+            SELECT MIN(id) AS min_id
+            FROM task_warning
+            GROUP BY proc_inst_id, node_key, warn_type
+        ) t2 ON t1.id = t2.min_id
+        ORDER BY t1.resolved ASC, t1.create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- Admin专用：去重后的未处理数 -->
+    <select id="countAllUnresolved" resultType="int">
+        SELECT COUNT(DISTINCT CONCAT(proc_inst_id, ':', node_key, ':', warn_type))
+        FROM task_warning
+        WHERE resolved = 0
+    </select>
+
+    <!-- Admin专用：去重后的未读数（badge用） -->
+    <select id="countAllDistinctUnread" resultType="int">
+        SELECT COUNT(*)
+        FROM (
+            SELECT MIN(id) AS min_id
+            FROM task_warning
+            GROUP BY proc_inst_id, node_key, warn_type
+        ) t
+        INNER JOIN task_warning w ON w.id = t.min_id
+        WHERE w.is_read = 0
+    </select>
+
+    <!-- Admin专用：全部标为已读（所有用户的） -->
+    <update id="markAllRead">
+        UPDATE task_warning
+        SET is_read = 1
+        WHERE is_read = 0
     </update>
 
 </mapper>

@@ -60,11 +60,41 @@ public interface ITaskWarningService
     void scanWarnings();
 
     /**
-     * 将指定流程实例+节点的所有未读预警标为已读（任务完成时自动清除）
+     * 将指定流程实例+节点的所有预警标为已读+已处理（任务完成时自动调用）
      *
      * @param procInstId 流程实例ID
      * @param nodeKey    节点key
      * @return 影响行数
      */
     int markReadByProcInstAndNodeKey(String procInstId, String nodeKey);
+
+    /**
+     * Admin专用：按 procInstId+nodeKey+warnType 去重，分页查询预警（每个节点只返回一条）
+     *
+     * @param pageNum  页码（从1开始）
+     * @param pageSize 每页条数
+     * @return 预警消息列表
+     */
+    List<TaskWarning> selectAllDistinct(int pageNum, int pageSize);
+
+    /**
+     * Admin专用：去重后的未处理预警数
+     *
+     * @return 未处理数
+     */
+    int countAllUnresolved();
+
+    /**
+     * Admin专用：去重后的未读预警数（badge用）
+     *
+     * @return 未读数
+     */
+    int countAllDistinctUnread();
+
+    /**
+     * Admin专用：将全部预警标为已读
+     *
+     * @return 影响行数
+     */
+    int markAllRead();
 }

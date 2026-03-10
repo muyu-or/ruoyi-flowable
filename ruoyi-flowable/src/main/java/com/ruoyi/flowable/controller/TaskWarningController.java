@@ -31,31 +31,59 @@ public class TaskWarningController extends BaseController
     private ITaskWarningService taskWarningService;
 
     /**
-     * 当前用户预警列表（分页）
+     * 预警列表（分页）
+     * admin：去重查询（每个节点只返回一条）
+     * 普通用户：查询自己的预警
+     *
+     * 返回字段：
+     *   rows: 预警列表
+     *   unreadCount: 未读数（badge用，全部已读可清零）
+     *   unresolvedCount: 未处理数（仅admin，展示用）
      */
-    @ApiOperation(value = "当前用户预警列表")
+    @ApiOperation(value = "预警列表")
     @GetMapping("/list")
     public AjaxResult list(@RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
                            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize)
     {
         Long userId = SecurityUtils.getUserId();
-        List<TaskWarning> list = taskWarningService.selectByUserId(userId, pageNum, pageSize);
-        int unreadCount = taskWarningService.countUnreadByUserId(userId);
+        boolean isAdmin = SecurityUtils.isAdmin(userId);
         Map<String, Object> data = new HashMap<>();
-        data.put("rows", list);
-        data.put("unreadCount", unreadCount);
+        if (isAdmin)
+        {
+            List<TaskWarning> list = taskWarningService.selectAllDistinct(pageNum, pageSize);
+            data.put("rows", list);
+            data.put("unreadCount", taskWarningService.countAllDistinctUnread());
+            data.put("unresolvedCount", taskWarningService.countAllUnresolved());
+        }
+        else
+        {
+            List<TaskWarning> list = taskWarningService.selectByUserId(userId, pageNum, pageSize);
+            data.put("rows", list);
+            data.put("unreadCount", taskWarningService.countUnreadByUserId(userId));
+        }
         return AjaxResult.success(data);
     }
 
     /**
-     * 当前用户未读预警数
+     * 未读预警数（badge 数字）
+     * admin：去重后的未读数
+     * 普通用户：未读数
      */
-    @ApiOperation(value = "当前用户未读预警数")
+    @ApiOperation(value = "未读预警数")
     @GetMapping("/unread")
     public AjaxResult unreadCount()
     {
         Long userId = SecurityUtils.getUserId();
-        int count = taskWarningService.countUnreadByUserId(userId);
+        boolean isAdmin = SecurityUtils.isAdmin(userId);
+        int count;
+        if (isAdmin)
+        {
+            count = taskWarningService.countAllDistinctUnread();
+        }
+        else
+        {
+            count = taskWarningService.countUnreadByUserId(userId);
+        }
         Map<String, Object> data = new HashMap<>();
         data.put("count", count);
         return AjaxResult.success(data);
@@ -63,13 +91,23 @@ public class TaskWarningController extends BaseController
 
     /**
      * 全部标为已读
+     * admin：标记全部预警已读
+     * 普通用户：只标记自己的
      */
     @ApiOperation(value = "全部标为已读")
     @PutMapping("/readAll")
     public AjaxResult readAll()
     {
         Long userId = SecurityUtils.getUserId();
-        taskWarningService.markAllReadByUserId(userId);
+        boolean isAdmin = SecurityUtils.isAdmin(userId);
+        if (isAdmin)
+        {
+            taskWarningService.markAllRead();
+        }
+        else
+        {
+            taskWarningService.markAllReadByUserId(userId);
+        }
         return AjaxResult.success();
     }
 

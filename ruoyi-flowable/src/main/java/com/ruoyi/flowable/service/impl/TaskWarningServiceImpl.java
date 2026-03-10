@@ -5,6 +5,7 @@ import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.flowable.domain.TaskWarning;
 import com.ruoyi.flowable.mapper.TaskWarningMapper;
 import com.ruoyi.flowable.service.ITaskWarningService;
+import com.ruoyi.manage.domain.ProductionTeam;
 import com.ruoyi.manage.mapper.ProductionTeamMapper;
 import com.ruoyi.system.domain.TaskNodeExecution;
 import com.ruoyi.system.mapper.TaskNodeExecutionMapper;
@@ -83,6 +84,31 @@ public class TaskWarningServiceImpl implements ITaskWarningService
         return taskWarningMapper.markReadByProcInstAndNodeKey(procInstId, nodeKey);
     }
 
+    @Override
+    public List<TaskWarning> selectAllDistinct(int pageNum, int pageSize)
+    {
+        int offset = (pageNum - 1) * pageSize;
+        return taskWarningMapper.selectAllDistinct(offset, pageSize);
+    }
+
+    @Override
+    public int countAllUnresolved()
+    {
+        return taskWarningMapper.countAllUnresolved();
+    }
+
+    @Override
+    public int countAllDistinctUnread()
+    {
+        return taskWarningMapper.countAllDistinctUnread();
+    }
+
+    @Override
+    public int markAllRead()
+    {
+        return taskWarningMapper.markAllRead();
+    }
+
     /**
      * 扫描即将到期和已超期的节点，推送预警消息（由 Quartz 定时任务调用）
      */
@@ -111,6 +137,12 @@ public class TaskWarningServiceImpl implements ITaskWarningService
                     continue;
                 }
 
+                // 从流程变量获取流程名称和任务名称
+                Object procNameObj = vars.get("procName");
+                String procName = procNameObj != null ? procNameObj.toString() : null;
+                Object taskNameObj = vars.get("taskName");
+                String taskName = taskNameObj != null ? taskNameObj.toString() : null;
+
                 // 查询该流程的所有活跃任务
                 List<Task> activeTasks = taskService.createTaskQuery()
                     .processInstanceId(procInstId)
@@ -132,12 +164,12 @@ public class TaskWarningServiceImpl implements ITaskWarningService
                     // 情况1：已过期（endDate < today） → 发 overdue + 打 timeout_flag
                     if (endDate.compareTo(today) < 0)
                     {
-                        handleOverdue(taskId, procInstId, nodeKey, nodeName, endDate);
+                        handleOverdue(taskId, procInstId, procName, taskName, nodeKey, nodeName, endDate);
                     }
                     // 情况2：今天到期或明天到期 → 发 deadline_soon
                     else if (endDate.equals(today) || endDate.equals(tomorrow))
                     {
-                        sendWarningsToTeamMembers(taskId, procInstId, nodeKey, nodeName, endDate, "deadline_soon");
+                        sendWarningsToTeamMembers(taskId, procInstId, procName, taskName, nodeKey, nodeName, endDate, "deadline_soon");
                     }
                 }
             }
@@ -211,8 +243,9 @@ public class TaskWarningServiceImpl implements ITaskWarningService
     /**
      * 向任务对应班组的所有成员推送预警消息
      */
-    private void sendWarningsToTeamMembers(String taskId, String procInstId, String nodeKey,
-                                           String nodeName, String endDate, String warnType)
+    private void sendWarningsToTeamMembers(String taskId, String procInstId, String procName,
+                                           String taskName, String nodeKey, String nodeName,
+                                           String endDate, String warnType)
     {
         TaskNodeExecution tne = taskNodeExecutionMapper.selectByTaskId(taskId);
         if (tne == null || tne.getAssignedTeamId() == null)
@@ -222,6 +255,15 @@ public class TaskWarningServiceImpl implements ITaskWarningService
         }
 
         Long teamId = tne.getAssignedTeamId();
+
+        // 查询班组名称
+        String teamName = null;
+        ProductionTeam team = productionTeamMapper.selectProductionTeamById(teamId);
+        if (team != null)
+        {
+            teamName = team.getTeamName();
+        }
+
         List<SysUser> members = productionTeamMapper.selectUserListByTeamId(teamId);
         if (members == null || members.isEmpty())
         {
@@ -244,10 +286,14 @@ public class TaskWarningServiceImpl implements ITaskWarningService
             warning.setUserId(userId);
             warning.setWarnType(warnType);
             warning.setProcInstId(procInstId);
+            warning.setProcName(procName);
+            warning.setTaskName(taskName);
+            warning.setTeamName(teamName);
             warning.setNodeKey(nodeKey);
             warning.setNodeName(nodeName);
             warning.setEndDate(endDate);
             warning.setIsRead(0);
+            warning.setResolved(0);
             warning.setCreateTime(now);
             taskWarningMapper.insertTaskWarning(warning);
             log.info("已推送 {} 预警给用户 {}，节点: {}({})", warnType, userId, nodeName, nodeKey);
@@ -257,8 +303,8 @@ public class TaskWarningServiceImpl implements ITaskWarningService
     /**
      * 处理已超时：打 timeout_flag + 推送 overdue 预警
      */
-    private void handleOverdue(String taskId, String procInstId, String nodeKey,
-                               String nodeName, String endDate)
+    private void handleOverdue(String taskId, String procInstId, String procName,
+                               String taskName, String nodeKey, String nodeName, String endDate)
     {
         TaskNodeExecution tne = taskNodeExecutionMapper.selectByTaskId(taskId);
         if (tne == null)
@@ -276,6 +322,6 @@ public class TaskWarningServiceImpl implements ITaskWarningService
         }
 
         // 推送 overdue 预警
-        sendWarningsToTeamMembers(taskId, procInstId, nodeKey, nodeName, endDate, "overdue");
+        sendWarningsToTeamMembers(taskId, procInstId, procName, taskName, nodeKey, nodeName, endDate, "overdue");
     }
 }

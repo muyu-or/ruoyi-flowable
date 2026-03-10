@@ -79,6 +79,19 @@ public class HomeStatServiceImpl implements IHomeStatService {
                 .map(teamId -> buildTeamProgress(teamId))
                 .collect(Collectors.toList());
             result.setTeamProgress(teamProgressList);
+
+            // 3.2 全员任务汇总统计（admin 专属，展示给 BI 大屏指标卡片）
+            List<Map<String, Object>> allRows = taskNodeExecutionMapper.countAllStats();
+            result.setCompanyStats(buildMyStats(allRows));
+
+            // 3.3 admin 也需要最近完成任务（全公司范围，供 BI 大屏展示）
+            List<Map<String, Object>> adminRecentRows = taskNodeExecutionMapper
+                .selectRecentCompleted(null, null, 20);
+            result.setRecentTasks(buildRecentTasks(adminRecentRows));
+
+            // 3.4 个人完成数量 Top5（admin 专属，供 BI 大屏展示）
+            List<Map<String, Object>> topRows = taskNodeExecutionMapper.countUserFinishedTop(5);
+            result.setUserTop5(buildUserTop5(topRows));
         }
 
         if (isLeader || !isAdmin) { // leader + 成员都能看到班组效率
@@ -484,6 +497,21 @@ public class HomeStatServiceImpl implements IHomeStatService {
         }
         dto.setTotal(dto.getPending() + dto.getRunning() + dto.getFinished() + dto.getRejected());
         return dto;
+    }
+
+    /**
+     * 构建个人完成数量 Top 列表
+     */
+    private List<HomeStatDto.UserTopDto> buildUserTop5(List<Map<String, Object>> rows) {
+        List<HomeStatDto.UserTopDto> list = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            HomeStatDto.UserTopDto dto = new HomeStatDto.UserTopDto();
+            dto.setUserId(toLong(row.get("userId")));
+            dto.setUserName((String) row.get("userName"));
+            dto.setFinished(toLong(row.get("finished")));
+            list.add(dto);
+        }
+        return list;
     }
 
     /**
