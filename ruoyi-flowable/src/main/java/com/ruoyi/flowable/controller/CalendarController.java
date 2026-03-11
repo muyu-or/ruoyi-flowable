@@ -63,31 +63,45 @@ public class CalendarController extends BaseController {
     @PreAuthorize("@ss.hasPermi('flowable:calendar:view')")
     public AjaxResult getEvents(@RequestParam int year, @RequestParam int month) {
         Long userId = SecurityUtils.getUserId();
-        boolean isAdmin = SecurityUtils.isAdmin(userId);
+        // 超级管理员 或 拥有"查看全部数据"权限 → 看全公司
+        boolean viewAll = SecurityUtils.isAdmin(userId)
+                || SecurityUtils.hasPermi("flowable:stat:all");
 
         // 月份首末日
         LocalDate first = LocalDate.of(year, month, 1);
         String monthStart = first.toString();
         String monthEnd = first.withDayOfMonth(first.lengthOfMonth()).toString();
 
-        // 角色过滤：Admin 看全部，组长按班组看，成员只看自己
-        List<Long> teamIds = null;
-        boolean filterByUser = !isAdmin;
-        if (!isAdmin) {
-            // 查是否是班组长：组长按班组过滤（看班组所有成员任务）
+        // 角色过滤
+        List<Long> leaderTeamIds = null;
+        List<Long> memberTeamIds = null;
+        boolean filterByUser = !viewAll;
+        if (!viewAll) {
+            // 1) 查用户作为组长的班组
             ProductionTeam query = new ProductionTeam();
             query.setLeaderId(userId);
             List<ProductionTeam> leaderTeams = productionTeamMapper.selectProductionTeamList(query);
             if (leaderTeams != null && !leaderTeams.isEmpty()) {
-                teamIds = leaderTeams.stream()
+                leaderTeamIds = leaderTeams.stream()
                         .map(ProductionTeam::getId)
                         .collect(Collectors.toList());
             }
-            // 不是组长 → teamIds 保持 null → SQL 走 userId 过滤（只看自己的任务）
+            // 2) 查用户作为成员的班组（排除已是组长的班组）
+            List<Long> allMemberTeamIds = productionTeamMapper.selectTeamIdsByUserId(userId);
+            if (allMemberTeamIds != null && !allMemberTeamIds.isEmpty()) {
+                if (leaderTeamIds != null && !leaderTeamIds.isEmpty()) {
+                    List<Long> finalLeaderTeamIds = leaderTeamIds;
+                    memberTeamIds = allMemberTeamIds.stream()
+                            .filter(id -> !finalLeaderTeamIds.contains(id))
+                            .collect(Collectors.toList());
+                } else {
+                    memberTeamIds = allMemberTeamIds;
+                }
+            }
         }
 
         List<Map<String, Object>> rows = taskNodeExecutionMapper
-                .selectCalendarEvents(monthStart, monthEnd, userId, teamIds, filterByUser);
+                .selectCalendarEvents(monthStart, monthEnd, userId, leaderTeamIds, memberTeamIds, filterByUser);
 
         // 组装 DTO
         List<CalendarEventDto> events = new ArrayList<>();

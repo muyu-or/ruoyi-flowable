@@ -35,11 +35,13 @@ public class ReportRecordServiceImpl implements IReportRecordService {
     @Override
     public List<ReportRecord> selectReportRecordList(ReportRecord record) {
         String username = SecurityUtils.getUsername();
-        boolean isAdmin = SecurityUtils.hasRole("admin");
-        boolean isLeader = SecurityUtils.hasRole("team_leader");
+        Long userId = SecurityUtils.getUserId();
+        boolean viewAll = SecurityUtils.isAdmin(userId)
+                || SecurityUtils.hasPermi("flowable:stat:all");
+        boolean isLeader = !viewAll && SecurityUtils.hasRole("team_leader");
 
-        if (isAdmin) {
-            // admin：不加过滤，查全部
+        if (viewAll) {
+            // 管理角色（admin / zongguan 等拥有 flowable:stat:all）：查全部
             return reportRecordMapper.selectReportRecordList(record);
         } else if (isLeader) {
             // 班组长：查本人所在班组的所有成员用户名
@@ -50,8 +52,8 @@ public class ReportRecordServiceImpl implements IReportRecordService {
             }
             return reportRecordMapper.selectReportRecordListByUsers(record, visibleUsers);
         } else {
-            // 普通用户：只看自己的
-            record.setCreateBy(username);
+            // 普通用户：按 uploader = 自己 过滤（只看自己上传的报告）
+            record.setUploader(username);
             return reportRecordMapper.selectReportRecordList(record);
         }
     }
@@ -79,12 +81,14 @@ public class ReportRecordServiceImpl implements IReportRecordService {
     @Override
     public int deleteReportRecordByIds(Long[] ids) {
         String username = SecurityUtils.getUsername();
-        boolean isAdmin = SecurityUtils.hasRole("admin");
-        boolean isLeader = SecurityUtils.hasRole("team_leader");
+        Long userId = SecurityUtils.getUserId();
+        boolean viewAll = SecurityUtils.isAdmin(userId)
+                || SecurityUtils.hasPermi("flowable:stat:all");
+        boolean isLeader = !viewAll && SecurityUtils.hasRole("team_leader");
 
         for (Long id : ids) {
-            if (isAdmin) {
-                continue; // admin 无限制
+            if (viewAll) {
+                continue; // 管理角色无限制
             } else if (isLeader) {
                 // 班组长：可删本组成员（含自己）的记录
                 List<String> visibleUsers = productionTeamMapper.selectMemberUsernamesByLeaderUsername(username);

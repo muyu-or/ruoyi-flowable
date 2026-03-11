@@ -164,7 +164,8 @@ export default {
         reportName: reportName,
         materialName: this.materialName || '',
         materialQuantity: this.materialQuantity,
-        nodeName: this.nodeName || ''
+        nodeName: this.nodeName || '',
+        uploader: this.$store.getters.name || ''
       }
       const newList = this.reportList.slice()
       newList.push(newReport)

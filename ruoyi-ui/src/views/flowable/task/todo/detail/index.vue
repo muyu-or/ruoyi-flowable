@@ -423,12 +423,14 @@ export default {
               const nsKey = this.taskDefinitionKey + '__formData'
               const nsData = res.data[nsKey] || {}
               this.$refs.taskFormRef.setFormData(nsData)
-              // 传递出库节点的物料信息给中间节点表单（预处理/真空/烘烤/检测）
+              // 传递物料信息给中间节点表单（预处理/真空/烘烤/检测）
+              // 优先从出库节点取，其次从入库节点取
               if (this.$refs.taskFormRef.setExtraContext) {
                 const stockOutData = res.data['Activity_01xy3yd__formData'] || {}
+                const stockInData = res.data['Activity_1uqk506__formData'] || {}
                 this.$refs.taskFormRef.setExtraContext({
-                  materialName: stockOutData.materialName || '',
-                  materialQuantity: stockOutData.outQuantity || null
+                  materialName: stockOutData.materialName || stockInData.materialName || '',
+                  materialQuantity: stockOutData.outQuantity || stockInData.quantity || null
                 })
               }
             }

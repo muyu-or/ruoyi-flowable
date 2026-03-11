@@ -291,15 +291,50 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 NULLIF(tne.plan_end_date, ''),
                 DATE_FORMAT(tne.start_time, '%Y-%m-%d')
               ) &lt;= #{monthEnd}
-        <choose>
-            <when test="filterByUser == true and teamIds != null and teamIds.size() > 0">
-                AND tne.assigned_team_id IN
-                <foreach item="tid" collection="teamIds" open="(" separator="," close=")">#{tid}</foreach>
-            </when>
-            <when test="filterByUser == true and (teamIds == null or teamIds.size() == 0)">
-                AND (tne.claim_user_id = #{userId} OR tne.assigned_user_id = #{userId})
-            </when>
-        </choose>
+        <if test="filterByUser == true">
+            AND (
+                <!-- 组长班组：看全部 -->
+                <if test="leaderTeamIds != null and leaderTeamIds.size() > 0">
+                    tne.assigned_team_id IN
+                    <foreach item="tid" collection="leaderTeamIds" open="(" separator="," close=")">#{tid}</foreach>
+                </if>
+                <!-- 成员班组：只看自己 -->
+                <if test="memberTeamIds != null and memberTeamIds.size() > 0">
+                    <if test="leaderTeamIds != null and leaderTeamIds.size() > 0"> OR </if>
+                    (tne.assigned_team_id IN
+                    <foreach item="tid" collection="memberTeamIds" open="(" separator="," close=")">#{tid}</foreach>
+                    AND (tne.claim_user_id = #{userId} OR tne.assigned_user_id = #{userId}))
+                </if>
+                <!-- 既不是组长也不是成员：只看自己 -->
+                <if test="(leaderTeamIds == null or leaderTeamIds.size() == 0) and (memberTeamIds == null or memberTeamIds.size() == 0)">
+                    (tne.claim_user_id = #{userId} OR tne.assigned_user_id = #{userId})
+                </if>
+            )
+        </if>
         ORDER BY displayDate ASC, tne.status ASC
+    </select>
+
+    <!-- 预警扫描：查当前正在处理（已被 Flowable 激活）且截止日期即将到期的节点 -->
+    <select id="selectPendingNodesForWarning" resultType="java.util.HashMap">
+        SELECT
+            tne.id,
+            tne.node_key       AS nodeKey,
+            tne.node_name      AS nodeName,
+            tne.status,
+            tne.assigned_team_id AS assignedTeamId,
+            tne.plan_end_date  AS planEndDate,
+            tne.timeout_flag   AS timeoutFlag,
+            ter.proc_inst_id   AS procInstId,
+            hv.TEXT_           AS taskName
+        FROM task_node_execution tne
+        JOIN task_execution_record ter ON ter.id = tne.exec_record_id
+        LEFT JOIN ACT_HI_VARINST hv ON hv.PROC_INST_ID_ = ter.proc_inst_id AND hv.NAME_ = 'taskName'
+        WHERE tne.status NOT IN ('completed', 'rejected', 'cancelled')
+          AND ter.status = 'running'
+          AND tne.task_id IS NOT NULL
+          AND tne.plan_end_date IS NOT NULL
+          AND tne.plan_end_date != ''
+          AND tne.plan_end_date &lt;= #{deadlineDate}
+        ORDER BY tne.plan_end_date ASC
     </select>
 </mapper>

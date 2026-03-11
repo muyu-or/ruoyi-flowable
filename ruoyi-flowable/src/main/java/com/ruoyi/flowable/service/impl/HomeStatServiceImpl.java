@@ -59,8 +59,10 @@ public class HomeStatServiceImpl implements IHomeStatService {
         result.setMyStats(buildMyStats(myRows));
 
         // 2. 根据角色权限返回不同数据
-        boolean isAdmin = SecurityUtils.isAdmin(userId);
-        boolean isLeader = !isAdmin && isUserLeader(userId); // 普通用户是否为班长
+        //    超级管理员(userId=1) 或 拥有"查看全部数据"权限 → 看全公司
+        boolean isAdmin = SecurityUtils.isAdmin(userId)
+                || SecurityUtils.hasPermi("flowable:stat:all");
+        boolean isLeader = !isAdmin && isUserLeader(userId);
 
         if (isAdmin) {
             // admin 能看到入库/出库趋势和库存总览

@@ -60,6 +60,7 @@ public class ReportLinkageServiceImpl implements IReportLinkageService {
                 record.setReportName(toStr(rpt.get("reportName")));
                 record.setMaterialName(toStr(rpt.get("materialName")));
                 record.setNodeName(toStr(rpt.get("nodeName")));
+                record.setUploader(toStr(rpt.get("uploader")));
 
                 Object qty = rpt.get("materialQuantity");
                 if (qty != null) {

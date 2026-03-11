@@ -43,6 +43,9 @@ public class TaskWarning
     /** 是否已读: 0=未读, 1=已读 */
     private Integer isRead;
 
+    /** 管理员已读: 0=未读, 1=已读（独立于普通用户的 isRead） */
+    private Integer adminRead;
+
     /** 是否已处理: 0=未处理, 1=已处理（节点任务完成后自动标记） */
     private Integer resolved;
 
@@ -167,6 +170,16 @@ public class TaskWarning
     public Integer getResolved()
     {
         return resolved;
+    }
+
+    public void setAdminRead(Integer adminRead)
+    {
+        this.adminRead = adminRead;
+    }
+
+    public Integer getAdminRead()
+    {
+        return adminRead;
     }
 
     public void setCreateTime(Date createTime)

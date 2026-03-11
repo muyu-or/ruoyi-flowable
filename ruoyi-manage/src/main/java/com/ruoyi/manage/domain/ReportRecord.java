@@ -44,4 +44,8 @@ public class ReportRecord extends BaseEntity {
     /** 上传所在节点名称 */
     @Excel(name = "节点名称")
     private String nodeName;
+
+    /** 实际上传人用户名（区别于 createBy 审批人） */
+    @Excel(name = "上传人")
+    private String uploader;
 }

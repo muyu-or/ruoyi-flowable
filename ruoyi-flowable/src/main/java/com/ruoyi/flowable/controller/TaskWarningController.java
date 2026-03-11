@@ -31,6 +31,14 @@ public class TaskWarningController extends BaseController
     private ITaskWarningService taskWarningService;
 
     /**
+     * 判断用户是否为管理角色（超级管理员 或 拥有"查看全部数据"权限）
+     */
+    private boolean isManagerRole(Long userId) {
+        return SecurityUtils.isAdmin(userId)
+                || SecurityUtils.hasPermi("flowable:stat:all");
+    }
+
+    /**
      * 预警列表（分页）
      * admin：去重查询（每个节点只返回一条）
      * 普通用户：查询自己的预警
@@ -46,9 +54,9 @@ public class TaskWarningController extends BaseController
                            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize)
     {
         Long userId = SecurityUtils.getUserId();
-        boolean isAdmin = SecurityUtils.isAdmin(userId);
+        boolean isManager = isManagerRole(userId);
         Map<String, Object> data = new HashMap<>();
-        if (isAdmin)
+        if (isManager)
         {
             List<TaskWarning> list = taskWarningService.selectAllDistinct(pageNum, pageSize);
             data.put("rows", list);
@@ -66,7 +74,7 @@ public class TaskWarningController extends BaseController
 
     /**
      * 未读预警数（badge 数字）
-     * admin：去重后的未读数
+     * 管理角色：去重后的未读数
      * 普通用户：未读数
      */
     @ApiOperation(value = "未读预警数")
@@ -74,9 +82,9 @@ public class TaskWarningController extends BaseController
     public AjaxResult unreadCount()
     {
         Long userId = SecurityUtils.getUserId();
-        boolean isAdmin = SecurityUtils.isAdmin(userId);
+        boolean isManager = isManagerRole(userId);
         int count;
-        if (isAdmin)
+        if (isManager)
         {
             count = taskWarningService.countAllDistinctUnread();
         }
@@ -91,7 +99,7 @@ public class TaskWarningController extends BaseController
 
     /**
      * 全部标为已读
-     * admin：标记全部预警已读
+     * 管理角色：标记全部预警已读
      * 普通用户：只标记自己的
      */
     @ApiOperation(value = "全部标为已读")
@@ -99,13 +107,15 @@ public class TaskWarningController extends BaseController
     public AjaxResult readAll()
     {
         Long userId = SecurityUtils.getUserId();
-        boolean isAdmin = SecurityUtils.isAdmin(userId);
-        if (isAdmin)
+        boolean isManager = isManagerRole(userId);
+        if (isManager)
         {
-            taskWarningService.markAllRead();
+            // 管理角色：只标记 admin_read，不影响普通用户的 is_read
+            taskWarningService.markAllAdminRead();
         }
         else
         {
+            // 普通用户：只标记自己的预警为已读
             taskWarningService.markAllReadByUserId(userId);
         }
         return AjaxResult.success();
@@ -131,5 +141,20 @@ public class TaskWarningController extends BaseController
     {
         taskWarningService.scanWarnings();
         return AjaxResult.success("扫描完成");
+    }
+
+    /**
+     * 清空已处理的预警
+     * 管理角色：删除全部已处理预警
+     * 普通用户：只删除自己的已处理预警
+     */
+    @ApiOperation(value = "清空已处理预警")
+    @DeleteMapping("/clearResolved")
+    public AjaxResult clearResolved()
+    {
+        Long userId = SecurityUtils.getUserId();
+        boolean isManager = isManagerRole(userId);
+        int count = taskWarningService.clearResolved(userId, isManager);
+        return AjaxResult.success("已删除 " + count + " 条已处理预警");
     }
 }

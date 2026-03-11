@@ -199,4 +199,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and ptu.position != ''
         limit 1
     </select>
+
+    <!-- 根据用户ID查询同班组所有成员用户名（包含组长和自己） -->
+    <select id="selectTeammateUsernamesByUserId" resultType="String">
+        SELECT DISTINCT su.user_name
+        FROM production_team_user ptu
+        INNER JOIN production_team pt ON pt.id = ptu.team_id AND pt.team_status = '1'
+        INNER JOIN production_team_user ptu2 ON ptu2.team_id = pt.id
+        INNER JOIN sys_user su ON su.user_id = ptu2.user_id
+        WHERE ptu.user_id = #{userId}
+    </select>
 </mapper>

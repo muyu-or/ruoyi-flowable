@@ -16,13 +16,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="nodeName"    column="node_name"    />
         <result property="endDate"     column="end_date"     />
         <result property="isRead"      column="is_read"      />
+        <result property="adminRead"   column="admin_read"   />
         <result property="resolved"    column="resolved"     />
         <result property="createTime"  column="create_time"  />
     </resultMap>
 
     <sql id="allColumns">
         id, user_id, warn_type, proc_inst_id, proc_name, task_name, team_name,
-        node_key, node_name, end_date, is_read, resolved, create_time
+        node_key, node_name, end_date, is_read, admin_read, resolved, create_time
     </sql>
 
     <insert id="insertTaskWarning" parameterType="com.ruoyi.flowable.domain.TaskWarning" useGeneratedKeys="true" keyProperty="id">
@@ -44,7 +45,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="countUnreadByUserId" resultType="int">
         SELECT COUNT(*)
         FROM task_warning
-        WHERE user_id = #{userId} AND is_read = 0
+        WHERE user_id = #{userId} AND is_read = 0 AND resolved = 0
     </select>
 
     <update id="markAllReadByUserId">
@@ -78,8 +79,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <!-- Admin专用：按 proc_inst_id + node_key + warn_type 去重，每个节点只返回一条 -->
+    <!-- admin_read AS is_read：前端用 isRead 字段判断，管理员使用独立的 admin_read -->
     <select id="selectAllDistinct" resultMap="TaskWarningResult">
-        SELECT t1.*
+        SELECT t1.id, t1.user_id, t1.warn_type, t1.proc_inst_id, t1.proc_name,
+               t1.task_name, t1.team_name, t1.node_key, t1.node_name, t1.end_date,
+               t1.admin_read AS is_read, t1.admin_read, t1.resolved, t1.create_time
         FROM task_warning t1
         INNER JOIN (
             SELECT MIN(id) AS min_id
@@ -97,23 +101,59 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE resolved = 0
     </select>
 
-    <!-- Admin专用：去重后的未读数（badge用） -->
+    <!-- Admin专用：去重后的未读数（badge用，只算未处理的，按 admin_read 判断） -->
     <select id="countAllDistinctUnread" resultType="int">
         SELECT COUNT(*)
         FROM (
             SELECT MIN(id) AS min_id
             FROM task_warning
+            WHERE resolved = 0
             GROUP BY proc_inst_id, node_key, warn_type
         ) t
         INNER JOIN task_warning w ON w.id = t.min_id
-        WHERE w.is_read = 0
+        WHERE w.admin_read = 0
     </select>
+
+    <!-- Admin专用：全部标为管理员已读（不影响普通用户的 is_read） -->
+    <update id="markAllAdminRead">
+        UPDATE task_warning
+        SET admin_read = 1
+        WHERE admin_read = 0
+    </update>
 
     <!-- Admin专用：全部标为已读（所有用户的） -->
     <update id="markAllRead">
         UPDATE task_warning
         SET is_read = 1
         WHERE is_read = 0
+    </update>
+
+    <!-- 批量删除已处理的预警 -->
+    <delete id="deleteResolvedByIds">
+        DELETE FROM task_warning
+        WHERE id IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">#{id}</foreach>
+        AND resolved = 1
+    </delete>
+
+    <!-- 删除全部已处理的预警 -->
+    <delete id="deleteAllResolved">
+        DELETE FROM task_warning WHERE resolved = 1
+    </delete>
+
+    <!-- 普通用户：删除自己的已处理预警 -->
+    <delete id="deleteResolvedByUserId">
+        DELETE FROM task_warning WHERE user_id = #{userId} AND resolved = 1
+    </delete>
+
+    <!-- 将指定节点的 deadline_soon 预警升级为 overdue -->
+    <update id="upgradeToOverdue">
+        UPDATE task_warning
+        SET warn_type = 'overdue'
+        WHERE proc_inst_id = #{procInstId}
+          AND node_key = #{nodeKey}
+          AND warn_type = 'deadline_soon'
+          AND resolved = 0
     </update>
 
 </mapper>

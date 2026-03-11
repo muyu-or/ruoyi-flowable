@@ -40,3 +40,11 @@ export function triggerScan() {
     method: 'post'
   })
 }
+
+// 清空已处理的预警
+export function clearResolved() {
+  return request({
+    url: '/flowable/warning/clearResolved',
+    method: 'delete'
+  })
+}

@@ -35,8 +35,10 @@ public class FlowStatServiceImpl implements IFlowStatService {
         List<Map<String, Object>> myRows = taskNodeExecutionMapper.countMyStatsByStatus(userId);
         result.setMyStats(buildMyStats(myRows));
 
-        // 2. 超级管理员：查看全部启用班组的统计汇总
-        if (SecurityUtils.isAdmin(userId)) {
+        // 2. 超级管理员 或 拥有"查看全部数据"权限：查看全部启用班组的统计汇总
+        boolean isManager = SecurityUtils.isAdmin(userId)
+                || SecurityUtils.hasPermi("flowable:stat:all");
+        if (isManager) {
             ProductionTeam allQuery = new ProductionTeam();
             allQuery.setTeamStatus("1");
             List<ProductionTeam> allTeams = productionTeamMapper.selectProductionTeamList(allQuery);

@@ -33,7 +33,8 @@
       <el-table-column label="物料名称" align="center" prop="materialName" width="140" show-overflow-tooltip />
       <el-table-column label="物料数量" align="center" prop="materialQuantity" width="100" />
       <el-table-column label="节点名称" align="center" prop="nodeName" width="120" />
-      <el-table-column label="上传人" align="center" prop="createBy" width="100" />
+      <el-table-column label="上传人" align="center" prop="uploader" width="100" />
+      <el-table-column label="审批人" align="center" prop="createBy" width="100" />
       <el-table-column label="上传时间" align="center" prop="createTime" width="160" />
       <el-table-column label="操作" align="center" width="180">
         <template slot-scope="scope">

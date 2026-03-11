@@ -97,4 +97,28 @@ public interface ITaskWarningService
      * @return 影响行数
      */
     int markAllRead();
+
+    /**
+     * Admin专用：将全部预警标为管理员已读（不影响普通用户的 is_read）
+     *
+     * @return 影响行数
+     */
+    int markAllAdminRead();
+
+    /**
+     * 批量删除已处理的预警
+     *
+     * @param ids 预警ID列表
+     * @return 影响行数
+     */
+    int deleteResolvedByIds(List<Long> ids);
+
+    /**
+     * 清空已处理的预警（管理角色删全部，普通用户删自己的）
+     *
+     * @param userId 当前用户ID
+     * @param isManager 是否管理角色
+     * @return 影响行数
+     */
+    int clearResolved(Long userId, boolean isManager);
 }

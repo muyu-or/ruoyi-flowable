@@ -1,19 +1,13 @@
 package com.ruoyi.flowable.service.impl;
 
-import com.alibaba.fastjson2.JSON;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.flowable.domain.TaskWarning;
 import com.ruoyi.flowable.mapper.TaskWarningMapper;
 import com.ruoyi.flowable.service.ITaskWarningService;
 import com.ruoyi.manage.domain.ProductionTeam;
 import com.ruoyi.manage.mapper.ProductionTeamMapper;
-import com.ruoyi.system.domain.TaskNodeExecution;
 import com.ruoyi.system.mapper.TaskNodeExecutionMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.TaskService;
-import org.flowable.engine.runtime.ProcessInstance;
-import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -40,12 +34,6 @@ public class TaskWarningServiceImpl implements ITaskWarningService
 
     @Resource
     private ProductionTeamMapper productionTeamMapper;
-
-    @Resource
-    private RuntimeService runtimeService;
-
-    @Resource
-    private TaskService taskService;
 
     @Override
     public int insertTaskWarning(TaskWarning warning)
@@ -109,8 +97,34 @@ public class TaskWarningServiceImpl implements ITaskWarningService
         return taskWarningMapper.markAllRead();
     }
 
+    @Override
+    public int markAllAdminRead()
+    {
+        return taskWarningMapper.markAllAdminRead();
+    }
+
+    @Override
+    public int deleteResolvedByIds(List<Long> ids)
+    {
+        return taskWarningMapper.deleteResolvedByIds(ids);
+    }
+
+    @Override
+    public int clearResolved(Long userId, boolean isManager)
+    {
+        if (isManager)
+        {
+            return taskWarningMapper.deleteAllResolved();
+        }
+        return taskWarningMapper.deleteResolvedByUserId(userId);
+    }
+
     /**
      * 扫描即将到期和已超期的节点，推送预警消息（由 Quartz 定时任务调用）
+     * <p>
+     * 扫描范围：所有运行中流程的全部未完成节点（不仅是当前活跃节点），
+     * 只要节点的 plan_end_date 已到期或即将到期就预警。
+     * </p>
      */
     @Override
     public void scanWarnings()
@@ -121,61 +135,64 @@ public class TaskWarningServiceImpl implements ITaskWarningService
         log.info("========== 开始扫描任务超时预警 ==========");
         log.info("today={}, tomorrow={}", today, tomorrow);
 
-        // 查询所有运行中的流程实例
-        List<ProcessInstance> processInstances = runtimeService.createProcessInstanceQuery().active().list();
-        log.info("运行中的流程实例数: {}", processInstances.size());
+        // 查询所有未完成且 plan_end_date <= tomorrow 的节点（包含尚未轮到执行的节点）
+        List<Map<String, Object>> nodes = taskNodeExecutionMapper.selectPendingNodesForWarning(tomorrow);
+        log.info("需预警检查的节点数: {}", nodes.size());
 
-        for (ProcessInstance pi : processInstances)
+        Date now = new Date();
+        for (Map<String, Object> node : nodes)
         {
-            String procInstId = pi.getProcessInstanceId();
             try
             {
-                Map<String, Object> vars = runtimeService.getVariables(procInstId);
-                Map<String, Object> nodeTimeMap = extractNodeTimeMap(vars);
-                if (nodeTimeMap == null || nodeTimeMap.isEmpty())
+                Long tneId = toLong(node.get("id"));
+                String nodeKey = (String) node.get("nodeKey");
+                String nodeName = (String) node.get("nodeName");
+                String planEndDate = (String) node.get("planEndDate");
+                String procInstId = (String) node.get("procInstId");
+                String taskName = (String) node.get("taskName");
+                Long assignedTeamId = toLong(node.get("assignedTeamId"));
+                Integer timeoutFlag = toInt(node.get("timeoutFlag"));
+
+                if (planEndDate == null || procInstId == null)
                 {
                     continue;
                 }
 
-                // 从流程变量获取流程名称和任务名称
-                Object procNameObj = vars.get("procName");
-                String procName = procNameObj != null ? procNameObj.toString() : null;
-                Object taskNameObj = vars.get("taskName");
-                String taskName = taskNameObj != null ? taskNameObj.toString() : null;
-
-                // 查询该流程的所有活跃任务
-                List<Task> activeTasks = taskService.createTaskQuery()
-                    .processInstanceId(procInstId)
-                    .active()
-                    .list();
-
-                for (Task task : activeTasks)
+                // 查班组名称
+                String teamName = null;
+                if (assignedTeamId != null && assignedTeamId > 0)
                 {
-                    String nodeKey = task.getTaskDefinitionKey();
-                    String endDate = extractEndDate(nodeTimeMap, nodeKey);
-                    if (endDate == null)
+                    ProductionTeam team = productionTeamMapper.selectProductionTeamById(assignedTeamId);
+                    if (team != null)
                     {
-                        continue;
+                        teamName = team.getTeamName();
                     }
+                }
 
-                    String taskId = task.getId();
-                    String nodeName = task.getName();
-
-                    // 情况1：已过期（endDate < today） → 发 overdue + 打 timeout_flag
-                    if (endDate.compareTo(today) < 0)
+                // 判断预警类型
+                if (planEndDate.compareTo(today) < 0)
+                {
+                    // 已超时：打 timeout_flag + 升级旧的 deadline_soon → overdue + 推送 overdue
+                    if (timeoutFlag == null || timeoutFlag == 0)
                     {
-                        handleOverdue(taskId, procInstId, procName, taskName, nodeKey, nodeName, endDate);
+                        taskNodeExecutionMapper.updateTimeoutFlag(tneId, 1);
+                        log.info("已标记节点 {} ({}) 超时", nodeName, nodeKey);
                     }
-                    // 情况2：今天到期或明天到期 → 发 deadline_soon
-                    else if (endDate.equals(today) || endDate.equals(tomorrow))
-                    {
-                        sendWarningsToTeamMembers(taskId, procInstId, procName, taskName, nodeKey, nodeName, endDate, "deadline_soon");
-                    }
+                    // 将之前的 deadline_soon 预警升级为 overdue
+                    taskWarningMapper.upgradeToOverdue(procInstId, nodeKey);
+                    sendWarningsToTeamMembers(assignedTeamId, procInstId, null, taskName,
+                            nodeKey, nodeName, planEndDate, teamName, "overdue", now);
+                }
+                else
+                {
+                    // 今天或明天到期：deadline_soon
+                    sendWarningsToTeamMembers(assignedTeamId, procInstId, null, taskName,
+                            nodeKey, nodeName, planEndDate, teamName, "deadline_soon", now);
                 }
             }
             catch (Exception e)
             {
-                log.error("扫描流程实例 {} 预警时出错", procInstId, e);
+                log.error("扫描节点预警时出错: {}", node, e);
             }
         }
 
@@ -183,85 +200,16 @@ public class TaskWarningServiceImpl implements ITaskWarningService
     }
 
     /**
-     * 从流程变量中提取 nodeTimeMap
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> extractNodeTimeMap(Map<String, Object> vars)
-    {
-        Object ntmObj = vars.get("nodeTimeMap");
-        if (ntmObj == null)
-        {
-            return null;
-        }
-        if (ntmObj instanceof Map)
-        {
-            return (Map<String, Object>) ntmObj;
-        }
-        try
-        {
-            return JSON.parseObject(ntmObj.toString(), Map.class);
-        }
-        catch (Exception e)
-        {
-            log.warn("解析 nodeTimeMap 失败: {}", ntmObj, e);
-            return null;
-        }
-    }
-
-    /**
-     * 从 nodeTimeMap 中提取指定节点的 endDate
-     */
-    @SuppressWarnings("unchecked")
-    private String extractEndDate(Map<String, Object> nodeTimeMap, String nodeKey)
-    {
-        Object nodeTime = nodeTimeMap.get(nodeKey);
-        if (nodeTime == null)
-        {
-            return null;
-        }
-        Map<String, Object> timeInfo;
-        if (nodeTime instanceof Map)
-        {
-            timeInfo = (Map<String, Object>) nodeTime;
-        }
-        else
-        {
-            try
-            {
-                timeInfo = JSON.parseObject(nodeTime.toString(), Map.class);
-            }
-            catch (Exception e)
-            {
-                log.warn("解析节点 {} 的时间信息失败: {}", nodeKey, nodeTime, e);
-                return null;
-            }
-        }
-        Object endDateObj = timeInfo.get("endDate");
-        return endDateObj != null ? endDateObj.toString() : null;
-    }
-
-    /**
      * 向任务对应班组的所有成员推送预警消息
      */
-    private void sendWarningsToTeamMembers(String taskId, String procInstId, String procName,
+    private void sendWarningsToTeamMembers(Long teamId, String procInstId, String procName,
                                            String taskName, String nodeKey, String nodeName,
-                                           String endDate, String warnType)
+                                           String endDate, String teamName, String warnType, Date now)
     {
-        TaskNodeExecution tne = taskNodeExecutionMapper.selectByTaskId(taskId);
-        if (tne == null || tne.getAssignedTeamId() == null)
+        if (teamId == null || teamId <= 0)
         {
-            log.debug("任务 {} 无对应节点执行记录或班组，跳过预警", taskId);
+            log.debug("节点 {}({}) 无分配班组，跳过预警", nodeName, nodeKey);
             return;
-        }
-
-        Long teamId = tne.getAssignedTeamId();
-
-        // 查询班组名称
-        String teamName = null;
-        ProductionTeam team = productionTeamMapper.selectProductionTeamById(teamId);
-        if (team != null)
-        {
-            teamName = team.getTeamName();
         }
 
         List<SysUser> members = productionTeamMapper.selectUserListByTeamId(teamId);
@@ -271,7 +219,6 @@ public class TaskWarningServiceImpl implements ITaskWarningService
             return;
         }
 
-        Date now = new Date();
         for (SysUser member : members)
         {
             Long userId = member.getUserId();
@@ -301,27 +248,56 @@ public class TaskWarningServiceImpl implements ITaskWarningService
     }
 
     /**
-     * 处理已超时：打 timeout_flag + 推送 overdue 预警
+     * 安全转换为 Long
      */
-    private void handleOverdue(String taskId, String procInstId, String procName,
-                               String taskName, String nodeKey, String nodeName, String endDate)
+    private Long toLong(Object obj)
     {
-        TaskNodeExecution tne = taskNodeExecutionMapper.selectByTaskId(taskId);
-        if (tne == null)
+        if (obj == null)
         {
-            log.debug("任务 {} 无对应节点执行记录，跳过超时标记", taskId);
-            return;
+            return null;
         }
-
-        // 尚未标记超时 → 打标
-        Integer timeoutFlag = tne.getTimeoutFlag();
-        if (timeoutFlag == null || timeoutFlag == 0)
+        if (obj instanceof Long)
         {
-            taskNodeExecutionMapper.updateTimeoutFlag(tne.getId(), 1);
-            log.info("已标记任务 {} 超时，节点: {}({})", taskId, nodeName, nodeKey);
+            return (Long) obj;
         }
+        if (obj instanceof Number)
+        {
+            return ((Number) obj).longValue();
+        }
+        try
+        {
+            return Long.parseLong(obj.toString());
+        }
+        catch (NumberFormatException e)
+        {
+            return null;
+        }
+    }
 
-        // 推送 overdue 预警
-        sendWarningsToTeamMembers(taskId, procInstId, procName, taskName, nodeKey, nodeName, endDate, "overdue");
+    /**
+     * 安全转换为 Integer
+     */
+    private Integer toInt(Object obj)
+    {
+        if (obj == null)
+        {
+            return null;
+        }
+        if (obj instanceof Integer)
+        {
+            return (Integer) obj;
+        }
+        if (obj instanceof Number)
+        {
+            return ((Number) obj).intValue();
+        }
+        try
+        {
+            return Integer.parseInt(obj.toString());
+        }
+        catch (NumberFormatException e)
+        {
+            return null;
+        }
     }
 }

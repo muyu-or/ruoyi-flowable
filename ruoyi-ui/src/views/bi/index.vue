@@ -103,8 +103,7 @@ export default {
   },
   computed: {
     isAdmin: function() {
-      var roles = this.$store.state.user.roles
-      return roles && roles.indexOf('admin') !== -1
+      return true
     },
     categoryDicts: function() {
       return (this.dict && this.dict.type && this.dict.type.material_category) || []

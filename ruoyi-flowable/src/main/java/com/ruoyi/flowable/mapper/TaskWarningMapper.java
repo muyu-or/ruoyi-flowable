@@ -113,4 +113,44 @@ public interface TaskWarningMapper
      * @return 影响行数
      */
     int markAllRead();
+
+    /**
+     * Admin专用：将全部预警标为管理员已读（不影响普通用户的 is_read）
+     *
+     * @return 影响行数
+     */
+    int markAllAdminRead();
+
+    /**
+     * 批量删除已处理的预警
+     *
+     * @param ids 预警ID列表
+     * @return 影响行数
+     */
+    int deleteResolvedByIds(@Param("ids") List<Long> ids);
+
+    /**
+     * 删除全部已处理的预警
+     *
+     * @return 影响行数
+     */
+    int deleteAllResolved();
+
+    /**
+     * 删除指定用户的已处理预警
+     *
+     * @param userId 用户ID
+     * @return 影响行数
+     */
+    int deleteResolvedByUserId(@Param("userId") Long userId);
+
+    /**
+     * 将指定节点的 deadline_soon 预警升级为 overdue
+     *
+     * @param procInstId 流程实例ID
+     * @param nodeKey    节点key
+     * @return 影响行数
+     */
+    int upgradeToOverdue(@Param("procInstId") String procInstId,
+                         @Param("nodeKey") String nodeKey);
 }

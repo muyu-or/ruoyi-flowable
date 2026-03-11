@@ -14,8 +14,8 @@
       </el-radio-group>
     </div>
 
-    <!-- 任务卡片（所有角色） -->
-    <StatCards :my-stats="statsData.myStats" />
+    <!-- 任务卡片（管理角色显示全公司，其他显示个人） -->
+    <StatCards :my-stats="statsData.companyStats || statsData.myStats" />
 
     <!-- 入库/出库趋势 + 库存总览（admin + leader） -->
     <el-row v-if="isAdmin" :gutter="20" class="charts-row">
@@ -50,6 +50,16 @@
 
     <!-- 班组长的最近完成任务（独占一行） -->
     <el-row v-if="isLeader && hasRecentTasks" class="recent-tasks-row">
+      <el-col :span="24">
+        <RecentTasksCard
+          :recent-tasks="statsData.recentTasks"
+          :is-leader="true"
+        />
+      </el-col>
+    </el-row>
+
+    <!-- 管理角色的最近完成任务（独占一行） -->
+    <el-row v-if="isAdmin && hasRecentTasks" class="recent-tasks-row">
       <el-col :span="24">
         <RecentTasksCard
           :recent-tasks="statsData.recentTasks"
@@ -105,10 +115,12 @@ export default {
   },
   computed: {
     isAdmin() {
-      return (this.$store.state.user.roles || []).includes('admin')
+      // 后端返回了 companyStats 或 teamProgress 说明拥有全局视角
+      return !!(this.statsData.companyStats || (this.statsData.teamProgress && this.statsData.teamProgress.length > 0 && this.statsData.stockTrend))
     },
     isLeader() {
-      return (this.$store.state.user.roles || []).includes('team_leader')
+      // 后端返回了 memberStats 说明是班组长
+      return !!(this.statsData.memberStats && this.statsData.memberStats.length > 0)
     },
     userName() {
       return this.$store.state.user.name || '用户'
@@ -122,7 +134,7 @@ export default {
       return this.statsData.myTeamEfficiency && this.statsData.myTeamEfficiency.teamId
     },
     hasRecentTasks() {
-      return !this.isAdmin && this.statsData.recentTasks && this.statsData.recentTasks.length > 0
+      return this.statsData.recentTasks && this.statsData.recentTasks.length > 0
     },
     categoryDicts() {
       return this.dict.type.material_category || []

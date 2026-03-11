@@ -23,6 +23,13 @@
               size="mini"
               @click="handleReadAll"
             >全部已读</el-button>
+            <el-button
+              v-if="hasResolved"
+              type="text"
+              size="mini"
+              style="color: #f56c6c"
+              @click="handleClearResolved"
+            >清空已处理</el-button>
           </span>
         </div>
         <div v-if="warningList.length === 0" class="warning-empty">
@@ -48,15 +55,15 @@
                 size="mini"
               >已处理</el-tag>
               <el-tag
-                v-else-if="item.isRead === 1"
-                type="info"
+                v-else-if="item.warnType === 'overdue'"
+                type="danger"
                 size="mini"
-              >未处理</el-tag>
+              >{{ item.isRead === 1 ? '已超时·未处理' : '已超时' }}</el-tag>
               <el-tag
                 v-else
-                :type="item.warnType === 'overdue' ? 'danger' : 'warning'"
+                type="warning"
                 size="mini"
-              >{{ item.warnType === 'overdue' ? '已超时' : '即将超时' }}</el-tag>
+              >{{ item.isRead === 1 ? '即将超时·未处理' : '即将超时' }}</el-tag>
             </div>
             <div class="warning-item-info">
               <span v-if="item.teamName" class="warning-team">{{ item.teamName }}</span>
@@ -73,7 +80,7 @@
 </template>
 
 <script>
-import { getWarningList, getUnreadWarningCount, markAllRead, markOneRead, triggerScan } from '@/api/flowable/warning'
+import { getWarningList, getUnreadWarningCount, markAllRead, markOneRead, triggerScan, clearResolved } from '@/api/flowable/warning'
 
 export default {
   name: 'NotificationBell',
@@ -84,6 +91,11 @@ export default {
       popoverVisible: false,
       pollTimer: null,
       scanning: false
+    }
+  },
+  computed: {
+    hasResolved: function() {
+      return this.warningList.some(function(item) { return item.resolved === 1 })
     }
   },
   created: function() {
@@ -158,6 +170,22 @@ export default {
       }).then(function() {
         self.scanning = false
       })
+    },
+    handleClearResolved: function() {
+      var self = this
+      this.$confirm('确认删除所有已处理的预警消息?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(function() {
+        clearResolved().then(function(res) {
+          self.$message.success(res.msg || '清空成功')
+          self.onPopoverShow()
+          self.fetchUnreadCount()
+        }).catch(function() {
+          self.$message.error('清空失败')
+        })
+      }).catch(function() {})
     }
   }
 }
@@ -171,6 +199,10 @@ export default {
   .el-icon-bell {
     font-size: 20px;
     vertical-align: middle;
+  }
+
+  ::v-deep .el-badge__content {
+    top: 8px;
   }
 }
 

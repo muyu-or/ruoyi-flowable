@@ -144,9 +144,7 @@ export default {
   },
   computed: {
     roleTip() {
-      if (this.isAdmin) return '管理员 · 全公司'
-      if (this.isLeader) return '班组长 · 班组'
-      return '成员 · 个人'
+      return this.$store.getters.nickName || ''
     },
     roleTagType() {
       if (this.isAdmin) return 'danger'

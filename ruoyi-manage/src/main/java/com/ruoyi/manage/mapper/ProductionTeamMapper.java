@@ -119,4 +119,9 @@ public interface ProductionTeamMapper
      * 根据用户ID查询其在班组中的职位（取第一个非空职位）
      */
     String selectPositionByUserId(@Param("userId") Long userId);
+
+    /**
+     * 根据用户ID查询同班组所有成员用户名（包含自己）
+     */
+    List<String> selectTeammateUsernamesByUserId(@Param("userId") Long userId);
 }
