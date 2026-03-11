@@ -94,7 +94,44 @@ Grep pattern="<方法名或常量名>" glob="*.java"
 - 数组更新使用 Vue 数组变异方法（push/splice 等），不得直接替换索引
 - Element-UI 版本为 2.15.14（Vue 2 版本）
 - 自定义表单组件必须声明 `dicts: [...]`（如 `dicts: ['warehouse_area']`）才能使用字典下拉
+- **字符串字面量必须使用标准 ASCII 引号**（`'` `"` `` ` ``），**严禁**使用中文全角引号（`""` `''`），否则会导致 Vue 编译错误
+- 编辑 `.vue` 文件后，检查所有新增的 `import` 是否在文件顶部已声明
+- 嵌套对象更新陷阱：`this.obj.newKey = val` 不会触发响应式，必须用 `this.$set(this.obj, 'newKey', val)` 或展开运算符 `this.obj = { ...this.obj, newKey: val }`
 
+
+## Bug Fix Protocol（Bug 修复协议）
+
+修复 bug 时，**必须**按以下顺序执行，不得跳步：
+
+1. **根因声明**：在写任何代码之前，用一句话说明根因和责任文件/方法。等待用户确认后再动手。
+   > 示例："根因：`ReportRecordServiceImpl.selectReportRecordList()` 中使用 `hasRole("admin")` 硬编码判断角色，导致 zongguan 角色无法查看全部报告。需改为 `hasPermi("flowable:stat:all")`。"
+2. **最小改动**：只修改直接导致 bug 的文件，不顺手重构无关代码。
+3. **编译验证**：每个文件改完后立即 `mvn compile`。
+4. **回归确认**：修复后说明修复内容 + 编译结果，等待用户验证。
+
+**禁止**：
+- 未确认根因就开始写修复代码
+- bug 修复 PR 中夹带功能改动或重构
+
+## Permission Check Convention（权限检查规范）
+
+跨模块判断"管理角色"时，**统一使用**以下模式，**禁止**硬编码角色名：
+
+```java
+boolean viewAll = SecurityUtils.isAdmin(userId)
+        || SecurityUtils.hasPermi("flowable:stat:all");
+```
+
+此模式已在以下模块统一使用：
+- 首页统计（Homepage BI）
+- 日历看板（Calendar）
+- 预警系统（TaskWarning）
+- 测试报告管理（ReportRecord）
+- 库存管理（Inventory）
+
+**禁止**使用以下方式判断管理角色：
+- ~~`SecurityUtils.hasRole("admin")`~~ — 无法覆盖 zongguan 等拥有全局权限的角色
+- ~~`SecurityUtils.isAdmin(userId)` 单独使用~~ — 无法覆盖非 admin 但拥有 `flowable:stat:all` 的角色
 
 ## Scope Control
 
@@ -478,3 +515,104 @@ inventoryLinkageService.handleNodeCompletion(task.getTaskDefinitionKey(), allVar
 | `ruoyi-flowable/.../service/impl/FlowTaskServiceImpl.java` | complete() 中注入并调用联动服务 |
 | `ruoyi-manage/.../service/IInventoryService.java` | `insertInventory()` / `processStockOut()` |
 | `ruoyi-manage/.../mapper/InventoryMapper.java` | `selectInventoryBymaterialId(String)` |
+
+---
+
+## 测试报告联动机制总结
+
+> 本章记录 complete() 审批通过时自动写入测试报告记录的完整实现。
+
+### 一、架构设计
+
+在 `FlowTaskServiceImpl.complete()` 内，与库存联动并列调用：
+
+```java
+reportLinkageService.handleReportOnCompletion(task.getTaskDefinitionKey(), allVariables);
+```
+
+- 单条报告写入失败**不抛异常**，不影响整体审批流程（与库存联动的事务回滚策略不同）。
+- 任意节点均可携带 `reports` 数组，只要表单数据中存在 `reports` 字段就会被提取。
+
+### 二、数据流转
+
+```
+前端 ReportUploader.vue
+  ↓ 用户上传文件 → /common/upload → 获得 storagePath
+  ↓ 构造 { storagePath, reportName, materialName, materialQuantity, nodeName, uploader }
+  ↓ 存入表单 formData.reports 数组
+  ↓ 审批提交 → 存入流程变量 {nodeKey}__formData.reports
+后端 ReportLinkageServiceImpl
+  ↓ 从流程变量提取 reports 数组
+  ↓ 逐条写入 report_record 表（自动生成 reportCode + 填入 createBy + createTime）
+```
+
+### 三、uploader 与 createBy 的区别
+
+| 字段 | 含义 | 来源 |
+|------|------|------|
+| `uploader` | 实际上传文件的人 | 前端 `this.$store.getters.name`，存入表单变量 |
+| `create_by` | 审批通过时的操作人 | `SecurityUtils.getUsername()`，即审批人 |
+
+**普通用户查看报告时按 `uploader` 过滤**（而非 `create_by`），确保上传者能看到自己上传的报告。
+
+### 四、物料名称的获取（extraContext）
+
+中间节点（预处理/真空/烘烤/检测）的 `materialName` 来自 `extraContext`：
+
+```javascript
+// todo/detail/index.vue
+const stockOutData = res.data['Activity_01xy3yd__formData'] || {}
+const stockInData  = res.data['Activity_1uqk506__formData'] || {}
+this.$refs.taskFormRef.setExtraContext({
+    materialName: stockOutData.materialName || stockInData.materialName || '',
+    materialQuantity: stockOutData.outQuantity || stockInData.quantity || null
+})
+```
+
+**优先从出库节点取**，出库节点无数据时**降级从入库节点取**。
+
+### 五、核心文件索引
+
+| 文件 | 职责 |
+|------|------|
+| `ruoyi-flowable/.../service/IReportLinkageService.java` | 联动服务接口 |
+| `ruoyi-flowable/.../service/impl/ReportLinkageServiceImpl.java` | 从流程变量提取 reports 并写入 DB |
+| `ruoyi-manage/.../service/impl/ReportRecordServiceImpl.java` | 报告 CRUD + 角色权限过滤（viewAll / isLeader / 普通用户） |
+| `ruoyi-manage/.../mapper/ReportRecordMapper.xml` | 含 uploader 字段的查询/插入 |
+| `ruoyi-ui/src/components/taskForms/ReportUploader.vue` | 报告上传组件，存储 uploader 元数据 |
+| `ruoyi-ui/src/views/manage/report/index.vue` | 报告管理列表页，分列显示上传人/审批人 |
+
+---
+
+## 预警系统总结
+
+> 本章记录节点超时预警的完整实现。
+
+### 一、架构设计
+
+- **定时扫描**：`TaskWarningServiceImpl.scanWarnings()` 由定时任务（或前端手动触发）调用，扫描即将超时和已超时的活跃节点。
+- **扫描范围**：只扫描 `task_id IS NOT NULL`（已被 Flowable 激活、当前正在处理）的节点，不包含未来待执行的节点。
+- **预警升级**：扫描时自动将已过期的 `deadline_soon` 升级为 `overdue`（调用 `upgradeToOverdue`）。
+
+### 二、admin_read 与 is_read 分离
+
+| 字段 | 用途 | 作用范围 |
+|------|------|---------|
+| `is_read` | 普通用户/班组长的已读状态 | 每条预警归属的 `target_user_id` |
+| `admin_read` | 管理员（admin / zongguan）的已读状态 | 全局，与 `is_read` 独立 |
+
+**管理员点击"全部已读"** → 只更新 `admin_read = 1`，不影响普通用户的 `is_read`。
+**管理员看到的预警列表** → `selectAllDistinct`（聚合去重），使用 `admin_read AS is_read` 映射。
+**管理员未读角标** → `countAllDistinctUnread` 按 `admin_read = 0` 计数。
+
+### 三、核心文件索引
+
+| 文件 | 职责 |
+|------|------|
+| `ruoyi-flowable/.../domain/TaskWarning.java` | 预警实体，含 `adminRead` 字段 |
+| `ruoyi-flowable/.../mapper/TaskWarningMapper.java` | 预警 Mapper 接口 |
+| `ruoyi-flowable/.../mapper/TaskWarningMapper.xml` | 预警 SQL（含 admin_read 列、upgradeToOverdue、selectAllDistinct） |
+| `ruoyi-flowable/.../service/impl/TaskWarningServiceImpl.java` | 扫描逻辑 + 预警升级 + 读状态管理 |
+| `ruoyi-flowable/.../controller/TaskWarningController.java` | 预警 API（list/readAll/scan/count） |
+| `ruoyi-ui/src/components/NotificationBell/index.vue` | 铃铛组件，预警列表 + 角标 + 已读逻辑 |
+| `ruoyi-system/.../mapper/TaskNodeExecutionMapper.xml` | `selectPendingNodesForWarning` SQL（task_id IS NOT NULL 过滤） |
