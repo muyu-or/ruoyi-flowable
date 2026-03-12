@@ -99,7 +99,7 @@ export default {
     }
   },
   created: function() {
-    this.fetchUnreadCount()
+    this.fetchUnreadCountAndNotify()
     var self = this
     this.pollTimer = setInterval(function() {
       self.fetchUnreadCount()
@@ -112,6 +112,31 @@ export default {
     }
   },
   methods: {
+    /**
+     * 首次加载时获取未读数，有未读且本次会话未弹过则弹出通知
+     */
+    fetchUnreadCountAndNotify: function() {
+      var self = this
+      getUnreadWarningCount().then(function(res) {
+        if (res && res.data && res.data.count !== undefined) {
+          self.unreadCount = res.data.count
+          // 本次浏览器会话只弹一次
+          if (self.unreadCount > 0 && !sessionStorage.getItem('warningNotified')) {
+            sessionStorage.setItem('warningNotified', '1')
+            self.$notify({
+              title: '任务预警提醒',
+              message: '您有 ' + self.unreadCount + ' 条未读预警消息，请点击铃铛查看。',
+              type: 'warning',
+              duration: 8000,
+              onClick: function() {
+                self.popoverVisible = true
+                self.onPopoverShow()
+              }
+            })
+          }
+        }
+      }).catch(function() {})
+    },
     itemClass: function(item) {
       if (item.resolved === 1) {
         return 'is-resolved'
