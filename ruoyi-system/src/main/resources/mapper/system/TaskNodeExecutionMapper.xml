@@ -298,16 +298,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     tne.assigned_team_id IN
                     <foreach item="tid" collection="leaderTeamIds" open="(" separator="," close=")">#{tid}</foreach>
                 </if>
-                <!-- 成员班组：只看自己 -->
+                <!-- 成员班组：看自己处理的 + 本班组未认领的任务 -->
                 <if test="memberTeamIds != null and memberTeamIds.size() > 0">
                     <if test="leaderTeamIds != null and leaderTeamIds.size() > 0"> OR </if>
                     (tne.assigned_team_id IN
                     <foreach item="tid" collection="memberTeamIds" open="(" separator="," close=")">#{tid}</foreach>
-                    AND (tne.claim_user_id = #{userId} OR tne.assigned_user_id = #{userId}))
+                    AND (tne.claim_user_id = #{userId} OR tne.assigned_user_id = #{userId} OR tne.claim_user_id IS NULL))
                 </if>
-                <!-- 既不是组长也不是成员：只看自己 -->
+                <!-- 既不是组长也不是成员：看自己的 + 未认领的 -->
                 <if test="(leaderTeamIds == null or leaderTeamIds.size() == 0) and (memberTeamIds == null or memberTeamIds.size() == 0)">
-                    (tne.claim_user_id = #{userId} OR tne.assigned_user_id = #{userId})
+                    (tne.claim_user_id = #{userId} OR tne.assigned_user_id = #{userId} OR tne.claim_user_id IS NULL)
                 </if>
             )
         </if>
@@ -336,5 +336,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND tne.plan_end_date != ''
           AND tne.plan_end_date &lt;= #{deadlineDate}
         ORDER BY tne.plan_end_date ASC
+    </select>
+
+    <select id="selectFinishedTaskIdsByClaimUserId" resultType="java.lang.String">
+        SELECT DISTINCT tne.task_id
+        FROM task_node_execution tne
+        WHERE tne.claim_user_id = #{claimUserId}
+          AND tne.status IN ('submitted', 'completed')
+          AND tne.task_id IS NOT NULL
     </select>
 </mapper>

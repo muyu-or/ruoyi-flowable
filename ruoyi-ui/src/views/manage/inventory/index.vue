@@ -3,8 +3,8 @@
     <el-form v-show="showSearch" ref="queryRef" :model="queryParams" label-width="110px">
       <el-row :gutter="16" type="flex" align="middle">
         <el-col :xs="24" :sm="24" :md="8">
-          <el-form-item label="物料唯一标识码" prop="materialId">
-            <el-input v-model="queryParams.materialId" placeholder="请输入物料唯一标识码" clearable @keyup.enter.native="handleQuery" />
+          <el-form-item label="物料ID" prop="materialId">
+            <el-input v-model="queryParams.materialId" placeholder="请输入物料ID" clearable @keyup.enter.native="handleQuery" />
           </el-form-item>
         </el-col>
         <el-col :xs="24" :sm="24" :md="8">
@@ -110,7 +110,7 @@
     <el-table v-loading="loading" :data="inventoryList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="物料唯一标识码" align="center" prop="materialId" sortable />
+      <el-table-column label="物料ID" align="center" prop="materialId" />
       <el-table-column label="物料名称" align="center" prop="materialName" sortable />
       <el-table-column label="物料大类" align="center" prop="materialCategory" sortable>
         <template slot-scope="scope">
@@ -1058,7 +1058,7 @@ export default {
       this.batchFlowOpen = true
       // 加载班组列表（若已有则跳过）
       if (!this.teamList || !this.teamList.length) {
-        listTeam({ pageNum: 1, pageSize: 100 }).then(res => {
+        listTeam({ pageNum: 1, pageSize: 100, teamStatus: '1' }).then(res => {
           this.teamList = res.rows || res.data || []
         })
       }

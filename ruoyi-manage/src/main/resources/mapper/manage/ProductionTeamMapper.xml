@@ -200,6 +200,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit 1
     </select>
 
+    <!-- 根据用户ID和班组ID查询其在指定班组中的职位 -->
+    <select id="selectPositionByUserIdAndTeamId" resultType="String">
+        select ptu.position
+        from production_team_user ptu
+        where ptu.user_id = #{userId}
+          and ptu.team_id = #{teamId}
+          and ptu.position is not null
+          and ptu.position != ''
+        limit 1
+    </select>
+
     <!-- 根据用户ID查询同班组所有成员用户名（包含组长和自己） -->
     <select id="selectTeammateUsernamesByUserId" resultType="String">
         SELECT DISTINCT su.user_name
@@ -208,5 +219,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         INNER JOIN production_team_user ptu2 ON ptu2.team_id = pt.id
         INNER JOIN sys_user su ON su.user_id = ptu2.user_id
         WHERE ptu.user_id = #{userId}
+    </select>
+
+    <!-- 根据班组长用户ID查询其所管辖班组的所有成员userId（包含自己） -->
+    <select id="selectMemberUserIdsByLeaderId" resultType="Long">
+        SELECT DISTINCT ptu.user_id
+        FROM production_team pt
+        INNER JOIN production_team_user ptu ON ptu.team_id = pt.id
+        WHERE pt.leader_id = #{leaderId}
+          AND pt.team_status = '1'
     </select>
 </mapper>

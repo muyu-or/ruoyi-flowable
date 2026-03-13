@@ -27,17 +27,9 @@
     </el-form>
 
     <el-row :gutter="10" class="mb8">
-      <!--      <el-col :span="1.5">-->
-      <!--        <el-button-->
-      <!--          type="primary"-->
-      <!--          plain-->
-      <!--          icon="el-icon-upload"-->
-      <!--          size="mini"-->
-      <!--          @click="handleImport"-->
-      <!--        >导入</el-button>-->
-      <!--      </el-col>-->
       <el-col :span="1.5">
         <el-button
+          v-hasPermi="['system:deployment:add']"
           type="success"
           plain
           icon="el-icon-plus"
@@ -58,15 +50,6 @@
       </el-col>
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
-    <el-alert title="流程设计说明" type="success">
-      <template slot="title">
-        <p>流程设计说明:</p>
-        <div>1、XML文件中的流程定义id属性用作流程定义的key参数。</div>
-        <div>2、XML文件中的流程定义name属性用作流程定义的name参数。如果未给定name属性，会使用id作为name。</div>
-        <div>3、当每个唯一key的流程第一次部署时，指定版本为1。对其后所有使用相同key的流程定义，部署时版本会在该key当前已部署的最高版本号基础上加1。key参数用于区分流程定义。</div>
-        <div>4、id参数设置为{processDefinitionKey}:{processDefinitionVersion}:{generated-id}，其中generated-id是一个唯一数字，用以保证在集群环境下，流程定义缓存中，流程id的唯一性。</div>
-      </template>
-    </el-alert>
     <el-table v-loading="loading" fit :data="definitionList" border @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="流程编号" align="center" prop="deploymentId" :show-overflow-tooltip="true" />
@@ -104,12 +87,12 @@
       <el-table-column label="部署时间" align="center" prop="deploymentTime" width="180" />
       <el-table-column label="操作" width="300" fixed="right" class-name="small-padding fixed-width">
         <template slot-scope="scope">
-          <el-button icon="el-icon-edit-outline" type="text" size="small" @click="handleLoadXml(scope.row)">设计</el-button>
+          <el-button v-hasPermi="['system:deployment:edit']" icon="el-icon-edit-outline" type="text" size="small" @click="handleLoadXml(scope.row)">设计</el-button>
           <el-button v-if="scope.row.suspensionState === 1" icon="el-icon-circle-check" type="text" size="small" @click="handleStartProcess(scope.row)">启动</el-button>
-          <el-button v-if="!scope.row.formId && !scope.row.formComponent" icon="el-icon-edit-el-icon-s-promotion" type="text" size="small" @click="handleAddForm(scope.row)">配置主表单</el-button>
-          <el-button v-if="scope.row.formId || scope.row.formComponent" icon="el-icon-edit" type="text" size="small" @click="handleAddForm(scope.row)">修改表单</el-button>
-          <el-button v-if="scope.row.suspensionState === 1" icon="el-icon-video-pause" type="text" size="small" @click="handleUpdateSuspensionState(scope.row)">挂起</el-button>
-          <el-button v-if="scope.row.suspensionState === 2" icon="el-icon-video-play" type="text" size="small" @click="handleUpdateSuspensionState(scope.row)">激活</el-button>
+          <el-button v-if="!scope.row.formId && !scope.row.formComponent" v-hasPermi="['system:deployment:edit']" icon="el-icon-edit-el-icon-s-promotion" type="text" size="small" @click="handleAddForm(scope.row)">配置主表单</el-button>
+          <el-button v-if="scope.row.formId || scope.row.formComponent" v-hasPermi="['system:deployment:edit']" icon="el-icon-edit" type="text" size="small" @click="handleAddForm(scope.row)">修改表单</el-button>
+          <el-button v-if="scope.row.suspensionState === 1" v-hasPermi="['system:deployment:edit']" icon="el-icon-video-pause" type="text" size="small" @click="handleUpdateSuspensionState(scope.row)">挂起</el-button>
+          <el-button v-if="scope.row.suspensionState === 2" v-hasPermi="['system:deployment:edit']" icon="el-icon-video-play" type="text" size="small" @click="handleUpdateSuspensionState(scope.row)">激活</el-button>
           <el-button v-hasPermi="['system:deployment:remove']" icon="el-icon-delete" type="text" size="small" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>

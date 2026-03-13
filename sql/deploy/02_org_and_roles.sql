@@ -88,7 +88,9 @@ INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, com
 (2044, '流程监听新增', 2042, 2, '#',          '',                                NULL, NULL, 1, 0, 'F', '0', '0', 'system:listener:add',      '#',          'admin', NOW(), '', NULL, ''),
 (2045, '流程监听修改', 2042, 3, '#',          '',                                NULL, NULL, 1, 0, 'F', '0', '0', 'system:listener:edit',     '#',          'admin', NOW(), '', NULL, ''),
 (2046, '流程监听删除', 2042, 4, '#',          '',                                NULL, NULL, 1, 0, 'F', '0', '0', 'system:listener:remove',   '#',          'admin', NOW(), '', NULL, ''),
-(2047, '流程监听导出', 2042, 5, '#',          '',                                NULL, NULL, 1, 0, 'F', '0', '0', 'system:listener:export',   '#',          'admin', NOW(), '', NULL, '');
+(2047, '流程监听导出', 2042, 5, '#',          '',                                NULL, NULL, 1, 0, 'F', '0', '0', 'system:listener:export',   '#',          'admin', NOW(), '', NULL, ''),
+(2052, '启动流程',     2022, 1, '',           NULL,                              NULL, NULL, 1, 0, 'F', '0', '0', 'flowable:definition:start','#',          'admin', NOW(), '', NULL, ''),
+(2053, '删除已发流程', 2026, 4, '',           NULL,                              NULL, NULL, 1, 0, 'F', '0', '0', 'flowable:process:remove', '#',          'admin', NOW(), '', NULL, '');
 
 -- ---- 3.2 库存管理菜单（2048-2109）----
 INSERT IGNORE INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark) VALUES
@@ -196,10 +198,10 @@ INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (14,3001),(14,3002),(14,3003),(14,3004),(14,3005),(14,3006),(14,3007),(14,3114),
 (14,3117);
 
--- 生产总管 (role_id=100) — 91 menus
+-- 生产总管 (role_id=100) — 90 menus（移除 2031/2032/2033 即 add/edit/remove 按钮权限，新增 2052 启动流程、2053 删除已发流程）
 INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (100,2),(100,2020),(100,2022),(100,2023),(100,2024),(100,2025),(100,2026),(100,2027),
-(100,2028),(100,2029),(100,2030),(100,2031),(100,2032),(100,2033),(100,2034),(100,2036),
+(100,2028),(100,2029),(100,2030),(100,2034),(100,2036),(100,2052),(100,2053),
 (100,2037),(100,2038),(100,2039),(100,2040),(100,2041),(100,2042),(100,2043),(100,2044),
 (100,2045),(100,2046),(100,2047),(100,2048),(100,2049),(100,2050),(100,2051),(100,2070),
 (100,2071),(100,2078),(100,2079),(100,2087),(100,2088),(100,2089),(100,2090),(100,2091),

@@ -165,7 +165,7 @@ export default {
 
     /** 获取班组列表 */
     loadTeamList() {
-      return listTeam({ pageNum: 1, pageSize: 100 }).then(res => {
+      return listTeam({ pageNum: 1, pageSize: 100, teamStatus: '1' }).then(res => {
         this.teamList = res.rows || res.data || []
       }).catch(err => {
         this.$message.error('加载班组列表失败')

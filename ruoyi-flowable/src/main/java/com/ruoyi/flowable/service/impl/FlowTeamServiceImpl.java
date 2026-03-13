@@ -230,8 +230,14 @@ public class FlowTeamServiceImpl extends FlowServiceFactory implements IFlowTeam
                 return;
             }
             nodeExec.setStatus("submitted");
+            // 记录实际提交人（班组成员），后续 complete 时不会被覆盖
+            Long submitterId = com.ruoyi.common.utils.SecurityUtils.getLoginUser().getUser().getUserId();
+            if (nodeExec.getClaimUserId() == null) {
+                nodeExec.setClaimUserId(submitterId);
+                nodeExec.setClaimTime(LocalDateTime.now().format(DATE_TIME_FORMATTER));
+            }
             taskNodeExecutionService.updateTaskNodeExecution(nodeExec);
-            log.info("已更新节点执行记录为submitted状态，taskId={}", taskId);
+            log.info("已更新节点执行记录为submitted状态，taskId={}，提交人={}", taskId, submitterId);
         } catch (Exception e) {
             log.error("更新任务提交状态时出错，taskId={}", taskId, e);
         }

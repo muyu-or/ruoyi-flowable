@@ -277,7 +277,7 @@ export default {
       })
     },
     loadTeamList() {
-      listTeam({ pageNum: 1, pageSize: 100 }).then(res => {
+      listTeam({ pageNum: 1, pageSize: 100, teamStatus: '1' }).then(res => {
         this.teamList = res.rows || res.data || []
       })
     },
@@ -345,11 +345,17 @@ export default {
             return
           }
         }
-        // 验证顺序约束：节点 i 的 startDate >= 节点 i-1 的 endDate
+        // 验证顺序约束：节点 i 的 startDate >= 节点 i-1 的 startDate，endDate >= 节点 i-1 的 endDate
         for (let i = 1; i < this.nodeDateArray.length; i++) {
-          if (this.nodeDateArray[i].startDate < this.nodeDateArray[i - 1].endDate) {
+          if (this.nodeDateArray[i].startDate < this.nodeDateArray[i - 1].startDate) {
             this.$message.warning(
-              `节点「${this.processNodes[i].name}」的开始日期不能早于上一节点「${this.processNodes[i - 1].name}」的结束日期`
+              `节点「${this.processNodes[i].name}」的开始日期不能早于上一节点「${this.processNodes[i - 1].name}」的开始日期`
+            )
+            return
+          }
+          if (this.nodeDateArray[i].endDate < this.nodeDateArray[i - 1].endDate) {
+            this.$message.warning(
+              `节点「${this.processNodes[i].name}」的截止日期不能早于上一节点「${this.processNodes[i - 1].name}」的截止日期`
             )
             return
           }

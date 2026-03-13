@@ -121,6 +121,11 @@
         </template>
       </el-table-column>
       <el-table-column label="操作人员" align="center" prop="operator" />
+      <el-table-column label="出库时间" align="center" prop="outboundTime" width="140" sortable>
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.outboundTime, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button

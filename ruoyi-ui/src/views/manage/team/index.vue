@@ -20,7 +20,7 @@
       <el-form-item label="状态" prop="teamStatus">
         <el-select v-model="queryParams.teamStatus" placeholder="请选择状态" clearable>
           <el-option
-            v-for="dict in dict.type.team_status"
+            v-for="dict in dict.type.team_status.filter(d => d.value !== '2')"
             :key="dict.value"
             :label="dict.label"
             :value="dict.value"

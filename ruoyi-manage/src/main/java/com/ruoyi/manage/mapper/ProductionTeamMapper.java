@@ -121,7 +121,21 @@ public interface ProductionTeamMapper
     String selectPositionByUserId(@Param("userId") Long userId);
 
     /**
+     * 根据用户ID和班组ID查询其在指定班组中的职位
+     *
+     * @param userId 用户ID
+     * @param teamId 班组ID
+     * @return 职位编码
+     */
+    String selectPositionByUserIdAndTeamId(@Param("userId") Long userId, @Param("teamId") Long teamId);
+
+    /**
      * 根据用户ID查询同班组所有成员用户名（包含自己）
      */
     List<String> selectTeammateUsernamesByUserId(@Param("userId") Long userId);
+
+    /**
+     * 根据班组长用户ID查询其所管辖班组的所有成员userId（包含自己）
+     */
+    List<Long> selectMemberUserIdsByLeaderId(@Param("leaderId") Long leaderId);
 }

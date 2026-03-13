@@ -29,7 +29,7 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:deployment:add']"
+          v-hasPermi="['flowable:definition:start']"
           type="primary"
           plain
           icon="el-icon-plus"
@@ -39,7 +39,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:deployment:remove']"
+          v-hasPermi="['flowable:process:remove']"
           type="danger"
           plain
           icon="el-icon-delete"
@@ -54,6 +54,7 @@
     <el-table v-loading="loading" :data="myProcessList" border @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="流程编号" align="center" prop="procInsId" :show-overflow-tooltip="true" />
+      <el-table-column label="任务名称" align="center" prop="businessTaskName" :show-overflow-tooltip="true" />
       <el-table-column label="流程名称" align="center" prop="procDefName" :show-overflow-tooltip="true" />
       <el-table-column label="流程类别" align="center" prop="category" width="100px" />
       <el-table-column label="流程版本" align="center" width="80px">
@@ -73,17 +74,11 @@
       </el-table-column>
       <el-table-column label="耗时" align="center" prop="duration" width="180" />
       <el-table-column label="当前节点" align="center" prop="taskName" />
-      <el-table-column label="办理人" align="center">
-        <template slot-scope="scope">
-          <label v-if="scope.row.assigneeName">{{ scope.row.assigneeName }} <el-tag type="info" size="mini">{{ scope.row.assigneeDeptName }}</el-tag></label>
-          <!--          <label v-if="scope.row.candidate">{{scope.row.candidate}}</label>-->
-        </template>
-      </el-table-column>
       <el-table-column label="操作" width="150" fixed="right" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button type="text" size="small" @click="handleFlowRecord(scope.row)">详情</el-button>
           <el-button v-if="scope.row.procStatus === 'running'" type="text" size="small" style="color:#F56C6C" @click="handleStop(scope.row)">取消申请</el-button>
-          <el-button v-hasPermi="['system:deployment:remove']" type="text" size="small" style="color:#F56C6C" @click="handleDelete(scope.row)">删除</el-button>
+          <el-button v-hasPermi="['flowable:process:remove']" type="text" size="small" style="color:#F56C6C" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

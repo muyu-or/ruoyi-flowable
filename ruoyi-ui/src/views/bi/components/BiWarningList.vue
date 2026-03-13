@@ -1,21 +1,24 @@
 <template>
   <div class="bi-chart-card bi-warning-list">
     <div class="bi-card-header">
-      <span class="bi-card-title"><i class="el-icon-warning-outline" /> 超时预警列表</span>
+      <span class="bi-card-title"><i class="el-icon-warning-outline" /> 超时预警任务列表</span>
+      <span class="warn-count" v-if="unresolvedList.length > 0">{{ unresolvedList.length }}条</span>
     </div>
-    <div class="warning-body">
-      <div v-if="!warnings || warnings.length === 0" class="warning-empty">
+    <div ref="scrollWrap" class="warning-scroll-wrap">
+      <div v-if="unresolvedList.length === 0" class="warning-empty">
         <i class="el-icon-check" style="font-size:24px;color:#26de81;" />
-        <p>暂无预警</p>
+        <p>暂无未处理预警</p>
       </div>
-      <div v-for="(item, idx) in warnings" :key="idx" class="warning-row" :class="rowClass(item)">
-        <span :class="['warn-dot', dotClass(item)]" />
-        <span :class="['warn-type', typeClass(item)]">{{ typeLabel(item) }}</span>
-        <span class="warn-task">{{ item.taskName || '' }}</span>
-        <span v-if="item.taskName && item.nodeName" class="warn-sep">-</span>
-        <span class="warn-node">{{ item.nodeName || '' }}</span>
-        <span v-if="item.teamName" class="warn-team">{{ item.teamName }}</span>
-        <span class="warn-date">截止 {{ item.endDate }}</span>
+      <div v-else ref="scrollInner" class="warning-scroll-inner">
+        <div v-for="(item, idx) in displayList" :key="idx" class="warning-row" :class="rowClass(item)">
+          <span :class="['warn-dot', dotClass(item)]" />
+          <span :class="['warn-type', typeClass(item)]">{{ typeLabel(item) }}</span>
+          <span class="warn-task">{{ item.taskName || '' }}</span>
+          <span v-if="item.taskName && item.nodeName" class="warn-sep">-</span>
+          <span class="warn-node">{{ item.nodeName || '' }}</span>
+          <span v-if="item.teamName" class="warn-team">{{ item.teamName }}</span>
+          <span class="warn-date">截止 {{ item.endDate }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -32,26 +35,74 @@ export default {
       }
     }
   },
+  data: function() {
+    return {
+      scrollTimer: null
+    }
+  },
+  computed: {
+    /** 只展示未处理的预警 */
+    unresolvedList: function() {
+      return (this.warnings || []).filter(function(item) {
+        return item.resolved !== 1
+      })
+    },
+    /** 超过6条时拼接一份实现无缝滚动 */
+    displayList: function() {
+      var list = this.unresolvedList
+      if (list.length <= 6) return list
+      return list.concat(list)
+    }
+  },
+  watch: {
+    unresolvedList: function() {
+      this.startScroll()
+    }
+  },
+  mounted: function() {
+    this.startScroll()
+  },
+  beforeDestroy: function() {
+    this.stopScroll()
+  },
   methods: {
     rowClass: function(item) {
-      if (item.resolved === 1) return 'is-resolved'
       if (item.isRead === 1) return 'is-read-unresolved'
       return ''
     },
     dotClass: function(item) {
-      if (item.resolved === 1) return 'dot-resolved'
       if (item.isRead === 1) return 'dot-read'
       return item.warnType === 'overdue' ? 'dot-overdue' : 'dot-soon'
     },
     typeClass: function(item) {
-      if (item.resolved === 1) return 'type-resolved'
       if (item.isRead === 1) return 'type-unresolved'
       return item.warnType === 'overdue' ? 'type-overdue' : 'type-soon'
     },
     typeLabel: function(item) {
-      if (item.resolved === 1) return '已处理'
       if (item.isRead === 1) return '未处理'
       return item.warnType === 'overdue' ? '已超时' : '即将超时'
+    },
+    startScroll: function() {
+      this.stopScroll()
+      var list = this.unresolvedList
+      if (list.length <= 6) return
+      var self = this
+      var offset = 0
+      this.scrollTimer = setInterval(function() {
+        if (!self.$refs.scrollInner) return
+        offset += 0.5
+        var halfHeight = self.$refs.scrollInner.scrollHeight / 2
+        if (offset >= halfHeight) {
+          offset = 0
+        }
+        self.$refs.scrollInner.style.transform = 'translateY(-' + offset + 'px)'
+      }, 80)
+    },
+    stopScroll: function() {
+      if (this.scrollTimer) {
+        clearInterval(this.scrollTimer)
+        this.scrollTimer = null
+      }
     }
   }
 }
@@ -77,20 +128,31 @@ export default {
 }
 .bi-card-header {
   margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 .bi-card-title {
   font-size: 13px;
   font-weight: 600;
   color: #00d4ff;
 }
+.warn-count {
+  font-size: 11px;
+  color: #ff6b6b;
+}
 .bi-warning-list {
-  height: 100%;
+  height: 240px;
   display: flex;
   flex-direction: column;
 }
-.warning-body {
+.warning-scroll-wrap {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
+  position: relative;
+}
+.warning-scroll-inner {
+  transition: transform 0.05s linear;
 }
 .warning-empty {
   text-align: center;
@@ -113,10 +175,6 @@ export default {
 .warning-row.is-read-unresolved {
   opacity: 0.7;
 }
-/* 已处理：明显透明 */
-.warning-row.is-resolved {
-  opacity: 0.45;
-}
 .warn-dot {
   width: 8px;
   height: 8px;
@@ -133,9 +191,6 @@ export default {
 }
 .dot-read {
   background: #e6a23c;
-}
-.dot-resolved {
-  background: #26de81;
 }
 .warn-type {
   font-size: 11px;
@@ -154,10 +209,6 @@ export default {
 .type-unresolved {
   background: rgba(230, 162, 60, 0.2);
   color: #e6a23c;
-}
-.type-resolved {
-  background: rgba(38, 222, 129, 0.2);
-  color: #26de81;
 }
 .warn-task {
   color: #00d4ff;

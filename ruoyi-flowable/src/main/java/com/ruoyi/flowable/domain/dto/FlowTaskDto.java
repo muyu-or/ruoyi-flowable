@@ -105,6 +105,9 @@ public class FlowTaskDto implements Serializable {
     @ApiModelProperty("任务是否成功(1:成功 0:失败 2:放弃)")
     private Integer taskSuccess;
 
+    @ApiModelProperty("业务任务名称（发起流程时填写的任务名称）")
+    private String businessTaskName;
+
     @ApiModelProperty("流程状态: running=进行中, finished=已完成, rejected=失败(不通过), stopped=已取消")
     private String procStatus;
 

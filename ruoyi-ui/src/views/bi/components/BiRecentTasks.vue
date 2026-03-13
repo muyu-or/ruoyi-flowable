@@ -115,7 +115,7 @@ export default {
   color: #00d4ff;
 }
 .bi-recent-tasks {
-  height: 180px;
+  height: 240px;
   display: flex;
   flex-direction: column;
 }
@@ -123,7 +123,6 @@ export default {
   flex: 1;
   overflow: hidden;
   position: relative;
-  max-height: 140px;
 }
 .task-scroll-inner {
   transition: transform 0.05s linear;

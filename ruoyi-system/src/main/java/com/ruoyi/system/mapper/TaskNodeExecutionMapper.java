@@ -165,6 +165,14 @@ public interface TaskNodeExecutionMapper
     );
 
     /**
+     * 查询某用户参与过的已完成任务的 task_id 列表（status 为 submitted 或 completed）
+     *
+     * @param claimUserId 认领/提交人用户ID
+     * @return task_id 列表
+     */
+    List<String> selectFinishedTaskIdsByClaimUserId(@org.apache.ibatis.annotations.Param("claimUserId") Long claimUserId);
+
+    /**
      * 预警扫描：查所有未完成且截止日期 <= deadlineDate 的节点
      *
      * @param deadlineDate 截止日期阈值（tomorrow），plan_end_date <= 此日期的都需预警

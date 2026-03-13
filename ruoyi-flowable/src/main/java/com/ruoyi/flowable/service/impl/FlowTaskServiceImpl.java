@@ -120,6 +120,9 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
     private com.ruoyi.system.service.ITaskNodeExecutionService taskNodeExecutionService;
 
     @Resource
+    private com.ruoyi.system.mapper.TaskNodeExecutionMapper taskNodeExecutionMapper;
+
+    @Resource
     private ITaskWarningService taskWarningService;
 
     /**
@@ -159,7 +162,18 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             taskService.resolveTask(taskVo.getTaskId(), allVariables);
         } else {
             taskService.addComment(taskVo.getTaskId(), taskVo.getInstanceId(), FlowComment.NORMAL.getType(), taskVo.getComment());
-            taskService.setAssignee(taskVo.getTaskId(), userId.toString());
+            // assignee 设为实际处理人：如果班组成员已提交过表单，记录班组成员为 assignee；否则记录当前操作人
+            String actualAssignee = userId.toString();
+            try {
+                com.ruoyi.system.domain.TaskNodeExecution nodeExec = taskNodeExecutionService.selectByTaskId(taskVo.getTaskId());
+                if (nodeExec != null && nodeExec.getClaimUserId() != null
+                        && !nodeExec.getClaimUserId().equals(userId)) {
+                    actualAssignee = nodeExec.getClaimUserId().toString();
+                }
+            } catch (Exception e) {
+                log.warn("查询节点执行记录失败，taskId={}，使用当前用户作为assignee", taskVo.getTaskId(), e);
+            }
+            taskService.setAssignee(taskVo.getTaskId(), actualAssignee);
             // 完成任务，传递合并后的所有变量到下一节点
             taskService.complete(taskVo.getTaskId(), allVariables);
 
@@ -663,10 +677,15 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
     public AjaxResult myProcess(FlowQueryVo queryVo) {
         Page<FlowTaskDto> page = new Page<>();
         Long userId = SecurityUtils.getLoginUser().getUser().getUserId();
+        // 管理角色（admin 或拥有 flowable:stat:all 权限）可查看所有人发起的流程
+        boolean viewAll = SecurityUtils.isAdmin(userId)
+                || SecurityUtils.hasPermi("flowable:stat:all");
         HistoricProcessInstanceQuery historicProcessInstanceQuery = historyService.createHistoricProcessInstanceQuery()
-                .startedBy(userId.toString())
                 .orderByProcessInstanceStartTime()
                 .desc();
+        if (!viewAll) {
+            historicProcessInstanceQuery.startedBy(userId.toString());
+        }
         List<HistoricProcessInstance> historicProcessInstances = historicProcessInstanceQuery.listPage(queryVo.getPageSize() * (queryVo.getPageNum() - 1), queryVo.getPageSize());
         page.setTotal(historicProcessInstanceQuery.count());
         List<FlowTaskDto> flowList = new ArrayList<>();
@@ -707,6 +726,15 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                 procStatus = "finished";      // 正常走到结束节点 = 已完成
             }
             flowTask.setProcStatus(procStatus);
+            // 业务任务名称（发起流程时填写的 taskName 流程变量）
+            List<org.flowable.variable.api.history.HistoricVariableInstance> taskNameVars = historyService
+                    .createHistoricVariableInstanceQuery()
+                    .processInstanceId(hisIns.getId())
+                    .variableName("taskName")
+                    .list();
+            if (CollectionUtils.isNotEmpty(taskNameVars) && taskNameVars.get(0).getValue() != null) {
+                flowTask.setBusinessTaskName(taskNameVars.get(0).getValue().toString());
+            }
             // 当前所处流程
             List<Task> taskList = taskService.createTaskQuery().processInstanceId(hisIns.getId()).list();
             if (CollectionUtils.isNotEmpty(taskList)) {
@@ -898,6 +926,12 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             flowTask.setProcDefVersion(pd.getVersion());
             flowTask.setProcInsId(task.getProcessInstanceId());
 
+            // 业务任务名称（发起流程时填写的 taskName 流程变量）
+            Map<String, Object> procVars = task.getProcessVariables();
+            if (procVars != null && procVars.get("taskName") != null) {
+                flowTask.setBusinessTaskName(procVars.get("taskName").toString());
+            }
+
             // 流程发起人信息
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                     .processInstanceId(task.getProcessInstanceId())
@@ -939,13 +973,126 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
     public AjaxResult finishedList(FlowQueryVo queryVo) {
         Page<FlowTaskDto> page = new Page<>();
         Long userId = SecurityUtils.getLoginUser().getUser().getUserId();
-        HistoricTaskInstanceQuery taskInstanceQuery = historyService.createHistoricTaskInstanceQuery()
-                .includeProcessVariables()
-                .finished()
-                .taskAssignee(userId.toString())
-                .orderByHistoricTaskInstanceEndTime()
-                .desc();
-        List<HistoricTaskInstance> historicTaskInstanceList = taskInstanceQuery.listPage(queryVo.getPageSize() * (queryVo.getPageNum() - 1), queryVo.getPageSize());
+
+        // 权限分层：admin/zongguan 看全部，班组长看班组，普通成员看自己
+        boolean viewAll = SecurityUtils.isAdmin(userId)
+                || SecurityUtils.hasPermi("flowable:stat:all");
+
+        List<HistoricTaskInstance> mergedList;
+
+        if (viewAll) {
+            // ---- 管理角色：查所有人已完成的任务 ----
+            mergedList = historyService.createHistoricTaskInstanceQuery()
+                    .includeProcessVariables()
+                    .finished()
+                    .orderByHistoricTaskInstanceEndTime()
+                    .desc()
+                    .list();
+        } else {
+            // 查询当前用户是否为班组长（管辖的班组有成员）
+            List<Long> teamMemberIds = productionTeamMapper.selectMemberUserIdsByLeaderId(userId);
+            boolean isLeader = teamMemberIds != null && !teamMemberIds.isEmpty();
+
+            if (isLeader) {
+                // ---- 班组长：查班组所有成员已完成的任务 ----
+                Set<String> memberIdStrings = teamMemberIds.stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toSet());
+
+                // 用 OR 查询每个成员的 assignee 任务
+                mergedList = new ArrayList<>();
+                for (String memberId : memberIdStrings) {
+                    List<HistoricTaskInstance> memberTasks = historyService.createHistoricTaskInstanceQuery()
+                            .includeProcessVariables()
+                            .finished()
+                            .taskAssignee(memberId)
+                            .orderByHistoricTaskInstanceEndTime()
+                            .desc()
+                            .list();
+                    mergedList.addAll(memberTasks);
+                }
+                // 补充 task_node_execution 中班组成员参与过的任务
+                for (Long memberId : teamMemberIds) {
+                    List<String> extraIds = taskNodeExecutionMapper.selectFinishedTaskIdsByClaimUserId(memberId);
+                    if (extraIds != null && !extraIds.isEmpty()) {
+                        Set<String> existingIds = mergedList.stream()
+                                .map(HistoricTaskInstance::getId)
+                                .collect(Collectors.toSet());
+                        List<String> newIds = extraIds.stream()
+                                .filter(id -> !existingIds.contains(id))
+                                .collect(Collectors.toList());
+                        if (!newIds.isEmpty()) {
+                            List<HistoricTaskInstance> extra = historyService.createHistoricTaskInstanceQuery()
+                                    .includeProcessVariables()
+                                    .finished()
+                                    .taskIds(newIds)
+                                    .list();
+                            mergedList.addAll(extra);
+                        }
+                    }
+                }
+                // 去重（同一个 taskId 可能出现多次）
+                Map<String, HistoricTaskInstance> deduped = new LinkedHashMap<>();
+                for (HistoricTaskInstance ht : mergedList) {
+                    deduped.putIfAbsent(ht.getId(), ht);
+                }
+                mergedList = new ArrayList<>(deduped.values());
+            } else {
+                // ---- 普通成员：只看自己的（保持原有逻辑） ----
+                // 1. 从 Flowable 查 assignee 为当前用户的已完成任务
+                List<HistoricTaskInstance> allAssigneeList = historyService.createHistoricTaskInstanceQuery()
+                        .includeProcessVariables()
+                        .finished()
+                        .taskAssignee(userId.toString())
+                        .orderByHistoricTaskInstanceEndTime()
+                        .desc()
+                        .list();
+
+                // 2. 从 task_node_execution 查当前用户参与过的任务
+                List<String> memberTaskIds = taskNodeExecutionMapper.selectFinishedTaskIdsByClaimUserId(userId);
+
+                // 3. 找出额外 task_id（去重）
+                Set<String> assigneeTaskIds = new HashSet<>();
+                for (HistoricTaskInstance ht : allAssigneeList) {
+                    assigneeTaskIds.add(ht.getId());
+                }
+                List<String> extraTaskIds = new ArrayList<>();
+                for (String tid : memberTaskIds) {
+                    if (!assigneeTaskIds.contains(tid)) {
+                        extraTaskIds.add(tid);
+                    }
+                }
+
+                // 4. 查出额外 task_id 对应的 HistoricTaskInstance
+                mergedList = new ArrayList<>(allAssigneeList);
+                if (!extraTaskIds.isEmpty()) {
+                    List<HistoricTaskInstance> extraList = historyService.createHistoricTaskInstanceQuery()
+                            .includeProcessVariables()
+                            .finished()
+                            .taskIds(extraTaskIds)
+                            .orderByHistoricTaskInstanceEndTime()
+                            .desc()
+                            .list();
+                    mergedList.addAll(extraList);
+                }
+            }
+        }
+
+        // 按 endTime 降序排序
+        mergedList.sort((a, b) -> {
+            if (a.getEndTime() == null && b.getEndTime() == null) return 0;
+            if (a.getEndTime() == null) return 1;
+            if (b.getEndTime() == null) return -1;
+            return b.getEndTime().compareTo(a.getEndTime());
+        });
+
+        // 手动分页
+        page.setTotal(mergedList.size());
+        int start = queryVo.getPageSize() * (queryVo.getPageNum() - 1);
+        int end = Math.min(start + queryVo.getPageSize(), mergedList.size());
+        List<HistoricTaskInstance> historicTaskInstanceList = start < mergedList.size()
+                ? mergedList.subList(start, end) : new ArrayList<>();
+
         List<FlowTaskDto> hisTaskList = new ArrayList<>();
         for (HistoricTaskInstance histTask : historicTaskInstanceList) {
             FlowTaskDto flowTask = new FlowTaskDto();
@@ -958,6 +1105,12 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             flowTask.setProcDefId(histTask.getProcessDefinitionId());
             flowTask.setTaskDefKey(histTask.getTaskDefinitionKey());
             flowTask.setTaskName(histTask.getName());
+
+            // 业务任务名称（发起流程时填写的 taskName 流程变量）
+            Map<String, Object> histProcVars = histTask.getProcessVariables();
+            if (histProcVars != null && histProcVars.get("taskName") != null) {
+                flowTask.setBusinessTaskName(histProcVars.get("taskName").toString());
+            }
 
             // 流程定义信息
             ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
@@ -998,7 +1151,6 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
             hisTaskList.add(flowTask);
         }
-        page.setTotal(taskInstanceQuery.count());
         page.setRecords(hisTaskList);
         return AjaxResult.success(page);
     }
@@ -1090,12 +1242,27 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                     // 展示审批人员
                     List<HistoricIdentityLink> linksForTask = historyService.getHistoricIdentityLinksForTask(histIns.getTaskId());
                     StringBuilder stringBuilder = new StringBuilder();
+                    // 获取该任务所属班组ID，用于精确查询候选人在该班组中的职位
+                    Long taskTeamId = null;
+                    try {
+                        com.ruoyi.system.domain.TaskNodeExecution tne = taskNodeExecutionMapper.selectByTaskId(histIns.getTaskId());
+                        if (tne != null) {
+                            taskTeamId = tne.getAssignedTeamId();
+                        }
+                    } catch (Exception e) {
+                        log.warn("查询节点执行记录获取班组ID失败，taskId={}", histIns.getTaskId(), e);
+                    }
                     for (HistoricIdentityLink identityLink : linksForTask) {
                         // 获选人,候选组/角色(多个)
                         if ("candidate".equals(identityLink.getType())) {
                             if (StringUtils.isNotBlank(identityLink.getUserId())) {
                                 SysUser sysUser = sysUserService.selectUserById(Long.parseLong(identityLink.getUserId()));
-                                String position = productionTeamMapper.selectPositionByUserId(sysUser.getUserId());
+                                String position;
+                                if (taskTeamId != null) {
+                                    position = productionTeamMapper.selectPositionByUserIdAndTeamId(sysUser.getUserId(), taskTeamId);
+                                } else {
+                                    position = productionTeamMapper.selectPositionByUserId(sysUser.getUserId());
+                                }
                                 String positionLabel = StringUtils.isNotBlank(position) ? DictUtils.getDictLabel("team_position", position) : null;
                                 if (StringUtils.isNotBlank(positionLabel)) {
                                     stringBuilder.append(sysUser.getNickName()).append("(").append(positionLabel).append(")").append(",");
@@ -1910,12 +2077,27 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
         // 展示审批人员
         List<HistoricIdentityLink> linksForTask = historyService.getHistoricIdentityLinksForTask(histIns.getTaskId());
         StringBuilder stringBuilder = new StringBuilder();
+        // 获取该任务所属班组ID，用于精确查询候选人在该班组中的职位
+        Long taskTeamId2 = null;
+        try {
+            com.ruoyi.system.domain.TaskNodeExecution tne2 = taskNodeExecutionMapper.selectByTaskId(histIns.getTaskId());
+            if (tne2 != null) {
+                taskTeamId2 = tne2.getAssignedTeamId();
+            }
+        } catch (Exception e) {
+            log.warn("查询节点执行记录获取班组ID失败，taskId={}", histIns.getTaskId(), e);
+        }
         for (HistoricIdentityLink identityLink : linksForTask) {
             // 获选人,候选组/角色(多个)
             if ("candidate".equals(identityLink.getType())) {
                 if (StringUtils.isNotBlank(identityLink.getUserId())) {
                     SysUser sysUser = sysUserService.selectUserById(Long.parseLong(identityLink.getUserId()));
-                    String position = productionTeamMapper.selectPositionByUserId(sysUser.getUserId());
+                    String position;
+                    if (taskTeamId2 != null) {
+                        position = productionTeamMapper.selectPositionByUserIdAndTeamId(sysUser.getUserId(), taskTeamId2);
+                    } else {
+                        position = productionTeamMapper.selectPositionByUserId(sysUser.getUserId());
+                    }
                     String positionLabel = StringUtils.isNotBlank(position) ? DictUtils.getDictLabel("team_position", position) : null;
                     if (StringUtils.isNotBlank(positionLabel)) {
                         stringBuilder.append(sysUser.getNickName()).append("(").append(positionLabel).append(")").append(",");
