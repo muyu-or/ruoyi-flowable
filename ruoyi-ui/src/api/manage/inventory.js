@@ -60,3 +60,12 @@ export function delInventory(id) {
     method: 'delete'
   })
 }
+
+// 批量设置成本单价
+export function batchSetUnitCost(data) {
+  return request({
+    url: '/manage/inventory/batch-unit-cost',
+    method: 'put',
+    data: data
+  })
+}

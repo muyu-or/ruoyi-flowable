@@ -57,6 +57,16 @@
         />
       </el-select>
     </el-form-item>
+    <el-form-item label="成本单价" prop="unitCost">
+      <el-input-number
+        v-model="form.unitCost"
+        :min="0"
+        :precision="2"
+        :disabled="readonly"
+        placeholder="请输入成本单价（元，选填）"
+        style="width: 100%"
+      />
+    </el-form-item>
     <el-form-item label="操作人" prop="operator">
       <el-input v-model="form.operator" :disabled="true" />
     </el-form-item>
@@ -96,6 +106,7 @@ export default {
         materialSubcategory: '',
         inQuantity: 0,
         warehouseArea: '',
+        unitCost: null,
         operator: '',
         remark: '',
         reportIds: [],

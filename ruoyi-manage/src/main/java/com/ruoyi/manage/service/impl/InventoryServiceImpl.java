@@ -21,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -93,6 +95,19 @@ public class InventoryServiceImpl implements IInventoryService
             existingInventory.setLastInboundTime(now);
             existingInventory.setUpdateTime(now);
 
+            // 加权平均单价计算
+            BigDecimal inUnitCost = inventoryDTO.getUnitCost();
+            if (inUnitCost != null && inUnitCost.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal oldCost = existingInventory.getUnitCost() != null ? existingInventory.getUnitCost() : BigDecimal.ZERO;
+                BigDecimal oldTotal = oldCost.multiply(BigDecimal.valueOf(existQty));
+                BigDecimal inTotal = inUnitCost.multiply(BigDecimal.valueOf(inQty));
+                if (newQuantity > 0) {
+                    BigDecimal newUnitCost = oldTotal.add(inTotal).divide(BigDecimal.valueOf(newQuantity), 2, RoundingMode.HALF_UP);
+                    existingInventory.setUnitCost(newUnitCost);
+                }
+                existingInventory.setTotalCost(existingInventory.getUnitCost().multiply(BigDecimal.valueOf(newQuantity)).setScale(2, RoundingMode.HALF_UP));
+            }
+
             // 记录本次入库流水
             StockIn stockIn = new StockIn();
             stockIn.setMaterialId(existingInventory.getMaterialId());
@@ -103,6 +118,11 @@ public class InventoryServiceImpl implements IInventoryService
             stockIn.setInboundTime(now);
             stockIn.setOperator(SecurityUtils.getUsername());
             stockIn.setCreateTime(now);
+            // 入库流水记录成本单价和金额
+            if (inUnitCost != null) {
+                stockIn.setUnitCost(inUnitCost);
+                stockIn.setTotalAmount(inUnitCost.multiply(BigDecimal.valueOf(inQty)).setScale(2, RoundingMode.HALF_UP));
+            }
             stockInMapper.insertStockIn(stockIn);
 
             return inventoryMapper.updateInventory(existingInventory);
@@ -121,6 +141,12 @@ public class InventoryServiceImpl implements IInventoryService
             newInventory.setLastInboundTime(now);
             newInventory.setCreateTime(now);
             newInventory.setUpdateTime(now);
+            // 新物料设置初始成本单价
+            BigDecimal inUnitCost = inventoryDTO.getUnitCost();
+            if (inUnitCost != null && inUnitCost.compareTo(BigDecimal.ZERO) > 0) {
+                newInventory.setUnitCost(inUnitCost);
+                newInventory.setTotalCost(inUnitCost.multiply(BigDecimal.valueOf(inventoryDTO.getQuantity())).setScale(2, RoundingMode.HALF_UP));
+            }
             int inventoryResult = inventoryMapper.insertInventory(newInventory);
 
             // 记录入库流水（手动赋值，避免 copyProperties 漏字段）
@@ -133,6 +159,11 @@ public class InventoryServiceImpl implements IInventoryService
             stockIn.setInboundTime(now);
             stockIn.setOperator(SecurityUtils.getUsername());
             stockIn.setCreateTime(now);
+            // 入库流水记录成本单价和金额
+            if (inUnitCost != null) {
+                stockIn.setUnitCost(inUnitCost);
+                stockIn.setTotalAmount(inUnitCost.multiply(BigDecimal.valueOf(inventoryDTO.getQuantity())).setScale(2, RoundingMode.HALF_UP));
+            }
             log.info("【insertInventory-StockIn】materialId={}, materialName={}, warehouseArea={}", stockIn.getMaterialId(), stockIn.getMaterialName(), stockIn.getWarehouseArea());
             int stockInResult = stockInMapper.insertStockIn(stockIn);
 
@@ -506,5 +537,30 @@ public class InventoryServiceImpl implements IInventoryService
         stockIn.setCreateTime(DateUtils.getNowDate());
 
         return stockInMapper.insertStockIn(stockIn);
+    }
+
+    @Override
+    @Transactional
+    public int batchSetUnitCost(Long[] ids, BigDecimal unitCost) {
+        if (ids == null || ids.length == 0) {
+            throw new ServiceException("请选择要设置单价的库存记录");
+        }
+        if (unitCost == null || unitCost.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ServiceException("成本单价必须大于0");
+        }
+        int count = 0;
+        for (Long id : ids) {
+            Inventory inventory = inventoryMapper.selectInventoryById(id);
+            if (inventory == null) {
+                continue;
+            }
+            inventory.setUnitCost(unitCost);
+            Long qty = inventory.getCurrentQuantity() != null ? inventory.getCurrentQuantity() : 0L;
+            inventory.setTotalCost(unitCost.multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP));
+            inventory.setUpdateTime(DateUtils.getNowDate());
+            inventoryMapper.updateInventory(inventory);
+            count++;
+        }
+        return count;
     }
 }

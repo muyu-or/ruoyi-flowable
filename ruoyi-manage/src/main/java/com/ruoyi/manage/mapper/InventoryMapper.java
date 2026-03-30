@@ -103,4 +103,9 @@ public interface InventoryMapper
      * @return 每行含 category（物料大类）和 totalQty（数量合计）
      */
     List<java.util.Map<String, Object>> sumInboundByCategory(@org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate, @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate);
+
+    /**
+     * 按物料大类汇总当前库存成本
+     */
+    List<java.util.Map<String, Object>> sumCostByCategory();
 }

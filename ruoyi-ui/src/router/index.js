@@ -180,6 +180,19 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/bi',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'mock',
+        component: () => import('@/views/bi/biDeviceMonitorMock'),
+        name: 'BiDeviceMonitorMock',
+        meta: { title: '智慧设备监控中心（Mock）', icon: '' }
+      }
+    ]
+  },
 ]
 
 // 动态路由，基于用户权限动态去加载

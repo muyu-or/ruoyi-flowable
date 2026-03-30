@@ -43,6 +43,14 @@ export function delTeam(id) {
   })
 }
 
+// 按班组ID查询成员列表
+export function getTeamMembers(teamId) {
+  return request({
+    url: '/manage/team/members/' + teamId,
+    method: 'get'
+  })
+}
+
 // 查询用户列表（含角色名称）
 export function listTeamUser(query) {
   return request({

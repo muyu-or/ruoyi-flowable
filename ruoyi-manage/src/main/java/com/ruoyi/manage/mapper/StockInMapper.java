@@ -77,4 +77,11 @@ public interface StockInMapper
     List<Map<String, Object>> sumQuantityGroupByPeriod(@Param("startDate") Date startDate,
                                                        @Param("endDate") Date endDate,
                                                        @Param("dateFormat") String dateFormat);
+
+    /**
+     * 按时间段分组统计入库金额
+     */
+    List<Map<String, Object>> sumAmountGroupByPeriod(@Param("startDate") Date startDate,
+                                                     @Param("endDate") Date endDate,
+                                                     @Param("dateFormat") String dateFormat);
 }

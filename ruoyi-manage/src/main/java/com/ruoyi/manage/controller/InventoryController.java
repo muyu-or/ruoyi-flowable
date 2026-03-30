@@ -19,7 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 库存信息Controller
@@ -151,5 +153,20 @@ public class InventoryController extends BaseController
     public AjaxResult scanInbound(@RequestBody InventoryDTO inventoryDTO)
     {
         return success(inventoryService.scanInbound(inventoryDTO));
+    }
+
+    /**
+     * 批量设置成本单价
+     */
+    @PreAuthorize("@ss.hasPermi('manage:inventory:edit')")
+    @Log(title = "库存信息", businessType = BusinessType.UPDATE)
+    @PutMapping("/batch-unit-cost")
+    @SuppressWarnings("unchecked")
+    public AjaxResult batchSetUnitCost(@RequestBody Map<String, Object> params)
+    {
+        List<Number> idList = (List<Number>) params.get("ids");
+        BigDecimal unitCost = new BigDecimal(params.get("unitCost").toString());
+        Long[] ids = idList.stream().map(Number::longValue).toArray(Long[]::new);
+        return toAjax(inventoryService.batchSetUnitCost(ids, unitCost));
     }
 }

@@ -7,6 +7,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -65,6 +66,18 @@ public class Inventory extends BaseEntity {
      */
     @Excel(name = "入库类型", dictType = "inbound_type")
     private String inboundType;
+
+    /**
+     * 成本单价（加权平均）
+     */
+    @Excel(name = "成本单价")
+    private BigDecimal unitCost;
+
+    /**
+     * 库存总成本（数量×单价）
+     */
+    @Excel(name = "库存总成本")
+    private BigDecimal totalCost;
 
     /**
      * 库存状态
@@ -199,6 +212,22 @@ public class Inventory extends BaseEntity {
 
     public String getInboundType() {
         return inboundType;
+    }
+
+    public BigDecimal getUnitCost() {
+        return unitCost;
+    }
+
+    public void setUnitCost(BigDecimal unitCost) {
+        this.unitCost = unitCost;
+    }
+
+    public BigDecimal getTotalCost() {
+        return totalCost;
+    }
+
+    public void setTotalCost(BigDecimal totalCost) {
+        this.totalCost = totalCost;
     }
 
     @Override

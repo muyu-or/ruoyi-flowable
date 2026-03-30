@@ -17,6 +17,10 @@ public class HomeStatDto {
     private List<StockTrendPoint> stockTrend;
     private List<InventoryCategoryDto> inventoryOverview;
 
+    // ⑧ admin 专属（库存成本统计）
+    private List<CostByCategoryDto> costByCategory;
+    private List<StockAmountTrendPoint> stockAmountTrend;
+
     // ③ admin 可见 / leader 看自己班组
     private List<TeamProgressDto> teamProgress;
 
@@ -52,6 +56,10 @@ public class HomeStatDto {
     public void setCompanyStats(MyStatsDto companyStats) { this.companyStats = companyStats; }
     public List<UserTopDto> getUserTop5() { return userTop5; }
     public void setUserTop5(List<UserTopDto> userTop5) { this.userTop5 = userTop5; }
+    public List<CostByCategoryDto> getCostByCategory() { return costByCategory; }
+    public void setCostByCategory(List<CostByCategoryDto> costByCategory) { this.costByCategory = costByCategory; }
+    public List<StockAmountTrendPoint> getStockAmountTrend() { return stockAmountTrend; }
+    public void setStockAmountTrend(List<StockAmountTrendPoint> stockAmountTrend) { this.stockAmountTrend = stockAmountTrend; }
 
     // MyStatsDto（复用 DashboardStatsDto.MyStatsDto 或重新定义）
     public static class MyStatsDto {
@@ -219,6 +227,28 @@ public class HomeStatDto {
         public void setClaimUserName(String claimUserName) { this.claimUserName = claimUserName; }
         public String getProcInstId() { return procInstId; }
         public void setProcInstId(String procInstId) { this.procInstId = procInstId; }
+    }
+
+    // CostByCategoryDto（按物料大类汇总库存成本）
+    public static class CostByCategoryDto {
+        private String category;
+        private Double totalCost;
+
+        public String getCategory() { return category; }
+        public void setCategory(String category) { this.category = category; }
+        public Double getTotalCost() { return totalCost; }
+        public void setTotalCost(Double totalCost) { this.totalCost = totalCost; }
+    }
+
+    // StockAmountTrendPoint（按时间段入库金额趋势）
+    public static class StockAmountTrendPoint {
+        private String label;
+        private Double inboundAmount;
+
+        public String getLabel() { return label; }
+        public void setLabel(String label) { this.label = label; }
+        public Double getInboundAmount() { return inboundAmount; }
+        public void setInboundAmount(Double inboundAmount) { this.inboundAmount = inboundAmount; }
     }
 
     // UserTopDto（个人完成数量排名）

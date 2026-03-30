@@ -120,4 +120,7 @@ public class FlowTaskDto implements Serializable {
     @ApiModelProperty("节点计划结束日期 yyyy-MM-dd")
     private String planEndDate;
 
+    @ApiModelProperty("实际处理人员（班组长审批时选择，逗号分隔）")
+    private String handlers;
+
 }

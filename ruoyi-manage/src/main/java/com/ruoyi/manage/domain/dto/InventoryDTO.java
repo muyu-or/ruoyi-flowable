@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +40,10 @@ public class InventoryDTO implements Serializable {
     /** 入库数量 */
     @Excel(name = "入库数量")
     private Long quantity;
+
+    /** 成本单价 */
+    @Excel(name = "成本单价")
+    private BigDecimal unitCost;
 
 
     /** 库区 */
@@ -73,6 +78,14 @@ public class InventoryDTO implements Serializable {
 
     /** 请求参数（用于范围查询等） */
     private Map<String, Object> params;
+
+    public BigDecimal getUnitCost() {
+        return unitCost;
+    }
+
+    public void setUnitCost(BigDecimal unitCost) {
+        this.unitCost = unitCost;
+    }
 
     public Map<String, Object> getParams() {
         if (params == null) {

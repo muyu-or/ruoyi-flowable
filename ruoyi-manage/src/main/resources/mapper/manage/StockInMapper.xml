@@ -13,11 +13,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehouseArea"    column="warehouse_area"    />
         <result property="inboundTime"    column="inbound_time"    />
         <result property="operator"    column="operator"    />
+        <result property="unitCost"    column="unit_cost"    />
+        <result property="totalAmount"    column="total_amount"    />
         <result property="createTime"    column="create_time"    />
     </resultMap>
 
     <sql id="selectStockInVo">
-        select id, material_id, material_name,inbound_type, quantity, warehouse_area, inbound_time, operator, create_time from stock_in
+        select id, material_id, material_name, inbound_type, quantity, warehouse_area, inbound_time, operator, unit_cost, total_amount, create_time from stock_in
     </sql>
 
     <select id="selectStockInList" parameterType="com.ruoyi.manage.domain.StockIn" resultMap="StockInResult">
@@ -50,6 +52,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             warehouse_area,
             <if test="inboundTime != null">inbound_time,</if>
             <if test="operator != null">operator,</if>
+            <if test="unitCost != null">unit_cost,</if>
+            <if test="totalAmount != null">total_amount,</if>
             <if test="createTime != null">create_time,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -60,6 +64,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{warehouseArea},
             <if test="inboundTime != null">#{inboundTime},</if>
             <if test="operator != null">#{operator},</if>
+            <if test="unitCost != null">#{unitCost},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
             <if test="createTime != null">#{createTime},</if>
          </trim>
     </insert>
@@ -74,6 +80,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseArea != null and warehouseArea != ''">warehouse_area = #{warehouseArea},</if>
             <if test="inboundTime != null">inbound_time = #{inboundTime},</if>
             <if test="operator != null">operator = #{operator},</if>
+            <if test="unitCost != null">unit_cost = #{unitCost},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
         </trim>
         where id = #{id}
@@ -89,6 +97,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <!-- 按时间段分组统计入库金额 -->
+    <select id="sumAmountGroupByPeriod" resultType="java.util.Map">
+        SELECT DATE_FORMAT(inbound_time, #{dateFormat}) AS label,
+               IFNULL(SUM(total_amount), 0) AS amount
+        FROM stock_in
+        WHERE inbound_time BETWEEN #{startDate} AND #{endDate}
+          AND total_amount IS NOT NULL
+        GROUP BY label
+        ORDER BY label
+    </select>
 
     <!-- 按时间段分组统计入库数量 -->
     <select id="sumQuantityGroupByPeriod" resultType="java.util.Map">

@@ -6,6 +6,7 @@ import com.ruoyi.manage.domain.Inventory;
 import com.ruoyi.manage.domain.dto.InventoryDTO;
 import com.ruoyi.manage.domain.vo.InventoryVO;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -87,4 +88,13 @@ public interface IInventoryService
      * @return
      */
     public int scanInbound(InventoryDTO inventoryDTO);
+
+    /**
+     * 批量设置成本单价
+     *
+     * @param ids 库存记录ID数组
+     * @param unitCost 成本单价
+     * @return 更新条数
+     */
+    public int batchSetUnitCost(Long[] ids, BigDecimal unitCost);
 }

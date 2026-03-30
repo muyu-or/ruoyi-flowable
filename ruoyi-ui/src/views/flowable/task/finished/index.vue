@@ -58,12 +58,6 @@
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-tickets"
-            @click="handleFlowRecord(scope.row)"
-          >流转记录</el-button>
-           <el-button
-            size="mini"
-            type="text"
             icon="el-icon-refresh-left"
             @click="handleRevoke(scope.row)"
           >撤回

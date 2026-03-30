@@ -63,9 +63,17 @@ public interface IProductionTeamService
 
     /**
      * 删除产线班组信息
-     * 
+     *
      * @param id 产线班组主键
      * @return 结果
      */
     public int deleteProductionTeamById(Long id);
+
+    /**
+     * 按班组ID查询成员列表
+     *
+     * @param teamId 班组ID
+     * @return 成员列表
+     */
+    public List<SysUser> selectUserListByTeamId(Long teamId);
 }

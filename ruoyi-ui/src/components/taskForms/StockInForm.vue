@@ -82,6 +82,17 @@
       />
     </el-form-item>
 
+    <el-form-item label="成本单价" prop="unitCost">
+      <el-input-number
+        v-model="form.unitCost"
+        :min="0"
+        :precision="2"
+        :disabled="readonly"
+        placeholder="请输入成本单价（元）"
+        style="width: 100%"
+      />
+    </el-form-item>
+
     <el-form-item label="检测说明" prop="checkDescription">
       <el-input
         v-model="form.checkDescription"
@@ -136,6 +147,7 @@ export default {
         warehouseArea: '',
         inboundType: '',
         quantity: null,
+        unitCost: null,
         checkDescription: '',
         operator: '',
         remark: '',

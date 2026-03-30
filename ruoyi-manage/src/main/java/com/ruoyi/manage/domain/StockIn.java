@@ -7,6 +7,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -59,6 +60,18 @@ public class StockIn extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "入库时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date inboundTime;
+
+    /**
+     * 成本单价
+     */
+    @Excel(name = "成本单价")
+    private BigDecimal unitCost;
+
+    /**
+     * 入库金额（数量×单价）
+     */
+    @Excel(name = "入库金额")
+    private BigDecimal totalAmount;
 
     /**
      * 操作人员
@@ -119,6 +132,22 @@ public class StockIn extends BaseEntity {
 
     public Date getInboundTime() {
         return inboundTime;
+    }
+
+    public BigDecimal getUnitCost() {
+        return unitCost;
+    }
+
+    public void setUnitCost(BigDecimal unitCost) {
+        this.unitCost = unitCost;
+    }
+
+    public BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
     }
 
     public void setOperator(String operator) {

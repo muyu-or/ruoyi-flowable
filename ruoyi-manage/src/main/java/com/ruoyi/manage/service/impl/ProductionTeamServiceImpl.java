@@ -180,4 +180,10 @@ public class ProductionTeamServiceImpl implements IProductionTeamService
             }
         }
     }
+
+    @Override
+    public List<SysUser> selectUserListByTeamId(Long teamId)
+    {
+        return productionTeamMapper.selectUserListByTeamId(teamId);
+    }
 }

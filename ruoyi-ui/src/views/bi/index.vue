@@ -55,6 +55,13 @@
         <div class="bi-bottom-right">
           <BiWarningList :warnings="warnings" />
         </div>
+        <div class="bi-bottom-cost">
+          <BiCostChart
+            :cost-by-category="statsData.costByCategory || []"
+            :stock-amount-trend="statsData.stockAmountTrend || []"
+            :category-dicts="categoryDicts"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -71,6 +78,7 @@ import BiTeamTop5Chart from './components/BiTeamTop5Chart'
 import BiMonitorPanel from './components/BiMonitorPanel'
 import BiRecentTasks from './components/BiRecentTasks'
 import BiWarningList from './components/BiWarningList'
+import BiCostChart from './components/BiCostChart'
 
 var WEEK_NAMES = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
 
@@ -88,7 +96,8 @@ export default {
     BiTeamTop5Chart,
     BiMonitorPanel,
     BiRecentTasks,
-    BiWarningList
+    BiWarningList,
+    BiCostChart
   },
   dicts: ['material_category'],
   data: function() {
@@ -262,6 +271,10 @@ export default {
   min-width: 0;
 }
 .bi-bottom-right {
+  flex: 1;
+  min-width: 0;
+}
+.bi-bottom-cost {
   flex: 1;
   min-width: 0;
 }

@@ -120,6 +120,18 @@
         </template>
       </el-table-column>
       <el-table-column label="入库数量" align="center" prop="quantity" sortable />
+      <el-table-column label="成本单价" align="center" prop="unitCost">
+        <template slot-scope="scope">
+          <span v-if="scope.row.unitCost != null">¥{{ Number(scope.row.unitCost).toFixed(2) }}</span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="入库金额" align="center" prop="totalAmount">
+        <template slot-scope="scope">
+          <span v-if="scope.row.totalAmount != null">¥{{ Number(scope.row.totalAmount).toFixed(2) }}</span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="入库时间" align="center" prop="inboundTime" width="180" sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.inboundTime, '{y}-{m}-{d}') }}</span>
@@ -191,6 +203,9 @@
         </el-form-item>
         <el-form-item label="操作人员" prop="operator">
           <el-input v-model="form.operator" placeholder="请输入操作人员" />
+        </el-form-item>
+        <el-form-item label="成本单价" prop="unitCost">
+          <el-input-number v-model="form.unitCost" :min="0" :precision="2" placeholder="请输入成本单价（元，选填）" style="width:100%" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -296,6 +311,7 @@ export default {
         warehouseArea: null,
         inboundTime: null,
         operator: null,
+        unitCost: null,
         createTime: null
       };
       this.resetForm("stockinRef");

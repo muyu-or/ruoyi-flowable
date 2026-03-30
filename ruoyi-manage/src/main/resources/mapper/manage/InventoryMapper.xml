@@ -17,6 +17,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="lastInboundTime" column="last_inbound_time" />
         <result property="lastOutboundTime" column="last_outbound_time" />
         <result property="inboundType" column="inbound_type" />
+        <result property="unitCost" column="unit_cost" />
+        <result property="totalCost" column="total_cost" />
     </resultMap>
 
     <select id="selectInventoryVOList" parameterType="com.ruoyi.manage.domain.dto.InventoryDTO" resultMap="InventoryVOResult">
@@ -89,6 +91,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
         <result property="inboundType"    column="inbound_type"    />
+        <result property="unitCost"    column="unit_cost"    />
+        <result property="totalCost"    column="total_cost"    />
     </resultMap>
 
     <sql id="selectInventoryVo">
@@ -105,6 +109,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             i.first_inbound_time,
             i.last_inbound_time,
             i.last_outbound_time,
+            i.unit_cost,
+            i.total_cost,
             i.create_time,
             i.update_time,
             (
@@ -176,6 +182,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="firstInboundTime != null">first_inbound_time,</if>
             <if test="lastInboundTime != null">last_inbound_time,</if>
             <if test="lastOutboundTime != null">last_outbound_time,</if>
+            <if test="unitCost != null">unit_cost,</if>
+            <if test="totalCost != null">total_cost,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
         </trim>
@@ -191,6 +199,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="firstInboundTime != null">#{firstInboundTime},</if>
             <if test="lastInboundTime != null">#{lastInboundTime},</if>
             <if test="lastOutboundTime != null">#{lastOutboundTime},</if>
+            <if test="unitCost != null">#{unitCost},</if>
+            <if test="totalCost != null">#{totalCost},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
         </trim>
@@ -210,6 +220,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="firstInboundTime != null">first_inbound_time = #{firstInboundTime},</if>
             <if test="lastInboundTime != null">last_inbound_time = #{lastInboundTime},</if>
             <if test="lastOutboundTime != null">last_outbound_time = #{lastOutboundTime},</if>
+            <if test="unitCost != null">unit_cost = #{unitCost},</if>
+            <if test="totalCost != null">total_cost = #{totalCost},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
@@ -248,6 +260,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE create_time BETWEEN #{startDate} AND #{endDate}
         GROUP BY label, material_category
         ORDER BY label
+    </select>
+
+    <!-- 按物料大类汇总当前库存成本（BI 成本饼图） -->
+    <select id="sumCostByCategory" resultType="java.util.HashMap">
+        SELECT material_category AS category,
+               IFNULL(SUM(total_cost), 0) AS totalCost
+        FROM inventory
+        WHERE status != '2'
+          AND total_cost IS NOT NULL
+        GROUP BY material_category
     </select>
 
     <!-- 按物料大类汇总时间段内入库数量（首页饼图） -->

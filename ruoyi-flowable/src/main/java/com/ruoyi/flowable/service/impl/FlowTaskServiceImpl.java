@@ -1177,21 +1177,30 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                     .desc().list();
             List<FlowTaskDto> hisFlowList = new ArrayList<>();
 
+            // 一次性加载所有历史流程变量
+            Map<String, Object> allProcVars = new HashMap<>();
+            try {
+                List<org.flowable.variable.api.history.HistoricVariableInstance> allVarList =
+                    historyService.createHistoricVariableInstanceQuery()
+                        .processInstanceId(procInsId)
+                        .list();
+                for (org.flowable.variable.api.history.HistoricVariableInstance hv : allVarList) {
+                    if (hv.getValue() != null) {
+                        allProcVars.put(hv.getVariableName(), hv.getValue());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("flowRecord: 批量读取流程变量失败, procInsId={}", procInsId, e);
+            }
+
             // 读取 nodeTimeMap（节点计划时间范围），用于在流转记录中显示
             Map<String, Object> nodeTimeMap = null;
             try {
-                List<org.flowable.variable.api.history.HistoricVariableInstance> varList =
-                    historyService.createHistoricVariableInstanceQuery()
-                        .processInstanceId(procInsId)
-                        .variableName("nodeTimeMap")
-                        .list();
-                if (varList != null && !varList.isEmpty()) {
-                    Object ntmObj = varList.get(0).getValue();
-                    if (ntmObj instanceof Map) {
-                        nodeTimeMap = (Map<String, Object>) ntmObj;
-                    } else if (ntmObj != null) {
-                        nodeTimeMap = JSON.parseObject(ntmObj.toString(), Map.class);
-                    }
+                Object ntmObj = allProcVars.get("nodeTimeMap");
+                if (ntmObj instanceof Map) {
+                    nodeTimeMap = (Map<String, Object>) ntmObj;
+                } else if (ntmObj != null) {
+                    nodeTimeMap = JSON.parseObject(ntmObj.toString(), Map.class);
                 }
             } catch (Exception e) {
                 log.warn("flowRecord: 读取 nodeTimeMap 失败, procInsId={}", procInsId, e);
@@ -1278,6 +1287,13 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                     }
                     if (StringUtils.isNotBlank(stringBuilder)) {
                         flowTask.setCandidate(stringBuilder.substring(0, stringBuilder.length() - 1));
+                    }
+
+                    // 填入实际处理人员（班组长审批时选择，存于 {nodeKey}__handlers）
+                    String handlersKey = histIns.getActivityId() + "__handlers";
+                    Object handlersVal = allProcVars.get(handlersKey);
+                    if (handlersVal != null && StringUtils.isNotBlank(handlersVal.toString())) {
+                        flowTask.setHandlers(handlersVal.toString());
                     }
 
                     flowTask.setDuration(histIns.getDurationInMillis() == null || histIns.getDurationInMillis() == 0 ? null : getDate(histIns.getDurationInMillis()));

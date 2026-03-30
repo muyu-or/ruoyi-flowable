@@ -67,8 +67,12 @@
                         {{ item.assigneeName }}
                         <el-tag type="info" size="mini">{{ item.deptName }}</el-tag>
                       </el-descriptions-item>
-                      <el-descriptions-item v-if="item.candidate" label-class-name="my-label">
-                        <template slot="label"><i class="el-icon-user" />候选办理</template>
+                      <el-descriptions-item v-if="item.handlers" label-class-name="my-label">
+                        <template slot="label"><i class="el-icon-user" />处理人员</template>
+                        {{ item.handlers }}
+                      </el-descriptions-item>
+                      <el-descriptions-item v-else-if="item.candidate" label-class-name="my-label">
+                        <template slot="label"><i class="el-icon-user" />班组成员</template>
                         {{ item.candidate }}
                       </el-descriptions-item>
                       <el-descriptions-item v-if="item.planStartDate || item.planEndDate" label-class-name="my-label">
@@ -109,6 +113,32 @@
           <el-form-item prop="targetKey">
             <flow-user v-if="checkSendUser" :check-type="checkType" @handleUserSelect="handleUserSelect" />
             <flow-role v-if="checkSendRole" @handleRoleSelect="handleRoleSelect" />
+          </el-form-item>
+
+          <!-- 处理人员多选：加载本节点班组成员 -->
+          <el-form-item
+            label="处理人员"
+            label-width="80px"
+            prop="handlers"
+            :rules="teamMembers.length > 0 ? [{ required: true, message: '请选择处理人员', trigger: 'change' }] : []"
+          >
+            <el-select
+              v-model="selectedHandlers"
+              multiple
+              placeholder="请选择本次任务处理人员"
+              style="width:100%"
+              :loading="loadingHandlers"
+            >
+              <el-option
+                v-for="member in teamMembers"
+                :key="member.userId"
+                :label="member.label"
+                :value="member.userId"
+              />
+            </el-select>
+            <div v-if="!loadingHandlers && teamMembers.length === 0" style="font-size:12px;color:#909399;margin-top:4px;">
+              当前节点未分配班组，无可选成员
+            </div>
           </el-form-item>
 
           <el-form-item
@@ -213,6 +243,7 @@
 import { flowRecord } from '@/api/flowable/finished'
 import FlowUser from '@/components/flow/User'
 import FlowRole from '@/components/flow/Role'
+import { getTeamMembers } from '@/api/manage/team'
 import { flowXmlAndNode } from '@/api/flowable/definition'
 import {
   complete,
@@ -282,7 +313,11 @@ export default {
       isLeader: true, // 当前用户是否为班组长（默认 true，避免权限检查延迟期间按钮消失）
       latestReturnComment: null, // 最新退回意见（班组长退回时的处理意见）
       nodeStartDate: '', // 当前节点计划开始日期
-      nodeEndDate: '' // 当前节点计划结束日期
+      nodeEndDate: '', // 当前节点计划结束日期
+      nodeTeamMap: {}, // 节点与班组的映射（nodeKey → teamId）
+      teamMembers: [], // 当前节点班组成员列表
+      selectedHandlers: [], // 班组长选中的处理人员
+      loadingHandlers: false // 加载成员中
     }
   },
   computed: {
@@ -405,6 +440,16 @@ export default {
         this.formComponent = res.data._formComponent || ''
         // 读取最新退回意见
         this.latestReturnComment = res.data._latestReturnComment || null
+
+        // 读取节点班组映射（存储 key 为 NODE_TEAM_MAP，值为 JSON 字符串）
+        var rawTeamMap = res.data['NODE_TEAM_MAP'] || res.data.nodeTeamMap
+        if (rawTeamMap) {
+          if (typeof rawTeamMap === 'string') {
+            try { this.nodeTeamMap = JSON.parse(rawTeamMap) } catch (e) { this.nodeTeamMap = {} }
+          } else {
+            this.nodeTeamMap = rawTeamMap
+          }
+        }
 
         // 读取当前节点的计划时间范围（从流程变量 nodeTimeMap 提取）
         const nodeTimeMap = res.data.nodeTimeMap
@@ -588,6 +633,22 @@ export default {
       this.submitForm().then(() => {
         this.completeOpen = true
         this.completeTitle = '流程审批'
+        this.selectedHandlers = []
+        // 加载当前节点的班组成员
+        var teamId = this.nodeTeamMap && this.taskDefinitionKey ? this.nodeTeamMap[this.taskDefinitionKey] : null
+        if (teamId != null && teamId !== '') {
+          this.loadingHandlers = true
+          getTeamMembers(teamId).then(res => {
+            this.teamMembers = (res.data || []).map(function(u) {
+              return { userId: u.userId, label: u.nickName || u.userName }
+            })
+            this.loadingHandlers = false
+          }).catch(function() {
+            this.loadingHandlers = false
+          })
+        } else {
+          this.teamMembers = []
+        }
       }).catch(() => {
         // 表单校验未通过，不打开审批弹框
         this.$message.warning('请先完整填写表单')
@@ -609,6 +670,10 @@ export default {
       }
       if (!this.taskForm.comment) {
         this.$modal.msgError('请输入处理意见!')
+        return
+      }
+      if (this.teamMembers.length > 0 && (!this.selectedHandlers || this.selectedHandlers.length === 0)) {
+        this.$modal.msgError('请选择处理人员!')
         return
       }
       // 退回重审无需校验退回节点（直接重置当前节点）
@@ -637,6 +702,14 @@ export default {
         this.taskForm.variables = {}
       }
       this.taskForm.variables.approval_status = 'approved'
+      // 记录处理人员（供统计用），key = {nodeKey}__handlers
+      if (this.taskDefinitionKey && this.selectedHandlers && this.selectedHandlers.length > 0) {
+        var handlerNames = this.selectedHandlers.map(uid => {
+          var member = this.teamMembers.find(function(m) { return m.userId === uid })
+          return member ? member.label : uid
+        })
+        this.$set(this.taskForm.variables, this.taskDefinitionKey + '__handlers', handlerNames.join(','))
+      }
       complete(this.taskForm).then(response => {
         this.$modal.msgSuccess('审批通过，流程继续进行!')
         this.completeOpen = false

@@ -104,6 +104,16 @@
           @click="handleExport"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          v-hasPermi="['manage:inventory:edit']"
+          type="success"
+          plain
+          icon="el-icon-price-tag"
+          :disabled="multiple"
+          @click="handleBatchSetCost"
+        >设置单价</el-button>
+      </el-col>
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
@@ -123,6 +133,16 @@
         </template>
       </el-table-column>
       <el-table-column label="当前库存" align="center" prop="currentQuantity" sortable />
+      <el-table-column label="成本单价" align="center" prop="unitCost" width="110">
+        <template slot-scope="scope">
+          <span>{{ scope.row.unitCost != null ? '¥' + Number(scope.row.unitCost).toFixed(2) : '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="库存总成本" align="center" prop="totalCost" width="120">
+        <template slot-scope="scope">
+          <span>{{ scope.row.totalCost != null ? '¥' + Number(scope.row.totalCost).toFixed(2) : '-' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="库房区域" align="center" prop="warehouseArea" sortable>
         <template slot-scope="scope">
           <span>{{ displayLabel(dict.type.warehouse_area, scope.row.warehouseArea) }}</span>
@@ -241,6 +261,9 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="成本单价">
+          <el-input-number v-model="form.unitCost" :min="0" :precision="2" controls-position="right" placeholder="请输入成本单价（可选）" style="width:100%" />
+        </el-form-item>
 
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -310,6 +333,29 @@
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitFileForm">确 定</el-button>
         <el-button @click="upload.open = false">取 消</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- 批量设置成本单价弹框 -->
+    <el-dialog title="批量设置成本单价" :visible.sync="batchCostOpen" width="380px" append-to-body>
+      <el-form ref="batchCostRef" :model="batchCostForm" label-width="90px">
+        <el-form-item label="选中数量">
+          <span style="color:#606266;">共 {{ ids.length }} 条记录</span>
+        </el-form-item>
+        <el-form-item label="成本单价" prop="unitCost" :rules="[{ required: true, message: '请输入成本单价', trigger: 'blur' }]">
+          <el-input-number
+            v-model="batchCostForm.unitCost"
+            :min="0.01"
+            :precision="2"
+            controls-position="right"
+            placeholder="请输入单价（元）"
+            style="width:100%"
+          />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitBatchCost">确 定</el-button>
+        <el-button @click="batchCostOpen = false">取 消</el-button>
       </div>
     </el-dialog>
 
@@ -513,7 +559,7 @@
 </template>
 
 <script>
-import { listInventory, delInventory, addInventory, updateInventory, stockOutInventory, scanInbound } from '@/api/manage/inventory'
+import { listInventory, delInventory, addInventory, updateInventory, stockOutInventory, scanInbound, batchSetUnitCost } from '@/api/manage/inventory'
 import { listDefinition, flowXmlAndNode, startProcessWithTeam } from '@/api/flowable/definition'
 import { listTeam } from '@/api/manage/team'
 import { getToken } from '@/utils/auth'
@@ -558,6 +604,10 @@ export default {
       flowDefinitionList: [],
       flowTotal: 0,
       flowCurrentRow: null, // 触发发起流程的库存行
+      // 批量设置单价弹窗
+      batchCostOpen: false,
+      batchCostForm: { unitCost: null },
+
       // 批量发起流程弹窗
       batchFlowOpen: false,
       batchGroups: [],
@@ -781,6 +831,7 @@ export default {
         materialCategory: null,
         materialSubcategory: null,
         currentQuantity: 1,
+        unitCost: null,
         warehouseArea: null,
         inboundType: null,
         status: '1',
@@ -968,6 +1019,22 @@ export default {
       this.download('manage/inventory/export', {
         ...this.queryParams
       }, `inventory_${new Date().getTime()}.xlsx`)
+    },
+
+    /** 批量设置成本单价 */
+    handleBatchSetCost() {
+      this.batchCostForm.unitCost = null
+      this.batchCostOpen = true
+    },
+    submitBatchCost() {
+      this.$refs.batchCostRef.validate(valid => {
+        if (!valid) return
+        batchSetUnitCost({ ids: this.ids, unitCost: this.batchCostForm.unitCost }).then(() => {
+          this.$modal.msgSuccess('成本单价设置成功')
+          this.batchCostOpen = false
+          this.getList()
+        })
+      })
     },
     /** 导入按钮操作 */
     handleImport() {

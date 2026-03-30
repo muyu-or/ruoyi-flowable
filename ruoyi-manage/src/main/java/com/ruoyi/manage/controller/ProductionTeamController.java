@@ -115,4 +115,13 @@ public class ProductionTeamController extends BaseController
     {
         return toAjax(productionTeamService.deleteProductionTeamByIds(ids));
     }
+
+    /**
+     * 按班组ID查询成员列表（供审批时选择处理人员）
+     */
+    @GetMapping("/members/{teamId}")
+    public AjaxResult getTeamMembers(@PathVariable Long teamId)
+    {
+        return AjaxResult.success(productionTeamService.selectUserListByTeamId(teamId));
+    }
 }

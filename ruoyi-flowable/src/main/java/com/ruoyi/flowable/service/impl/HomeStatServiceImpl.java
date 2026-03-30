@@ -72,6 +72,10 @@ public class HomeStatServiceImpl implements IHomeStatService {
 
             // 2.2 库存总览（按物料大类汇总该时间段内入库数量）
             result.setInventoryOverview(getInventoryOverview(dateRange));
+
+            // 2.3 库存成本统计
+            result.setCostByCategory(getCostByCategory());
+            result.setStockAmountTrend(getStockAmountTrend(dateRange));
         }
 
         if (isAdmin) {
@@ -243,6 +247,41 @@ public class HomeStatServiceImpl implements IHomeStatService {
             dto.setTotalQty(toLong(row.get("totalQty")));
             list.add(dto);
         }
+        return list;
+    }
+
+    /**
+     * 按物料大类汇总当前库存成本
+     */
+    private List<HomeStatDto.CostByCategoryDto> getCostByCategory() {
+        List<Map<String, Object>> rows = inventoryMapper.sumCostByCategory();
+        List<HomeStatDto.CostByCategoryDto> list = new java.util.ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            HomeStatDto.CostByCategoryDto dto = new HomeStatDto.CostByCategoryDto();
+            dto.setCategory((String) row.get("category"));
+            Object val = row.get("totalCost");
+            dto.setTotalCost(val instanceof Number ? ((Number) val).doubleValue() : 0.0);
+            list.add(dto);
+        }
+        return list;
+    }
+
+    /**
+     * 按时间段汇总入库金额趋势
+     */
+    private List<HomeStatDto.StockAmountTrendPoint> getStockAmountTrend(DateRange dateRange) {
+        String dateFormat = getDateFormatForPeriod(dateRange.period);
+        List<Map<String, Object>> rows = stockInMapper.sumAmountGroupByPeriod(
+            dateRange.startDate, dateRange.endDate, dateFormat);
+        List<HomeStatDto.StockAmountTrendPoint> list = new java.util.ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            HomeStatDto.StockAmountTrendPoint point = new HomeStatDto.StockAmountTrendPoint();
+            point.setLabel(String.valueOf(row.get("label")));
+            Object val = row.get("amount");
+            point.setInboundAmount(val instanceof Number ? ((Number) val).doubleValue() : 0.0);
+            list.add(point);
+        }
+        list.sort(java.util.Comparator.comparing(HomeStatDto.StockAmountTrendPoint::getLabel));
         return list;
     }
 

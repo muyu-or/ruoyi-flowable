@@ -49,8 +49,12 @@
                         {{ item.assigneeName }}
                         <el-tag type="info" size="mini">{{ item.deptName }}</el-tag>
                       </el-descriptions-item>
-                      <el-descriptions-item v-if="item.candidate" label-class-name="my-label">
-                        <template slot="label"><i class="el-icon-user" />候选办理</template>
+                      <el-descriptions-item v-if="item.handlers" label-class-name="my-label">
+                        <template slot="label"><i class="el-icon-user" />处理人员</template>
+                        {{ item.handlers }}
+                      </el-descriptions-item>
+                      <el-descriptions-item v-else-if="item.candidate" label-class-name="my-label">
+                        <template slot="label"><i class="el-icon-user" />班组成员</template>
                         {{ item.candidate }}
                       </el-descriptions-item>
                       <el-descriptions-item v-if="item.planStartDate || item.planEndDate" label-class-name="my-label">

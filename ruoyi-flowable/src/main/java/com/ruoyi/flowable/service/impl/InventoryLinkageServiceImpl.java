@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Map;
 
@@ -65,7 +66,8 @@ public class InventoryLinkageServiceImpl implements IInventoryLinkageService {
         dto.setWarehouseArea(toStr(form.get("warehouseArea")));
         dto.setInboundType(toStr(form.get("inboundType")));
         dto.setQuantity(toLong(form.get("quantity")));
-        log.info("原料检测入库：materialName={}, quantity={}", dto.getMaterialName(), dto.getQuantity());
+        dto.setUnitCost(toBigDecimal(form.get("unitCost")));
+        log.info("原料检测入库：materialName={}, quantity={}, unitCost={}", dto.getMaterialName(), dto.getQuantity(), dto.getUnitCost());
         int result = inventoryService.insertInventory(dto);
         if (result <= 0) {
             throw new ServiceException("原料检测入库失败，请联系管理员");
@@ -143,5 +145,10 @@ public class InventoryLinkageServiceImpl implements IInventoryLinkageService {
 
     private String toStr(Object val) {
         return val == null ? "" : val.toString().trim();
+    }
+
+    private BigDecimal toBigDecimal(Object val) {
+        if (val == null) return null;
+        try { return new BigDecimal(val.toString()); } catch (NumberFormatException e) { return null; }
     }
 }
