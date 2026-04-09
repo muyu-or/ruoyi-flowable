@@ -181,4 +181,25 @@ public interface TaskNodeExecutionMapper
     List<java.util.Map<String, Object>> selectPendingNodesForWarning(
         @org.apache.ibatis.annotations.Param("deadlineDate") String deadlineDate
     );
+
+    /**
+     * BI大屏：查询已完成任务的原始耗时数据（按节点分组，用于 Java 计算 P50/P90）
+     *
+     * @return 每行含 nodeName, duration (秒)
+     */
+    List<java.util.Map<String, Object>> selectCompletedDurationsByNode();
+
+    /**
+     * BI大屏：查询已完成任务的原始耗时数据（按班组分组，用于 Java 计算稳定性）
+     *
+     * @return 每行含 teamName, duration (秒)
+     */
+    List<java.util.Map<String, Object>> selectCompletedDurationsByTeam();
+
+    /**
+     * BI大屏：按节点统计活跃/已完成任务数量
+     *
+     * @return 每行含 nodeName, activeCount, completedCount
+     */
+    List<java.util.Map<String, Object>> selectNodeStatusSummary();
 }

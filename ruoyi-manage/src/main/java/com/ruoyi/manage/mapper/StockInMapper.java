@@ -84,4 +84,9 @@ public interface StockInMapper
     List<Map<String, Object>> sumAmountGroupByPeriod(@Param("startDate") Date startDate,
                                                      @Param("endDate") Date endDate,
                                                      @Param("dateFormat") String dateFormat);
+
+    /**
+     * BI大屏：查询全部入库金额总和
+     */
+    java.math.BigDecimal selectTotalStockInAmount();
 }

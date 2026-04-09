@@ -118,4 +118,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         GROUP BY label
         ORDER BY label
     </select>
+
+    <!-- BI大屏：全部入库金额总和 -->
+    <select id="selectTotalStockInAmount" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(total_amount), 0) FROM stock_in WHERE total_amount IS NOT NULL
+    </select>
 </mapper>

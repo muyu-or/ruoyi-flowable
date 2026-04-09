@@ -345,4 +345,36 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND tne.status IN ('submitted', 'completed')
           AND tne.task_id IS NOT NULL
     </select>
+
+    <!-- BI大屏：已完成任务耗时按节点分组（供 Java 计算 P50/P90） -->
+    <select id="selectCompletedDurationsByNode" resultType="java.util.HashMap">
+        SELECT node_name AS nodeName, process_duration AS duration
+        FROM task_node_execution
+        WHERE status = 'completed'
+          AND process_duration IS NOT NULL
+          AND process_duration &gt; 0
+        ORDER BY node_name, process_duration
+    </select>
+
+    <!-- BI大屏：已完成任务耗时按班组分组（供 Java 计算稳定性） -->
+    <select id="selectCompletedDurationsByTeam" resultType="java.util.HashMap">
+        SELECT pt.team_name AS teamName, tne.process_duration AS duration
+        FROM task_node_execution tne
+        JOIN production_team pt ON pt.id = tne.assigned_team_id
+        WHERE tne.status = 'completed'
+          AND tne.process_duration IS NOT NULL
+          AND tne.process_duration &gt; 0
+        ORDER BY pt.team_name, tne.process_duration
+    </select>
+
+    <!-- BI大屏：按节点统计活跃/已完成任务数量 -->
+    <select id="selectNodeStatusSummary" resultType="java.util.HashMap">
+        SELECT node_name AS nodeName,
+               SUM(CASE WHEN status IN ('pending', 'claimed') THEN 1 ELSE 0 END) AS activeCount,
+               SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completedCount
+        FROM task_node_execution
+        WHERE status != 'cancelled'
+        GROUP BY node_name
+        ORDER BY completedCount DESC
+    </select>
 </mapper>

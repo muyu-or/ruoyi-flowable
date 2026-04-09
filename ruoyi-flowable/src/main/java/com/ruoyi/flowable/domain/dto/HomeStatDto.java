@@ -1,5 +1,6 @@
 package com.ruoyi.flowable.domain.dto;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +38,13 @@ public class HomeStatDto {
     // ⑦ admin 专属（个人完成数量 Top5，供 BI 大屏使用）
     private List<UserTopDto> userTop5;
 
+    // ⑨ admin 专属（BI 大屏新增指标）
+    private List<WarningStatDto> warningStats;
+    private CostSummaryDto costSummary;
+    private List<NodeBottleneckDto> nodeBottleneck;
+    private List<TeamStabilityDto> teamStability;
+    private List<NodeStatusSummaryDto> nodeStatusSummary;
+
     // Getters/Setters
     public MyStatsDto getMyStats() { return myStats; }
     public void setMyStats(MyStatsDto myStats) { this.myStats = myStats; }
@@ -60,6 +68,16 @@ public class HomeStatDto {
     public void setCostByCategory(List<CostByCategoryDto> costByCategory) { this.costByCategory = costByCategory; }
     public List<StockAmountTrendPoint> getStockAmountTrend() { return stockAmountTrend; }
     public void setStockAmountTrend(List<StockAmountTrendPoint> stockAmountTrend) { this.stockAmountTrend = stockAmountTrend; }
+    public List<WarningStatDto> getWarningStats() { return warningStats; }
+    public void setWarningStats(List<WarningStatDto> warningStats) { this.warningStats = warningStats; }
+    public CostSummaryDto getCostSummary() { return costSummary; }
+    public void setCostSummary(CostSummaryDto costSummary) { this.costSummary = costSummary; }
+    public List<NodeBottleneckDto> getNodeBottleneck() { return nodeBottleneck; }
+    public void setNodeBottleneck(List<NodeBottleneckDto> nodeBottleneck) { this.nodeBottleneck = nodeBottleneck; }
+    public List<TeamStabilityDto> getTeamStability() { return teamStability; }
+    public void setTeamStability(List<TeamStabilityDto> teamStability) { this.teamStability = teamStability; }
+    public List<NodeStatusSummaryDto> getNodeStatusSummary() { return nodeStatusSummary; }
+    public void setNodeStatusSummary(List<NodeStatusSummaryDto> nodeStatusSummary) { this.nodeStatusSummary = nodeStatusSummary; }
 
     // MyStatsDto（复用 DashboardStatsDto.MyStatsDto 或重新定义）
     public static class MyStatsDto {
@@ -264,5 +282,78 @@ public class HomeStatDto {
         public void setUserName(String userName) { this.userName = userName; }
         public Long getFinished() { return finished; }
         public void setFinished(Long finished) { this.finished = finished; }
+    }
+
+    // WarningStatDto（预警按节点统计）
+    public static class WarningStatDto {
+        private String nodeName;
+        private int warningCount;
+        private double avgResponseMinutes;
+
+        public String getNodeName() { return nodeName; }
+        public void setNodeName(String nodeName) { this.nodeName = nodeName; }
+        public int getWarningCount() { return warningCount; }
+        public void setWarningCount(int warningCount) { this.warningCount = warningCount; }
+        public double getAvgResponseMinutes() { return avgResponseMinutes; }
+        public void setAvgResponseMinutes(double avgResponseMinutes) { this.avgResponseMinutes = avgResponseMinutes; }
+    }
+
+    // CostSummaryDto（成本汇总）
+    public static class CostSummaryDto {
+        private BigDecimal totalInventoryCost;
+        private BigDecimal avgUnitCost;
+        private BigDecimal totalStockInAmount;
+
+        public BigDecimal getTotalInventoryCost() { return totalInventoryCost; }
+        public void setTotalInventoryCost(BigDecimal totalInventoryCost) { this.totalInventoryCost = totalInventoryCost; }
+        public BigDecimal getAvgUnitCost() { return avgUnitCost; }
+        public void setAvgUnitCost(BigDecimal avgUnitCost) { this.avgUnitCost = avgUnitCost; }
+        public BigDecimal getTotalStockInAmount() { return totalStockInAmount; }
+        public void setTotalStockInAmount(BigDecimal totalStockInAmount) { this.totalStockInAmount = totalStockInAmount; }
+    }
+
+    // NodeBottleneckDto（节点瓶颈 P50/P90）
+    public static class NodeBottleneckDto {
+        private String nodeName;
+        private long p50Seconds;
+        private long p90Seconds;
+
+        public String getNodeName() { return nodeName; }
+        public void setNodeName(String nodeName) { this.nodeName = nodeName; }
+        public long getP50Seconds() { return p50Seconds; }
+        public void setP50Seconds(long p50Seconds) { this.p50Seconds = p50Seconds; }
+        public long getP90Seconds() { return p90Seconds; }
+        public void setP90Seconds(long p90Seconds) { this.p90Seconds = p90Seconds; }
+    }
+
+    // TeamStabilityDto（班组效率稳定性）
+    public static class TeamStabilityDto {
+        private String teamName;
+        private double meanSeconds;
+        private double stdSeconds;
+        private double cv;
+
+        public String getTeamName() { return teamName; }
+        public void setTeamName(String teamName) { this.teamName = teamName; }
+        public double getMeanSeconds() { return meanSeconds; }
+        public void setMeanSeconds(double meanSeconds) { this.meanSeconds = meanSeconds; }
+        public double getStdSeconds() { return stdSeconds; }
+        public void setStdSeconds(double stdSeconds) { this.stdSeconds = stdSeconds; }
+        public double getCv() { return cv; }
+        public void setCv(double cv) { this.cv = cv; }
+    }
+
+    // NodeStatusSummaryDto（节点状态汇总）
+    public static class NodeStatusSummaryDto {
+        private String nodeName;
+        private long activeCount;
+        private long completedCount;
+
+        public String getNodeName() { return nodeName; }
+        public void setNodeName(String nodeName) { this.nodeName = nodeName; }
+        public long getActiveCount() { return activeCount; }
+        public void setActiveCount(long activeCount) { this.activeCount = activeCount; }
+        public long getCompletedCount() { return completedCount; }
+        public void setCompletedCount(long completedCount) { this.completedCount = completedCount; }
     }
 }

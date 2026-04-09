@@ -281,4 +281,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE s.inbound_time BETWEEN #{startDate} AND #{endDate}
         GROUP BY i.material_category
     </select>
+
+    <!-- BI大屏：库存成本汇总 -->
+    <select id="selectCostSummary" resultType="java.util.HashMap">
+        SELECT IFNULL(SUM(total_cost), 0) AS totalInventoryCost,
+               CASE WHEN SUM(current_quantity) &gt; 0
+                    THEN ROUND(SUM(total_cost) / SUM(current_quantity), 2)
+                    ELSE 0 END AS avgUnitCost
+        FROM inventory
+        WHERE status != '2'
+          AND total_cost IS NOT NULL
+          AND unit_cost IS NOT NULL
+    </select>
 </mapper>

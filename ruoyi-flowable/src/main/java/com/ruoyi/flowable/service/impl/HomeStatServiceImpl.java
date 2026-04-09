@@ -2,6 +2,7 @@ package com.ruoyi.flowable.service.impl;
 
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.flowable.domain.dto.HomeStatDto;
+import com.ruoyi.flowable.mapper.TaskWarningMapper;
 import com.ruoyi.flowable.service.IHomeStatService;
 import com.ruoyi.manage.mapper.InventoryMapper;
 import com.ruoyi.manage.mapper.ProductionTeamMapper;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,6 +48,9 @@ public class HomeStatServiceImpl implements IHomeStatService {
 
     @Resource
     private HistoryService historyService;
+
+    @Resource
+    private TaskWarningMapper taskWarningMapper;
 
     @Override
     public HomeStatDto getHomeStats(Long userId, String period) {
@@ -98,6 +103,13 @@ public class HomeStatServiceImpl implements IHomeStatService {
             // 3.4 个人完成数量 Top5（admin 专属，供 BI 大屏展示）
             List<Map<String, Object>> topRows = taskNodeExecutionMapper.countUserFinishedTop(5);
             result.setUserTop5(buildUserTop5(topRows));
+
+            // 3.5 BI大屏新增指标
+            result.setWarningStats(buildWarningStats());
+            result.setCostSummary(buildCostSummary());
+            result.setNodeBottleneck(buildNodeBottleneck());
+            result.setTeamStability(buildTeamStability());
+            result.setNodeStatusSummary(buildNodeStatusSummary());
         }
 
         if (isLeader || !isAdmin) { // leader + 成员都能看到班组效率
@@ -553,6 +565,154 @@ public class HomeStatServiceImpl implements IHomeStatService {
             list.add(dto);
         }
         return list;
+    }
+
+    // =============== BI 大屏新增指标构建方法 ===============
+
+    /**
+     * 预警按节点统计
+     */
+    private List<HomeStatDto.WarningStatDto> buildWarningStats() {
+        List<Map<String, Object>> rows = taskWarningMapper.selectWarningStatsByNode();
+        List<HomeStatDto.WarningStatDto> list = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            HomeStatDto.WarningStatDto dto = new HomeStatDto.WarningStatDto();
+            dto.setNodeName((String) row.get("nodeName"));
+            dto.setWarningCount(((Number) row.get("warningCount")).intValue());
+            Object avgResp = row.get("avgResponseMinutes");
+            dto.setAvgResponseMinutes(avgResp instanceof Number ? ((Number) avgResp).doubleValue() : 0.0);
+            list.add(dto);
+        }
+        return list;
+    }
+
+    /**
+     * 成本汇总（库存总成本 + 加权均价 + 入库总金额）
+     */
+    private HomeStatDto.CostSummaryDto buildCostSummary() {
+        HomeStatDto.CostSummaryDto dto = new HomeStatDto.CostSummaryDto();
+        Map<String, Object> costMap = inventoryMapper.selectCostSummary();
+        if (costMap != null) {
+            Object totalCost = costMap.get("totalInventoryCost");
+            dto.setTotalInventoryCost(totalCost instanceof BigDecimal ? (BigDecimal) totalCost
+                    : new BigDecimal(totalCost != null ? totalCost.toString() : "0"));
+            Object avgCost = costMap.get("avgUnitCost");
+            dto.setAvgUnitCost(avgCost instanceof BigDecimal ? (BigDecimal) avgCost
+                    : new BigDecimal(avgCost != null ? avgCost.toString() : "0"));
+        } else {
+            dto.setTotalInventoryCost(BigDecimal.ZERO);
+            dto.setAvgUnitCost(BigDecimal.ZERO);
+        }
+        BigDecimal totalStockInAmount = stockInMapper.selectTotalStockInAmount();
+        dto.setTotalStockInAmount(totalStockInAmount != null ? totalStockInAmount : BigDecimal.ZERO);
+        return dto;
+    }
+
+    /**
+     * 节点瓶颈 P50/P90（Java 端计算分位数）
+     */
+    private List<HomeStatDto.NodeBottleneckDto> buildNodeBottleneck() {
+        List<Map<String, Object>> rows = taskNodeExecutionMapper.selectCompletedDurationsByNode();
+        // 按节点分组
+        Map<String, List<Long>> grouped = new LinkedHashMap<>();
+        for (Map<String, Object> row : rows) {
+            String nodeName = (String) row.get("nodeName");
+            long duration = toLong(row.get("duration"));
+            grouped.computeIfAbsent(nodeName, k -> new ArrayList<>()).add(duration);
+        }
+        List<HomeStatDto.NodeBottleneckDto> list = new ArrayList<>();
+        for (Map.Entry<String, List<Long>> entry : grouped.entrySet()) {
+            List<Long> durations = entry.getValue();
+            HomeStatDto.NodeBottleneckDto dto = new HomeStatDto.NodeBottleneckDto();
+            dto.setNodeName(entry.getKey());
+            dto.setP50Seconds(quantile(durations, 0.5));
+            dto.setP90Seconds(quantile(durations, 0.9));
+            list.add(dto);
+        }
+        // 按 P90 降序
+        list.sort((a, b) -> Long.compare(b.getP90Seconds(), a.getP90Seconds()));
+        return list;
+    }
+
+    /**
+     * 班组效率稳定性（均值/标准差/变异系数）
+     */
+    private List<HomeStatDto.TeamStabilityDto> buildTeamStability() {
+        List<Map<String, Object>> rows = taskNodeExecutionMapper.selectCompletedDurationsByTeam();
+        // 按班组分组
+        Map<String, List<Long>> grouped = new LinkedHashMap<>();
+        for (Map<String, Object> row : rows) {
+            String teamName = (String) row.get("teamName");
+            long duration = toLong(row.get("duration"));
+            grouped.computeIfAbsent(teamName, k -> new ArrayList<>()).add(duration);
+        }
+        List<HomeStatDto.TeamStabilityDto> list = new ArrayList<>();
+        for (Map.Entry<String, List<Long>> entry : grouped.entrySet()) {
+            List<Long> durations = entry.getValue();
+            double mean = meanLong(durations);
+            double std = stdLong(durations);
+            double cv = mean > 0 ? std / mean : 0.0;
+
+            HomeStatDto.TeamStabilityDto dto = new HomeStatDto.TeamStabilityDto();
+            dto.setTeamName(entry.getKey());
+            dto.setMeanSeconds(mean);
+            dto.setStdSeconds(std);
+            dto.setCv(cv);
+            list.add(dto);
+        }
+        // 按 CV 降序
+        list.sort((a, b) -> Double.compare(b.getCv(), a.getCv()));
+        return list;
+    }
+
+    /**
+     * 节点活跃/已完成状态汇总
+     */
+    private List<HomeStatDto.NodeStatusSummaryDto> buildNodeStatusSummary() {
+        List<Map<String, Object>> rows = taskNodeExecutionMapper.selectNodeStatusSummary();
+        List<HomeStatDto.NodeStatusSummaryDto> list = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            HomeStatDto.NodeStatusSummaryDto dto = new HomeStatDto.NodeStatusSummaryDto();
+            dto.setNodeName((String) row.get("nodeName"));
+            dto.setActiveCount(toLong(row.get("activeCount")));
+            dto.setCompletedCount(toLong(row.get("completedCount")));
+            list.add(dto);
+        }
+        return list;
+    }
+
+    // =============== 统计辅助方法 ===============
+
+    /** 分位数计算（数据已排序） */
+    private long quantile(List<Long> sorted, double q) {
+        if (sorted == null || sorted.isEmpty()) return 0L;
+        double pos = (sorted.size() - 1) * q;
+        int base = (int) Math.floor(pos);
+        double rest = pos - base;
+        if (base + 1 < sorted.size()) {
+            return Math.round(sorted.get(base) + rest * (sorted.get(base + 1) - sorted.get(base)));
+        }
+        return sorted.get(base);
+    }
+
+    /** 均值 */
+    private double meanLong(List<Long> arr) {
+        if (arr == null || arr.isEmpty()) return 0.0;
+        long sum = 0;
+        for (Long v : arr) sum += v;
+        return (double) sum / arr.size();
+    }
+
+    /** 标准差 */
+    private double stdLong(List<Long> arr) {
+        if (arr == null || arr.size() < 2) return 0.0;
+        double mean = meanLong(arr);
+        double variance = 0.0;
+        for (Long v : arr) {
+            double diff = v - mean;
+            variance += diff * diff;
+        }
+        return Math.sqrt(variance / (arr.size() - 1));
     }
 
     /**

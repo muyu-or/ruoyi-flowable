@@ -153,4 +153,11 @@ public interface TaskWarningMapper
      */
     int upgradeToOverdue(@Param("procInstId") String procInstId,
                          @Param("nodeKey") String nodeKey);
+
+    /**
+     * BI大屏：按节点统计预警次数和平均响应时间（分钟）
+     *
+     * @return 每行含 nodeName, warningCount, avgResponseMinutes
+     */
+    List<java.util.Map<String, Object>> selectWarningStatsByNode();
 }

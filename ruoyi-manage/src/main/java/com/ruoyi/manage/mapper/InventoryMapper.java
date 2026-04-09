@@ -4,9 +4,13 @@ package com.ruoyi.manage.mapper;
 import com.ruoyi.manage.domain.Inventory;
 import com.ruoyi.manage.domain.dto.InventoryDTO;
 import com.ruoyi.manage.domain.vo.InventoryVO;
+import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 库存信息Mapper接口
@@ -88,24 +92,30 @@ public interface InventoryMapper
     /**
      * 按时间周期统计物料类别数量
      */
-    List<java.util.Map<String, Object>> countByCategoryAndPeriod(@org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate, @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate, @org.apache.ibatis.annotations.Param("materialCategory") String materialCategory);
+    @MapKey("material_category")
+    List<Map<String, Object>> countByCategoryAndPeriod(@Param("startDate") Date startDate, @Param("endDate") Date endDate, @Param("materialCategory") String materialCategory);
 
     /**
      * 按时间周期分段统计物料类别数量（用于柱状图）
      */
-    List<java.util.Map<String, Object>> countBarsByPeriod(@org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate, @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate, @org.apache.ibatis.annotations.Param("dateFormat") String dateFormat);
+    @MapKey("label")
+    List<Map<String, Object>> countBarsByPeriod(@Param("startDate") Date startDate, @Param("endDate") Date endDate, @Param("dateFormat") String dateFormat);
 
     /**
      * 按物料大类汇总时间段内入库数量（首页库存总览饼图）
-     *
-     * @param startDate 开始时间
-     * @param endDate   结束时间
-     * @return 每行含 category（物料大类）和 totalQty（数量合计）
      */
-    List<java.util.Map<String, Object>> sumInboundByCategory(@org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate, @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate);
+    @MapKey("category")
+    List<Map<String, Object>> sumInboundByCategory(@Param("startDate") Date startDate, @Param("endDate") Date endDate);
 
     /**
      * 按物料大类汇总当前库存成本
      */
-    List<java.util.Map<String, Object>> sumCostByCategory();
+    @MapKey("category")
+    List<Map<String, Object>> sumCostByCategory();
+
+    /**
+     * BI大屏：库存成本汇总（总库存成本 + 加权平均单价）
+     */
+    @MapKey("totalInventoryCost")
+    Map<String, Object> selectCostSummary();
 }

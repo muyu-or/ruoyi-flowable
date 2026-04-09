@@ -156,4 +156,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND resolved = 0
     </update>
 
+    <!-- BI大屏：按节点统计预警次数和平均响应时间 -->
+    <select id="selectWarningStatsByNode" resultType="java.util.HashMap">
+        SELECT node_name AS nodeName,
+               COUNT(*) AS warningCount,
+               IFNULL(AVG(
+                   CASE WHEN resolved = 1 AND end_date IS NOT NULL
+                        THEN TIMESTAMPDIFF(MINUTE, create_time, STR_TO_DATE(end_date, '%Y-%m-%d'))
+                        ELSE NULL
+                   END
+               ), 0) AS avgResponseMinutes
+        FROM task_warning
+        WHERE node_name IS NOT NULL AND node_name != ''
+        GROUP BY node_name
+        ORDER BY warningCount DESC
+    </select>
+
 </mapper>
