@@ -138,12 +138,7 @@
           <span>{{ scope.row.unitCost != null ? '¥' + Number(scope.row.unitCost).toFixed(2) : '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="库存总成本" align="center" prop="totalCost" width="120">
-        <template slot-scope="scope">
-          <span>{{ scope.row.totalCost != null ? '¥' + Number(scope.row.totalCost).toFixed(2) : '-' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="库房区域" align="center" prop="warehouseArea" sortable>
+<el-table-column label="库房区域" align="center" prop="warehouseArea" sortable>
         <template slot-scope="scope">
           <span>{{ displayLabel(dict.type.warehouse_area, scope.row.warehouseArea) }}</span>
         </template>

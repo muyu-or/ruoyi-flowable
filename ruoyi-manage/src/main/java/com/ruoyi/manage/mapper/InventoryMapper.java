@@ -90,6 +90,11 @@ public interface InventoryMapper
     String findMaxCodeByPrefix(String codePrefix);
 
     /**
+     * 统计当前有效库存中不同物料子类的数量
+     */
+    int countDistinctSubcategory();
+
+    /**
      * 按时间周期统计物料类别数量
      */
     @MapKey("material_category")

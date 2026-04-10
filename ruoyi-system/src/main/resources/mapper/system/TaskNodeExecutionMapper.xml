@@ -159,13 +159,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
 
-    <!-- 个人任务按状态统计（排除已取消） -->
+    <!-- 个人任务按状态统计（排除已取消，含作为处理人员参与的任务） -->
     <select id="countMyStatsByStatus" resultType="java.util.HashMap">
         SELECT status, COUNT(*) AS cnt
-        FROM task_node_execution
-        WHERE (claim_user_id = #{userId}
-           OR assigned_user_id = #{userId})
-          AND status != 'cancelled'
+        FROM (
+            SELECT tne.id, tne.status
+            FROM task_node_execution tne
+            WHERE (tne.claim_user_id = #{userId}
+               OR tne.assigned_user_id = #{userId})
+              AND tne.status != 'cancelled'
+            UNION
+            SELECT tne.id, tne.status
+            FROM task_node_execution tne
+            INNER JOIN task_node_execution_handler h ON h.node_execution_id = tne.id
+            WHERE h.user_id = #{userId}
+              AND tne.status != 'cancelled'
+        ) t
         GROUP BY status
     </select>
 
@@ -186,20 +195,29 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND status IN ('pending', 'claimed')
     </update>
 
-    <!-- 按班组统计成员任务状态 -->
+    <!-- 按班组统计成员任务状态（含作为处理人员参与的任务） -->
     <select id="countMemberStatsByTeam" resultType="java.util.HashMap">
-        SELECT tne.claim_user_id AS userId,
+        SELECT t.userId,
                u.nick_name AS userName,
-               SUM(CASE WHEN tne.status = 'pending' THEN 1 ELSE 0 END) AS pending,
-               SUM(CASE WHEN tne.status = 'claimed' THEN 1 ELSE 0 END) AS running,
-               SUM(CASE WHEN tne.status = 'completed' THEN 1 ELSE 0 END) AS finished,
+               SUM(CASE WHEN t.status = 'pending' THEN 1 ELSE 0 END) AS pending,
+               SUM(CASE WHEN t.status = 'claimed' THEN 1 ELSE 0 END) AS running,
+               SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) AS finished,
                COUNT(*) AS total
-        FROM task_node_execution tne
-        LEFT JOIN sys_user u ON u.user_id = tne.claim_user_id
-        WHERE tne.assigned_team_id = #{teamId}
-          AND tne.status != 'cancelled'
-          AND tne.claim_user_id IS NOT NULL
-        GROUP BY tne.claim_user_id, u.nick_name
+        FROM (
+            SELECT tne.id, tne.status, tne.claim_user_id AS userId
+            FROM task_node_execution tne
+            WHERE tne.assigned_team_id = #{teamId}
+              AND tne.status != 'cancelled'
+              AND tne.claim_user_id IS NOT NULL
+            UNION
+            SELECT tne.id, tne.status, h.user_id AS userId
+            FROM task_node_execution tne
+            INNER JOIN task_node_execution_handler h ON h.node_execution_id = tne.id
+            WHERE tne.assigned_team_id = #{teamId}
+              AND tne.status != 'cancelled'
+        ) t
+        LEFT JOIN sys_user u ON u.user_id = t.userId
+        GROUP BY t.userId, u.nick_name
     </select>
 
     <!-- 查询最近完成的节点任务（首页展示） -->
@@ -242,16 +260,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         GROUP BY status
     </select>
 
-    <!-- 全公司个人完成数量 Top N -->
+    <!-- 全公司个人完成数量 Top N（含作为处理人员参与的任务） -->
     <select id="countUserFinishedTop" resultType="java.util.HashMap">
-        SELECT tne.claim_user_id AS userId,
-               u.nick_name       AS userName,
-               COUNT(*)          AS finished
-        FROM task_node_execution tne
-        LEFT JOIN sys_user u ON u.user_id = tne.claim_user_id
-        WHERE tne.status = 'completed'
-          AND tne.claim_user_id IS NOT NULL
-        GROUP BY tne.claim_user_id, u.nick_name
+        SELECT t.userId, u.nick_name AS userName, COUNT(*) AS finished
+        FROM (
+            SELECT tne.id AS execId, tne.claim_user_id AS userId
+            FROM task_node_execution tne
+            WHERE tne.status = 'completed'
+              AND tne.claim_user_id IS NOT NULL
+            UNION
+            SELECT tne.id AS execId, h.user_id AS userId
+            FROM task_node_execution tne
+            INNER JOIN task_node_execution_handler h ON h.node_execution_id = tne.id
+            WHERE tne.status = 'completed'
+        ) t
+        LEFT JOIN sys_user u ON u.user_id = t.userId
+        GROUP BY t.userId, u.nick_name
         ORDER BY finished DESC
         LIMIT #{limit}
     </select>
@@ -364,7 +388,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE tne.status = 'completed'
           AND tne.process_duration IS NOT NULL
           AND tne.process_duration &gt; 0
+          AND pt.team_status = '1'
         ORDER BY pt.team_name, tne.process_duration
+    </select>
+
+    <!-- BI大屏：按班组统计准时完成率（已完成任务中未触发超时预警的占比） -->
+    <select id="selectTeamOnTimeStats" resultType="java.util.HashMap">
+        SELECT pt.team_name AS teamName,
+               COUNT(*) AS completedCount,
+               SUM(CASE WHEN tw.id IS NULL THEN 1 ELSE 0 END) AS onTimeCount
+        FROM task_node_execution tne
+        JOIN production_team pt ON pt.id = tne.assigned_team_id
+        LEFT JOIN task_execution_record ter ON ter.id = tne.exec_record_id
+        LEFT JOIN task_warning tw ON tw.proc_inst_id = ter.proc_inst_id
+            AND tw.node_key = tne.node_key
+            AND tw.warn_type = 'overdue'
+        WHERE tne.status = 'completed'
+          AND pt.team_status = '1'
+        GROUP BY pt.team_name
+        ORDER BY onTimeCount / COUNT(*) DESC
     </select>
 
     <!-- BI大屏：按节点统计活跃/已完成任务数量 -->

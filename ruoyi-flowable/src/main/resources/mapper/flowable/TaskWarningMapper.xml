@@ -156,19 +156,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND resolved = 0
     </update>
 
-    <!-- BI大屏：按节点统计预警次数和平均响应时间 -->
+    <!-- BI大屏：按节点统计预警次数、平均响应时间、未处理数 -->
     <select id="selectWarningStatsByNode" resultType="java.util.HashMap">
-        SELECT node_name AS nodeName,
+        SELECT tw.node_name AS nodeName,
                COUNT(*) AS warningCount,
+               SUM(CASE WHEN tw.resolved = 0 THEN 1 ELSE 0 END) AS unresolvedCount,
                IFNULL(AVG(
-                   CASE WHEN resolved = 1 AND end_date IS NOT NULL
-                        THEN TIMESTAMPDIFF(MINUTE, create_time, STR_TO_DATE(end_date, '%Y-%m-%d'))
+                   CASE WHEN tw.resolved = 1 AND tne.complete_time IS NOT NULL
+                        THEN GREATEST(TIMESTAMPDIFF(MINUTE, tw.create_time, STR_TO_DATE(tne.complete_time, '%Y-%m-%d %H:%i:%s')), 1)
+                        WHEN tw.resolved = 1
+                        THEN GREATEST(TIMESTAMPDIFF(MINUTE, tw.create_time, IFNULL(tw.end_date, tw.create_time)), 1)
                         ELSE NULL
                    END
                ), 0) AS avgResponseMinutes
-        FROM task_warning
-        WHERE node_name IS NOT NULL AND node_name != ''
-        GROUP BY node_name
+        FROM task_warning tw
+        LEFT JOIN task_execution_record ter ON ter.proc_inst_id = tw.proc_inst_id
+        LEFT JOIN task_node_execution tne ON tne.exec_record_id = ter.id
+            AND tne.node_key = tw.node_key
+            AND tne.status = 'completed'
+        WHERE tw.node_name IS NOT NULL AND tw.node_name != ''
+        GROUP BY tw.node_name
         ORDER BY warningCount DESC
     </select>
 

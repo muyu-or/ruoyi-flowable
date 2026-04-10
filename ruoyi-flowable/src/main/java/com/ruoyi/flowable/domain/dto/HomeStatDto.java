@@ -45,6 +45,9 @@ public class HomeStatDto {
     private List<TeamStabilityDto> teamStability;
     private List<NodeStatusSummaryDto> nodeStatusSummary;
 
+    // ⑩ 物料子类数量（库存中不同 material_subcategory 的种类数）
+    private int subcategoryCount;
+
     // Getters/Setters
     public MyStatsDto getMyStats() { return myStats; }
     public void setMyStats(MyStatsDto myStats) { this.myStats = myStats; }
@@ -78,6 +81,8 @@ public class HomeStatDto {
     public void setTeamStability(List<TeamStabilityDto> teamStability) { this.teamStability = teamStability; }
     public List<NodeStatusSummaryDto> getNodeStatusSummary() { return nodeStatusSummary; }
     public void setNodeStatusSummary(List<NodeStatusSummaryDto> nodeStatusSummary) { this.nodeStatusSummary = nodeStatusSummary; }
+    public int getSubcategoryCount() { return subcategoryCount; }
+    public void setSubcategoryCount(int subcategoryCount) { this.subcategoryCount = subcategoryCount; }
 
     // MyStatsDto（复用 DashboardStatsDto.MyStatsDto 或重新定义）
     public static class MyStatsDto {
@@ -288,12 +293,15 @@ public class HomeStatDto {
     public static class WarningStatDto {
         private String nodeName;
         private int warningCount;
+        private int unresolvedCount;
         private double avgResponseMinutes;
 
         public String getNodeName() { return nodeName; }
         public void setNodeName(String nodeName) { this.nodeName = nodeName; }
         public int getWarningCount() { return warningCount; }
         public void setWarningCount(int warningCount) { this.warningCount = warningCount; }
+        public int getUnresolvedCount() { return unresolvedCount; }
+        public void setUnresolvedCount(int unresolvedCount) { this.unresolvedCount = unresolvedCount; }
         public double getAvgResponseMinutes() { return avgResponseMinutes; }
         public void setAvgResponseMinutes(double avgResponseMinutes) { this.avgResponseMinutes = avgResponseMinutes; }
     }
@@ -326,21 +334,21 @@ public class HomeStatDto {
         public void setP90Seconds(long p90Seconds) { this.p90Seconds = p90Seconds; }
     }
 
-    // TeamStabilityDto（班组效率稳定性）
+    // TeamStabilityDto（班组效率统计）
     public static class TeamStabilityDto {
         private String teamName;
         private double meanSeconds;
-        private double stdSeconds;
-        private double cv;
+        private long completedCount;
+        private double onTimeRate;
 
         public String getTeamName() { return teamName; }
         public void setTeamName(String teamName) { this.teamName = teamName; }
         public double getMeanSeconds() { return meanSeconds; }
         public void setMeanSeconds(double meanSeconds) { this.meanSeconds = meanSeconds; }
-        public double getStdSeconds() { return stdSeconds; }
-        public void setStdSeconds(double stdSeconds) { this.stdSeconds = stdSeconds; }
-        public double getCv() { return cv; }
-        public void setCv(double cv) { this.cv = cv; }
+        public long getCompletedCount() { return completedCount; }
+        public void setCompletedCount(long completedCount) { this.completedCount = completedCount; }
+        public double getOnTimeRate() { return onTimeRate; }
+        public void setOnTimeRate(double onTimeRate) { this.onTimeRate = onTimeRate; }
     }
 
     // NodeStatusSummaryDto（节点状态汇总）

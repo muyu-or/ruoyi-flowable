@@ -702,13 +702,14 @@ export default {
         this.taskForm.variables = {}
       }
       this.taskForm.variables.approval_status = 'approved'
-      // 记录处理人员（供统计用），key = {nodeKey}__handlers
+      // 记录处理人员（供统计用），key = {nodeKey}__handlers / {nodeKey}__handlerUserIds
       if (this.taskDefinitionKey && this.selectedHandlers && this.selectedHandlers.length > 0) {
         var handlerNames = this.selectedHandlers.map(uid => {
           var member = this.teamMembers.find(function(m) { return m.userId === uid })
           return member ? member.label : uid
         })
         this.$set(this.taskForm.variables, this.taskDefinitionKey + '__handlers', handlerNames.join(','))
+        this.$set(this.taskForm.variables, this.taskDefinitionKey + '__handlerUserIds', this.selectedHandlers.join(','))
       }
       complete(this.taskForm).then(response => {
         this.$modal.msgSuccess('审批通过，流程继续进行!')

@@ -197,6 +197,13 @@ public interface TaskNodeExecutionMapper
     List<java.util.Map<String, Object>> selectCompletedDurationsByTeam();
 
     /**
+     * BI大屏：按班组统计准时完成率
+     *
+     * @return 每行含 teamName, completedCount, onTimeCount
+     */
+    List<java.util.Map<String, Object>> selectTeamOnTimeStats();
+
+    /**
      * BI大屏：按节点统计活跃/已完成任务数量
      *
      * @return 每行含 nodeName, activeCount, completedCount

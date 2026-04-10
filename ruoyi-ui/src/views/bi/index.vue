@@ -12,14 +12,6 @@
               <div class="line" />
             </header>
 
-            <!-- Period selector (floating) -->
-            <div class="period-ctrl">
-              <el-radio-group v-model="currentPeriod" size="mini" @change="onPeriodChange">
-                <el-radio-button label="week">本周</el-radio-button>
-                <el-radio-button label="month">本月</el-radio-button>
-              </el-radio-group>
-            </div>
-
             <!-- Left Top: 2 stacked panels -->
             <section class="panel left-top">
               <span class="cut-corner lt" /><span class="cut-corner rt" />
@@ -62,7 +54,7 @@
                     <div class="mini-stat"><strong id="warnAvgResp2">0m</strong><span>平均响应</span></div>
                     <div class="mini-stat"><strong id="warnUnresolved2">0</strong><span>未处理</span></div>
                   </div>
-                  <div id="warningTable" class="grid-table" />
+                  <div id="warningTable" class="grid-table" style="max-height:200px;overflow-y:auto;" />
                 </div>
               </div>
             </section>
@@ -85,10 +77,9 @@
                 <!-- Page 0: 产能概览 -->
                 <div :class="['carousel-page', carouselPage === 0 ? 'active' : '']">
                   <h3 class="panel-title">产能概览</h3>
-                  <div class="energy-metrics" style="margin-top:4px;margin-bottom:4px;">
+                  <div class="energy-metrics" style="margin-top:4px;margin-bottom:4px;grid-template-columns:repeat(2,1fr);">
                     <div class="energy-card"><strong id="kpiOnTimeRate">0%</strong><span>准时完成率</span></div>
-                    <div class="energy-card"><strong id="kpiDailyOutput">0</strong><span>日均产出</span></div>
-                    <div class="energy-card"><strong id="kpiCapacityUtil">0%</strong><span>产能利用率</span></div>
+                    <div class="energy-card"><strong id="kpiDailyOutput">0</strong><span>日均完成数</span></div>
                   </div>
                   <div class="ring-wrap" style="height:110px;">
                     <div id="onTimeRing" class="ring" style="width:100px;height:100px;" />
@@ -113,8 +104,7 @@
                 <!-- Page 0: 经营指标 -->
                 <div :class="['carousel-page', carouselPage === 0 ? 'active' : '']">
                   <h3 class="panel-title">经营指标</h3>
-                  <div class="energy-metrics" style="margin-top:8px;margin-bottom:14px;">
-                    <div class="energy-card"><strong id="kpiTurnover">0x</strong><span>库存周转率</span></div>
+                  <div class="energy-metrics" style="margin-top:8px;margin-bottom:14px;grid-template-columns:repeat(2,1fr);">
                     <div class="energy-card"><strong id="kpiTeamQual">0%</strong><span>班组达标率</span></div>
                     <div class="energy-card"><strong id="kpiFlowEff">0%</strong><span>流转效率</span></div>
                   </div>
@@ -126,7 +116,7 @@
                   <div class="energy-metrics" style="margin-top:8px;margin-bottom:14px;">
                     <div class="energy-card"><strong id="turnoverTotal">0</strong><span>总入库批次</span></div>
                     <div class="energy-card"><strong id="turnoverAvgDaily">0</strong><span>日均入库量</span></div>
-                    <div class="energy-card"><strong id="turnoverCategories">0</strong><span>物料品类数</span></div>
+                    <div class="energy-card"><strong id="turnoverCategories">0</strong><span>物料子类数</span></div>
                   </div>
                   <svg id="turnoverTrendChart" class="chart" viewBox="0 0 300 120" preserveAspectRatio="none" />
                 </div>
@@ -146,17 +136,17 @@
                   <div class="chip" style="right:46px;bottom:88px;"><span class="badge">&#128228;</span>出库调度</div>
                   <!-- Carousel metric boxes: Set A -->
                   <div :class="['hub-metrics', carouselPage === 0 ? 'active' : '']">
-                    <div class="metric-box" style="left:30%;top:128px;"><strong id="hubOnTime">0%</strong><span>准时完成率</span></div>
-                    <div class="metric-box" style="left:33%;top:210px;"><strong id="hubDaily">0</strong><span>日均产出</span></div>
-                    <div class="metric-box" style="right:30%;top:128px;"><strong id="hubTurnover">0x</strong><span>库存周转率</span></div>
-                    <div class="metric-box" style="right:33%;top:210px;"><strong id="hubTeamQual">0%</strong><span>班组达标率</span></div>
+                    <div class="metric-box" style="left:22%;top:110px;"><strong id="hubOnTime">0%</strong><span>准时完成率</span></div>
+                    <div class="metric-box" style="left:22%;top:200px;"><strong id="hubDaily">0</strong><span>日均完成数</span></div>
+                    <div class="metric-box" style="right:22%;top:110px;"><strong id="hubTeamQual">0%</strong><span>班组达标率</span></div>
+                    <div class="metric-box" style="right:22%;top:200px;"><strong id="hubFastTeam">--</strong><span>最优班组</span></div>
                   </div>
                   <!-- Carousel metric boxes: Set B -->
                   <div :class="['hub-metrics', carouselPage === 1 ? 'active' : '']">
-                    <div class="metric-box" style="left:30%;top:128px;"><strong id="hubCapUtil">0%</strong><span>产能利用率</span></div>
-                    <div class="metric-box" style="left:33%;top:210px;"><strong id="hubFlowEff">0%</strong><span>流转效率</span></div>
-                    <div class="metric-box" style="right:30%;top:128px;"><strong id="hubAvgNode">0m</strong><span>平均节点耗时</span></div>
-                    <div class="metric-box" style="right:33%;top:210px;"><strong id="hubFastTeam">--</strong><span>最快班组</span></div>
+                    <div class="metric-box" style="left:22%;top:110px;"><strong id="hubFlowEff">0%</strong><span>流转效率</span></div>
+                    <div class="metric-box" style="left:22%;top:200px;"><strong id="hubAvgNode">0m</strong><span>平均节点耗时</span></div>
+                    <div class="metric-box" style="right:22%;top:110px;"><strong id="hubOnTime2">0%</strong><span>准时完成率</span></div>
+                    <div class="metric-box" style="right:22%;top:200px;"><strong id="hubDaily2">0</strong><span>日均完成数</span></div>
                   </div>
                   <div class="hub-zone">
                     <div id="liquidChart" ref="liquidChartDom" style="width:220px;height:220px;" />
@@ -192,9 +182,8 @@
               <div class="inner">
                 <h3 class="panel-title">出入库趋势与相关性</h3>
                 <div class="bottom-shell">
-                  <div class="legend"><span class="people">入库</span><span class="car">出库</span></div>
-                  <div id="stockTrendChart" ref="stockTrendChartDom" class="chart" style="height:120px;" />
-                  <div id="timeBoard" class="time-board">--<small>实时数据刷新中</small></div>
+                  <div id="stockTrendChart" ref="stockTrendChartDom" class="chart" style="height:160px;" />
+                  <div id="timeBoard" class="time-board">--</div>
                 </div>
               </div>
             </section>
@@ -204,7 +193,7 @@
               <span class="cut-corner lt" /><span class="cut-corner rt" />
               <span class="cut-corner lb" /><span class="cut-corner rb" />
               <div class="inner">
-                <h3 class="panel-title">班组效率稳定性 Top</h3>
+                <h3 class="panel-title">班组效率 Top</h3>
                 <div id="stabilityTable" class="grid-table" />
               </div>
             </section>
@@ -228,7 +217,7 @@ export default {
   dicts: ['material_category'],
   data: function() {
     return {
-      currentPeriod: 'month',
+      currentPeriod: 'all',
       statsData: {},
       carouselPage: 0,
       carouselTimer: null,
@@ -328,7 +317,7 @@ export default {
       getHomeStats({ period: this.currentPeriod }).then(function(res) {
         self.statsData = (res && res.data) || {}
         self.$nextTick(function() { self.renderAll() })
-      }).catch(function() {})
+      }).catch(function(err) { console.error('BI loadData error:', err) })
     },
 
     // ============ Derived KPIs ============
@@ -338,21 +327,20 @@ export default {
       var ws = sd.warningStats || []
       var costSum = sd.costSummary || {}
       var ns = sd.nodeStatusSummary || []
+      var st = sd.stockTrend || []
       var nb = sd.nodeBottleneck || []
       var ts = sd.teamStability || []
       var finished = cs.finished || 0
 
-      // 准时完成率: (finished - unresolved_overdue) / finished
-      var unresolvedCount = 0
+      // 准时完成率: (finished - 有预警的已完成任务数) / finished
+      var warnedFinished = 0
       for (var i = 0; i < ws.length; i++) {
-        if ((ws[i].avgResponseMinutes || 0) <= 0) {
-          unresolvedCount += ws[i].warningCount || 0
-        }
+        warnedFinished += Math.max(0, (ws[i].warningCount || 0) - (ws[i].unresolvedCount || 0))
       }
-      var onTimeRate = finished > 0 ? Math.round(Math.max(0, (finished - unresolvedCount) / finished * 100)) : 0
+      var onTimeRate = finished > 0 ? Math.round(Math.max(0, (finished - warnedFinished) / finished * 100)) : 0
 
-      // 日均产出
-      var periodDays = this.currentPeriod === 'week' ? 7 : 30
+      // 日均产出（按数据跨度天数计算）
+      var periodDays = Math.max(1, st.length > 0 ? st.length : 30)
       var dailyOutput = (finished / periodDays).toFixed(1)
 
       // 库存周转率
@@ -369,10 +357,10 @@ export default {
       }
       var capacityUtil = totalAll > 0 ? Math.round(totalActive / totalAll * 100) : 0
 
-      // 班组达标率: teams with CV < 0.3
+      // 班组达标率: 准时率 >= 80% 的班组占比
       var qualTeams = 0
       for (var k = 0; k < ts.length; k++) {
-        if ((ts[k].cv || 0) < 0.3) qualTeams++
+        if ((ts[k].onTimeRate || 0) >= 0.8) qualTeams++
       }
       var teamQualRate = ts.length > 0 ? Math.round(qualTeams / ts.length * 100) : 0
 
@@ -395,13 +383,15 @@ export default {
       }
       var avgNodeTime = nb.length > 0 ? Math.round(p50Sum / nb.length / 60) : 0
 
-      // 最快班组
+      // 最快班组（准时率最高的正式班组）
       var fastestTeam = '--'
-      var minMean = Infinity
+      var maxOnTimeRate = -1
       for (var p = 0; p < ts.length; p++) {
-        if ((ts[p].meanSeconds || 0) > 0 && ts[p].meanSeconds < minMean) {
-          minMean = ts[p].meanSeconds
-          fastestTeam = ts[p].teamName || '--'
+        var tName = ts[p].teamName || ''
+        var tOnTime = ts[p].onTimeRate || 0
+        if (tOnTime > maxOnTimeRate && tName.indexOf('\u73ed\u7ec4') >= 0 && tName.length >= 3) {
+          maxOnTimeRate = tOnTime
+          fastestTeam = tName
         }
       }
 
@@ -446,28 +436,38 @@ export default {
       // --- Left-top Panel 2: Warning Stats (both pages) ---
       var warnTotalCount = 0
       var warnAvgTotal = 0
-      var warnResolved = 0
+      var warnAvgCount = 0
+      var totalUnresolved = 0
       for (var wi = 0; wi < ws.length; wi++) {
         warnTotalCount += ws[wi].warningCount || 0
-        warnAvgTotal += (ws[wi].avgResponseMinutes || 0) * (ws[wi].warningCount || 0)
-        if (ws[wi].avgResponseMinutes > 0) warnResolved += ws[wi].warningCount
+        totalUnresolved += ws[wi].unresolvedCount || 0
+        var resolvedInNode = (ws[wi].warningCount || 0) - (ws[wi].unresolvedCount || 0)
+        if (resolvedInNode > 0 && (ws[wi].avgResponseMinutes || 0) > 0) {
+          warnAvgTotal += (ws[wi].avgResponseMinutes || 0) * resolvedInNode
+          warnAvgCount += resolvedInNode
+        }
       }
-      var globalAvgResp = warnTotalCount > 0 ? Math.round(warnAvgTotal / warnTotalCount) : 0
-      var unresolvedDisplay = Math.max(0, warnTotalCount - warnResolved)
+      var globalAvgResp = warnAvgCount > 0 ? Math.round(warnAvgTotal / warnAvgCount) : 0
+      var unresolvedDisplay = totalUnresolved
+      var avgRespStr = globalAvgResp >= 1440 ? (Math.round(globalAvgResp / 1440 * 10) / 10) + '\u5929' : globalAvgResp > 0 ? (Math.round(globalAvgResp / 60 * 10) / 10) + '\u5c0f\u65f6' : '-'
       // Page 0 stats
       this.setTextById('warnTotal', warnTotalCount)
-      this.setTextById('warnAvgResp', globalAvgResp + 'm')
+      this.setTextById('warnAvgResp', avgRespStr)
       this.setTextById('warnUnresolved', unresolvedDisplay)
       // Page 1 stats (duplicate)
       this.setTextById('warnTotal2', warnTotalCount)
-      this.setTextById('warnAvgResp2', globalAvgResp + 'm')
+      this.setTextById('warnAvgResp2', avgRespStr)
       this.setTextById('warnUnresolved2', unresolvedDisplay)
       // Radar chart
       this.initCharts()
       this.renderRiskRadar(ws)
-      // Warning table (page 1, expanded to 8 rows)
-      this.renderTable('warningTable', '\u8282\u70b9', '\u54cd\u5e94(\u5206\u949f)', '\u6b21\u6570',
-        ws.slice(0, 8).map(function(n) { return [n.nodeName, Math.round((n.avgResponseMinutes || 0) * 10) / 10 + 'm', (n.warningCount || 0) + '\u6b21'] }))
+      // Warning table (page 1, scrollable)
+      this.renderTable('warningTable', '\u8282\u70b9', '\u54cd\u5e94(\u5929)', '\u6b21\u6570',
+        ws.map(function(n) {
+          var mins = n.avgResponseMinutes || 0
+          var resp = mins > 0 ? (Math.round(mins / 1440 * 10) / 10) + '\u5929' : '-'
+          return [n.nodeName, resp, (n.warningCount || 0) + '\u6b21']
+        }))
 
       // --- Top Strip: Status Grid (de-duplicated last 3) ---
       var statusList = []
@@ -476,15 +476,13 @@ export default {
       })
       // New KPI cards (no longer duplicating completion rate / warnings / stock-in amount)
       statusList.push({ count: kpis.onTimeRate + '%', icon: '\ud83c\udfaf', name: '\u51c6\u65f6\u7387' })
-      statusList.push({ count: kpis.capacityUtil + '%', icon: '\u26a1', name: '\u4ea7\u80fd\u5229\u7528' })
       statusList.push({ count: kpis.flowEff + '%', icon: '\ud83d\udd04', name: '\u6d41\u8f6c\u6548\u7387' })
-      while (statusList.length < 9) statusList.push({ count: '--', icon: '\u00b7', name: '--' })
+      statusList.push({ count: warnTotalCount, icon: '\u26a0\ufe0f', name: '\u9884\u8b66\u603b\u6570' })
       this.renderStatus(statusList.slice(0, 9))
 
       // --- Right-top Panel 1 Page 0: 产能概览 ---
       this.setTextById('kpiOnTimeRate', kpis.onTimeRate + '%')
       this.setTextById('kpiDailyOutput', kpis.dailyOutput)
-      this.setTextById('kpiCapacityUtil', kpis.capacityUtil + '%')
       this.setTextById('onTimeRateText', kpis.onTimeRate + '%')
       var onTimeRingEl = document.getElementById('onTimeRing')
       if (onTimeRingEl) onTimeRingEl.style.background = 'conic-gradient(#6dffcf 0 ' + kpis.onTimeRate + '%, rgba(106,250,255,0.92) ' + kpis.onTimeRate + '% 100%)'
@@ -502,7 +500,6 @@ export default {
       this.renderProgress(progressData)
 
       // --- Right-top Panel 2 Page 0: 经营指标 ---
-      this.setTextById('kpiTurnover', kpis.turnoverRate + 'x')
       this.setTextById('kpiTeamQual', kpis.teamQualRate + '%')
       this.setTextById('kpiFlowEff', kpis.flowEff + '%')
       if (st.length > 0) {
@@ -516,10 +513,10 @@ export default {
       if (st.length > 0) {
         for (var si = 0; si < st.length; si++) totalInboundQty += (st[si].inboundQty || 0)
       }
-      var periodDaysForTurnover = this.currentPeriod === 'week' ? 7 : 30
+      var periodDaysForTurnover = Math.max(1, st.length > 0 ? st.length : 30)
       this.setTextById('turnoverTotal', st.length)
       this.setTextById('turnoverAvgDaily', totalInboundQty > 0 ? (totalInboundQty / periodDaysForTurnover).toFixed(1) : '0')
-      this.setTextById('turnoverCategories', inv.length)
+      this.setTextById('turnoverCategories', sd.subcategoryCount || 0)
       if (st.length > 0) {
         var inQtyValues = st.map(function(p) { return p.inboundQty || 0 })
         var inQtyLabels = st.map(function(p) { return p.label || '' })
@@ -532,18 +529,17 @@ export default {
       // --- Center Main: Hub KPIs (Set A page 0) ---
       this.setTextById('hubOnTime', kpis.onTimeRate + '%')
       this.setTextById('hubDaily', kpis.dailyOutput)
-      this.setTextById('hubTurnover', kpis.turnoverRate + 'x')
       this.setTextById('hubTeamQual', kpis.teamQualRate + '%')
-      // Hub KPIs (Set B page 1)
-      this.setTextById('hubCapUtil', kpis.capacityUtil + '%')
-      this.setTextById('hubFlowEff', kpis.flowEff + '%')
-      this.setTextById('hubAvgNode', kpis.avgNodeTime + 'm')
       this.setTextById('hubFastTeam', kpis.fastestTeam)
+      // Hub KPIs (Set B page 1)
+      this.setTextById('hubFlowEff', kpis.flowEff + '%')
+      this.setTextById('hubAvgNode', (Math.round(kpis.avgNodeTime / 1440 * 10) / 10) + '天')
+      this.setTextById('hubOnTime2', kpis.onTimeRate + '%')
+      this.setTextById('hubDaily2', kpis.dailyOutput)
       this.setTextById('totalCompleted', finished)
 
-      // --- Left Bottom Page 0: Node Bottleneck ---
-      this.renderTable('bottleneckTable', '\u8282\u70b9', 'P50\u8017\u65f6', 'P90\u8017\u65f6',
-        nb.slice(0, 5).map(function(n) { return [n.nodeName, Math.round((n.p50Seconds || 0) / 60) + 'm', Math.round((n.p90Seconds || 0) / 60) + 'm'] }))
+      // --- Left Bottom Page 0: Node Bottleneck (P90/P50 >= 3 标红) ---
+      this.renderBottleneckTable(nb.slice(0, 5))
 
       // --- Left Bottom Page 1: Top5 Employees ---
       this.renderRankTable('userTop5Table', userTop)
@@ -552,8 +548,8 @@ export default {
       this.renderStockTrend(st)
 
       // --- Right Bottom: Team Stability ---
-      this.renderTable('stabilityTable', '\u73ed\u7ec4', 'CV\u6ce2\u52a8\u7387', '\u5747\u503c\u8017\u65f6',
-        ts.slice(0, 5).map(function(t) { return [t.teamName, (Math.round((t.cv || 0) * 1000) / 10) + '%', (Math.round((t.meanSeconds || 0) / 60 * 10) / 10) + 'm'] }))
+      this.renderTable('stabilityTable', '\u73ed\u7ec4', '\u51c6\u65f6\u7387', '\u5747\u503c\u8017\u65f6',
+        ts.slice(0, 5).map(function(t) { return [t.teamName, Math.round((t.onTimeRate || 0) * 100) + '%', (Math.round((t.meanSeconds || 0) / 86400 * 10) / 10) + '\u5929'] }))
 
       this.updateClock()
     },
@@ -637,11 +633,11 @@ export default {
       var r = this._pearson(inArr, outArr)
       chart.setOption({
         backgroundColor: 'transparent', tooltip: { trigger: 'axis' },
-        legend: { bottom: 6, textStyle: { color: 'rgba(226,243,255,0.70)' }, data: ['\u5165\u5e93', '\u51fa\u5e93'] },
-        grid: { left: 44, right: 18, top: 24, bottom: 26 },
-        xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: 'rgba(0,175,255,0.12)' }}, axisLabel: { color: 'rgba(226,243,255,0.45)', fontSize: 10 }},
+        legend: { top: 0, left: 0, textStyle: { color: 'rgba(226,243,255,0.70)' }, data: ['\u5165\u5e93', '\u51fa\u5e93'] },
+        grid: { left: 44, right: 18, top: 28, bottom: 28 },
+        xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: 'rgba(0,175,255,0.12)' }}, axisLabel: { color: 'rgba(226,243,255,0.45)', fontSize: 10, rotate: labels.length > 12 ? 45 : 0, interval: labels.length > 20 ? Math.floor(labels.length / 10) : 0 }},
         yAxis: { type: 'value', axisLine: { show: false }, axisLabel: { color: 'rgba(226,243,255,0.45)', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(0,175,255,0.08)' }}},
-        graphic: [{ type: 'text', left: '50%', top: 8, style: { text: '\u76f8\u5173\u7cfb\u6570 r=' + (Math.round(r * 100) / 100), fill: 'rgba(226,243,255,0.85)', fontSize: 12, fontWeight: 900 }}],
+        graphic: [],
         series: [
           { name: '\u5165\u5e93', type: 'line', smooth: true, showSymbol: false, lineStyle: { width: 2, color: 'rgba(0,175,255,0.95)' }, areaStyle: { color: 'rgba(0,175,255,0.10)' }, data: inArr },
           { name: '\u51fa\u5e93', type: 'line', smooth: true, showSymbol: false, lineStyle: { width: 2, color: 'rgba(38,222,129,0.90)' }, areaStyle: { color: 'rgba(38,222,129,0.08)' }, data: outArr }
@@ -679,6 +675,22 @@ export default {
         (rows || []).map(function(row) {
           return '<div class="item"><span>' + row[0] + '</span><span>' + row[1] + '</span><span>' + row[2] + '</span></div>'
         }).join('')
+    },
+    renderBottleneckTable: function(nb) {
+      var el = document.getElementById('bottleneckTable')
+      if (!el) return
+      var html = '<div class="head"><span>\u8282\u70b9</span><span>P50\u8017\u65f6</span><span>P90\u8017\u65f6</span></div>'
+      for (var i = 0; i < nb.length; i++) {
+        var n = nb[i]
+        var p50 = Math.round((n.p50Seconds || 0) / 86400 * 10) / 10
+        var p90 = Math.round((n.p90Seconds || 0) / 86400 * 10) / 10
+        var ratio = p50 > 0 ? p90 / p50 : 0
+        var warn = ratio >= 3
+        var style = warn ? ' style="color:#ff6b6b;font-weight:700;"' : ''
+        var icon = warn ? ' \u26a0' : ''
+        html += '<div class="item"' + style + '><span>' + n.nodeName + icon + '</span><span>' + p50 + '\u5929</span><span>' + p90 + '\u5929</span></div>'
+      }
+      el.innerHTML = html
     },
     renderRankTable: function(id, userList) {
       var el = document.getElementById(id)
@@ -746,7 +758,7 @@ export default {
       var week = ['\u661f\u671f\u65e5', '\u661f\u671f\u4e00', '\u661f\u671f\u4e8c', '\u661f\u671f\u4e09', '\u661f\u671f\u56db', '\u661f\u671f\u4e94', '\u661f\u671f\u516d']
       var pad = function(n) { return String(n).padStart(2, '0') }
       var el = document.getElementById('timeBoard')
-      if (el) el.innerHTML = d.getFullYear() + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate()) + ' ' + week[d.getDay()] + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + '<small>\u5b9e\u65f6\u6570\u636e\u5237\u65b0\u4e2d</small>'
+      if (el) el.innerHTML = d.getFullYear() + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate()) + ' ' + week[d.getDay()] + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds())
     },
 
     // ============ Helpers ============
@@ -799,7 +811,7 @@ export default {
 .smart-device-dashboard::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 16%, transparent 84%, rgba(255,255,255,.02)), radial-gradient(circle at center, transparent 48%, rgba(0,0,0,0.25) 100%); pointer-events: none; }
 :root { --bg-0: #020812; --bg-1: #051426; --bg-2: #071f39; --panel: rgba(8,24,44,0.78); --panel-2: rgba(5,18,35,0.92); --line: rgba(47,226,255,0.28); --line-strong: rgba(71,243,255,0.72); --cyan: #52f4ff; --cyan-2: #8ffcff; --blue: #4a8dff; --green: #6dffcf; --yellow: #ffe27a; --text: #e6fbff; --muted: #7eb9c8; --shadow: 0 0 22px rgba(36,220,255,0.12), inset 0 0 40px rgba(36,220,255,0.035); }
 * { box-sizing: border-box; }
-.dashboard { width: 100%; height: 100%; padding: 10px 10px 8px; display: grid; grid-template-columns: 290px minmax(900px, 1fr) 290px; grid-template-rows: 82px 96px minmax(0, 1fr) 192px; gap: 10px; position: relative; }
+.dashboard { width: 100%; height: 100%; padding: 10px 10px 8px; display: grid; grid-template-columns: 290px minmax(900px, 1fr) 290px; grid-template-rows: 82px 96px minmax(0, 1fr) 240px; gap: 10px; position: relative; }
 .scan { position: absolute; left: 0; right: 0; top: -90px; height: 90px; background: linear-gradient(180deg, transparent, rgba(82,244,255,.08), transparent); pointer-events: none; animation: scan 7s linear infinite; opacity: .65; }
 @keyframes scan { 0% { transform: translateY(0); } 100% { transform: translateY(calc(100vh + 120px)); } }
 .panel { position: relative; background: linear-gradient(180deg, rgba(8,26,48,0.72), rgba(3,13,26,0.92)); border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; min-height: 0; }
@@ -829,10 +841,12 @@ export default {
 .mini-stat { min-height: 46px; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 3px 2px; border: 1px dashed rgba(82,244,255,.18); background: linear-gradient(180deg, rgba(9,39,61,0.26), rgba(5,19,34,0.16)); }
 .mini-stat strong { font-size: 16px; color: #8ffcff; display: block; margin-bottom: 2px; } .mini-stat span { font-size: 10px; color: var(--muted); }
 .chart { width: 100%; height: 100px; display: block; }
-.grid-table { margin-top: 4px; font-size: 11px; border-top: 1px solid rgba(82,244,255,.14); }
-.grid-table .head, .grid-table .item { display: grid; grid-template-columns: 58px 1fr 64px; gap: 4px; align-items: center; padding: 4px 5px; }
+.grid-table { margin-top: 4px; font-size: 12px; border-top: 1px solid rgba(82,244,255,.14); }
+.grid-table::-webkit-scrollbar { width: 4px; } .grid-table::-webkit-scrollbar-track { background: transparent; } .grid-table::-webkit-scrollbar-thumb { background: rgba(82,244,255,.2); border-radius: 2px; }
+.grid-table .head, .grid-table .item { display: grid; grid-template-columns: 82px 1fr 64px; gap: 4px; align-items: center; padding: 6px 5px; }
 .grid-table .head { color: #94f6ff; background: rgba(44,164,203,0.15); font-weight: 700; }
 .grid-table .item:nth-child(odd) { background: rgba(255,255,255,.018); } .grid-table .item:nth-child(even) { background: rgba(0,0,0,.08); }
+.grid-table .item span:first-child, .grid-table .head span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .status-grid { height: 100%; display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; align-items: center; padding: 6px 6px 4px; }
 .status-card { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 4px 2px; background: linear-gradient(180deg, rgba(7,28,49,0.35), rgba(3,12,24,0.08)); border: 1px solid rgba(82,244,255,.08); }
 .status-card .count { font-size: 13px; font-weight: 800; color: #b4ffe6; margin-bottom: 2px; text-shadow: 0 0 8px rgba(82,244,255,.22); }
@@ -861,11 +875,11 @@ export default {
 .energy-card { text-align: center; padding: 5px 0; }
 .energy-card strong { display: block; font-size: 18px; color: #8ffcff; margin-bottom: 3px; } .energy-card span { color: #93cddb; font-size: 11px; }
 .bottom-shell { height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
-.legend { display: flex; justify-content: flex-end; gap: 18px; font-size: 12px; color: #89c4cf; padding-right: 8px; }
+.legend { display: flex; justify-content: flex-start; gap: 18px; font-size: 12px; color: #89c4cf; padding-left: 2px; }
 .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
 .legend .people::before { background: #54f7ff; } .legend .car::before { background: #6dffcf; }
-.time-board { text-align: center; color: #35f2ff; font-size: 18px; font-weight: 700; text-shadow: 0 0 10px rgba(82,244,255,.18); margin-top: 2px; }
-.time-board small { display: block; color: #86d9e3; font-size: 10px; margin-top: 2px; }
+.time-board { text-align: center; color: #35f2ff; font-size: 20px; font-weight: 700; text-shadow: 0 0 10px rgba(82,244,255,.18); margin-top: 4px; padding: 6px 0; }
+.time-board small { display: block; color: #86d9e3; font-size: 11px; margin-top: 3px; }
 
 /* Carousel pages */
 .carousel-host { position: relative; }
@@ -878,7 +892,4 @@ export default {
 .bi-dash-stage-scale { transform-origin: 0 0; }
 
 /* Period selector */
-.period-ctrl { position: absolute; right: 20px; top: 28px; z-index: 10; }
-.period-ctrl .el-radio-button__inner { background: transparent; border-color: rgba(0,212,255,0.3); color: rgba(226,243,255,0.6); }
-.period-ctrl .el-radio-button__orig-radio:checked + .el-radio-button__inner { background: rgba(0,212,255,0.15); border-color: #00d4ff; color: #00d4ff; box-shadow: -1px 0 0 0 #00d4ff; }
 </style>

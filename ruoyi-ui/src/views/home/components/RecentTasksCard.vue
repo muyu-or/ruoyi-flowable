@@ -21,9 +21,6 @@
             <span class="meta-time">
               <i class="el-icon-time" /> {{ item.completeTime || '--' }}
             </span>
-            <span v-if="item.processDuration" class="meta-duration">
-              {{ formatDuration(item.processDuration) }}
-            </span>
           </div>
         </div>
       </div>

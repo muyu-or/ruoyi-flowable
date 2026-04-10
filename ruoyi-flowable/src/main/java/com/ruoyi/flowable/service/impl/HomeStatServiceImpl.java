@@ -110,6 +110,7 @@ public class HomeStatServiceImpl implements IHomeStatService {
             result.setNodeBottleneck(buildNodeBottleneck());
             result.setTeamStability(buildTeamStability());
             result.setNodeStatusSummary(buildNodeStatusSummary());
+            result.setSubcategoryCount(inventoryMapper.countDistinctSubcategory());
         }
 
         if (isLeader || !isAdmin) { // leader + 成员都能看到班组效率
@@ -189,12 +190,15 @@ public class HomeStatServiceImpl implements IHomeStatService {
                 cal.set(Calendar.MILLISECOND, 0);
                 startDate = cal.getTime();
                 break;
+            case "all":
+                // 所有数据：起始日期设为 2020-01-01
+                cal.set(2020, Calendar.JANUARY, 1, 0, 0, 0);
+                cal.set(Calendar.MILLISECOND, 0);
+                startDate = cal.getTime();
+                break;
             default:
-                // 默认为本月
-                cal.set(Calendar.DAY_OF_MONTH, 1);
-                cal.set(Calendar.HOUR_OF_DAY, 0);
-                cal.set(Calendar.MINUTE, 0);
-                cal.set(Calendar.SECOND, 0);
+                // 默认为全部数据
+                cal.set(2020, Calendar.JANUARY, 1, 0, 0, 0);
                 cal.set(Calendar.MILLISECOND, 0);
                 startDate = cal.getTime();
                 break;
@@ -342,7 +346,8 @@ public class HomeStatServiceImpl implements IHomeStatService {
             case "month": return "%m-%d";
             case "quarter": return "%Y第%u周";
             case "year": return "%Y-%m";
-            default: return "%m-%d";
+            case "all": return "%Y-%m";
+            default: return "%Y-%m";
         }
     }
 
@@ -579,6 +584,8 @@ public class HomeStatServiceImpl implements IHomeStatService {
             HomeStatDto.WarningStatDto dto = new HomeStatDto.WarningStatDto();
             dto.setNodeName((String) row.get("nodeName"));
             dto.setWarningCount(((Number) row.get("warningCount")).intValue());
+            Object unresolved = row.get("unresolvedCount");
+            dto.setUnresolvedCount(unresolved instanceof Number ? ((Number) unresolved).intValue() : 0);
             Object avgResp = row.get("avgResponseMinutes");
             dto.setAvgResponseMinutes(avgResp instanceof Number ? ((Number) avgResp).doubleValue() : 0.0);
             list.add(dto);
@@ -638,30 +645,39 @@ public class HomeStatServiceImpl implements IHomeStatService {
      * 班组效率稳定性（均值/标准差/变异系数）
      */
     private List<HomeStatDto.TeamStabilityDto> buildTeamStability() {
-        List<Map<String, Object>> rows = taskNodeExecutionMapper.selectCompletedDurationsByTeam();
-        // 按班组分组
-        Map<String, List<Long>> grouped = new LinkedHashMap<>();
-        for (Map<String, Object> row : rows) {
+        // 按班组统计准时完成率
+        List<Map<String, Object>> onTimeRows = taskNodeExecutionMapper.selectTeamOnTimeStats();
+        // 按班组统计均值耗时
+        List<Map<String, Object>> durationRows = taskNodeExecutionMapper.selectCompletedDurationsByTeam();
+        Map<String, List<Long>> durationGrouped = new LinkedHashMap<>();
+        for (Map<String, Object> row : durationRows) {
             String teamName = (String) row.get("teamName");
             long duration = toLong(row.get("duration"));
-            grouped.computeIfAbsent(teamName, k -> new ArrayList<>()).add(duration);
+            durationGrouped.computeIfAbsent(teamName, k -> new ArrayList<>()).add(duration);
         }
+
         List<HomeStatDto.TeamStabilityDto> list = new ArrayList<>();
-        for (Map.Entry<String, List<Long>> entry : grouped.entrySet()) {
-            List<Long> durations = entry.getValue();
+        for (Map<String, Object> row : onTimeRows) {
+            String teamName = (String) row.get("teamName");
+            long completed = toLong(row.get("completedCount"));
+            long onTime = toLong(row.get("onTimeCount"));
+            double rate = completed > 0 ? (double) onTime / completed : 0.0;
+
+            List<Long> durations = durationGrouped.get(teamName);
+            if (durations == null || durations.isEmpty()) {
+                continue; // 跳过没有有效耗时数据的班组
+            }
             double mean = meanLong(durations);
-            double std = stdLong(durations);
-            double cv = mean > 0 ? std / mean : 0.0;
 
             HomeStatDto.TeamStabilityDto dto = new HomeStatDto.TeamStabilityDto();
-            dto.setTeamName(entry.getKey());
+            dto.setTeamName(teamName);
             dto.setMeanSeconds(mean);
-            dto.setStdSeconds(std);
-            dto.setCv(cv);
+            dto.setCompletedCount(completed);
+            dto.setOnTimeRate(rate);
             list.add(dto);
         }
-        // 按 CV 降序
-        list.sort((a, b) -> Double.compare(b.getCv(), a.getCv()));
+        // 按准时率降序
+        list.sort((a, b) -> Double.compare(b.getOnTimeRate(), a.getOnTimeRate()));
         return list;
     }
 

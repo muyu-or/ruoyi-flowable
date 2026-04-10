@@ -230,6 +230,41 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                 log.warn("更新任务完成状态时出错", e);
             }
 
+            // 保存处理人员到关联表（供统计用）
+            try {
+                String nodeKey = task.getTaskDefinitionKey();
+                String handlerUserIdsStr = (String) allVariables.get(nodeKey + "__handlerUserIds");
+                String handlerNamesStr = (String) allVariables.get(nodeKey + "__handlers");
+                if (StringUtils.isNotBlank(handlerUserIdsStr) && StringUtils.isNotBlank(handlerNamesStr)) {
+                    com.ruoyi.system.domain.TaskNodeExecution nodeExec = taskNodeExecutionService.selectByTaskId(taskVo.getTaskId());
+                    if (nodeExec != null) {
+                        String[] userIds = handlerUserIdsStr.split(",");
+                        String[] names = handlerNamesStr.split(",");
+                        java.util.List<com.ruoyi.system.domain.TaskNodeExecutionHandler> handlers = new java.util.ArrayList<>();
+                        for (int i = 0; i < userIds.length; i++) {
+                            com.ruoyi.system.domain.TaskNodeExecutionHandler h = new com.ruoyi.system.domain.TaskNodeExecutionHandler();
+                            h.setNodeExecutionId(nodeExec.getId());
+                            try {
+                                h.setUserId(Long.parseLong(userIds[i].trim()));
+                            } catch (NumberFormatException nfe) {
+                                log.warn("处理人员userId解析失败: {}", userIds[i]);
+                                continue;
+                            }
+                            h.setUserName(i < names.length ? names[i].trim() : "");
+                            handlers.add(h);
+                        }
+                        if (!handlers.isEmpty()) {
+                            com.ruoyi.common.utils.spring.SpringUtils.getBean(
+                                    com.ruoyi.system.mapper.TaskNodeExecutionHandlerMapper.class)
+                                    .batchInsert(handlers);
+                            log.info("已保存 {} 名处理人员到节点执行记录 {}", handlers.size(), nodeExec.getId());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("保存处理人员关联记录时出错", e);
+            }
+
             // 任务完成后，自动将该节点的未读预警标为已读
             try {
                 String procInstId = task.getProcessInstanceId();

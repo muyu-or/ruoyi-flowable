@@ -57,10 +57,7 @@ export default {
   methods: {
     formatDuration: function(seconds) {
       if (!seconds || seconds <= 0) return ''
-      var h = Math.floor(seconds / 3600)
-      var m = Math.floor((seconds % 3600) / 60)
-      if (h > 0) return h + 'h' + m + 'm'
-      return m + 'm'
+      return (Math.round(seconds / 86400 * 10) / 10) + '天'
     },
     startScroll: function() {
       this.stopScroll()
