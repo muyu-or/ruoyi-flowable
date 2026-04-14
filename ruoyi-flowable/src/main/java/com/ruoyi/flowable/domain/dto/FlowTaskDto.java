@@ -123,4 +123,7 @@ public class FlowTaskDto implements Serializable {
     @ApiModelProperty("实际处理人员（班组长审批时选择，逗号分隔）")
     private String handlers;
 
+    @ApiModelProperty("处理人员职位（逗号分隔，与handlers一一对应）")
+    private String handlerPositions;
+
 }

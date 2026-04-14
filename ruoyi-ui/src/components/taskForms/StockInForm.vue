@@ -200,7 +200,15 @@ export default {
       return new Promise((resolve, reject) => {
         this.$refs.formRef.validate((valid) => {
           if (valid) {
-            resolve(Object.assign({}, this.form))
+            const result = Object.assign({}, this.form)
+            // 用当前表单的物料名称和数量刷新每条报告，防止上传时快照为空
+            if (Array.isArray(result.reports)) {
+              result.reports = result.reports.map(r => Object.assign({}, r, {
+                materialName: this.form.materialName || r.materialName || '',
+                materialQuantity: this.form.quantity != null ? this.form.quantity : r.materialQuantity
+              }))
+            }
+            resolve(result)
           } else {
             reject(new Error('表单校验失败'))
           }

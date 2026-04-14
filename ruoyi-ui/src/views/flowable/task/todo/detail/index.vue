@@ -69,7 +69,13 @@
                       </el-descriptions-item>
                       <el-descriptions-item v-if="item.handlers" label-class-name="my-label">
                         <template slot="label"><i class="el-icon-user" />处理人员</template>
-                        {{ item.handlers }}
+                        <template v-if="item.handlerPositions">
+                          <span v-for="(name, hIdx) in item.handlers.split(',')" :key="hIdx">
+                            <span v-if="hIdx > 0">，</span>{{ name }}
+                            <el-tag v-if="(item.handlerPositions.split(','))[hIdx]" type="info" size="mini" style="margin-left:2px">{{ (item.handlerPositions.split(','))[hIdx] }}</el-tag>
+                          </span>
+                        </template>
+                        <template v-else>{{ item.handlers }}</template>
                       </el-descriptions-item>
                       <el-descriptions-item v-else-if="item.candidate" label-class-name="my-label">
                         <template slot="label"><i class="el-icon-user" />班组成员</template>
@@ -640,7 +646,7 @@ export default {
           this.loadingHandlers = true
           getTeamMembers(teamId).then(res => {
             this.teamMembers = (res.data || []).map(function(u) {
-              return { userId: u.userId, label: u.nickName || u.userName }
+              return { userId: u.userId, label: u.nickName || u.userName, position: u.searchValue || u.position || '' }
             })
             this.loadingHandlers = false
           }).catch(function() {
@@ -708,7 +714,12 @@ export default {
           var member = this.teamMembers.find(function(m) { return m.userId === uid })
           return member ? member.label : uid
         })
+        var handlerPositions = this.selectedHandlers.map(uid => {
+          var member = this.teamMembers.find(function(m) { return m.userId === uid })
+          return member ? (member.position || '') : ''
+        })
         this.$set(this.taskForm.variables, this.taskDefinitionKey + '__handlers', handlerNames.join(','))
+        this.$set(this.taskForm.variables, this.taskDefinitionKey + '__handlerPositions', handlerPositions.join(','))
         this.$set(this.taskForm.variables, this.taskDefinitionKey + '__handlerUserIds', this.selectedHandlers.join(','))
       }
       complete(this.taskForm).then(response => {

@@ -87,7 +87,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectUserListByTeamId" parameterType="Long" resultMap="SysUserWithPositionResult">
         select u.user_id, u.dept_id, u.nick_name, u.user_name, u.phonenumber, d.dept_name,
-        tu.position,
+        COALESCE(dd.dict_label, tu.position) as position,
         (SELECT GROUP_CONCAT(r.role_name SEPARATOR ',')
          FROM sys_role r
          LEFT JOIN sys_user_role ur ON r.role_id = ur.role_id
@@ -95,6 +95,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from sys_user u
         left join sys_dept d on u.dept_id = d.dept_id
         left join production_team_user tu on u.user_id = tu.user_id
+        left join sys_dict_data dd on dd.dict_type = 'team_position' and dd.dict_value = tu.position
         where tu.team_id = #{teamId}
     </select>
 

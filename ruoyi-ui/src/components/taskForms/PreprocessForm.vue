@@ -87,7 +87,14 @@ export default {
       return new Promise((resolve, reject) => {
         this.$refs.formRef.validate(valid => {
           if (valid) {
-            resolve({ ...this.form })
+            const result = { ...this.form }
+            if (Array.isArray(result.reports)) {
+              result.reports = result.reports.map(r => Object.assign({}, r, {
+                materialName: this.extraContext.materialName || r.materialName || '',
+                materialQuantity: this.extraContext.materialQuantity != null ? this.extraContext.materialQuantity : r.materialQuantity
+              }))
+            }
+            resolve(result)
           } else {
             reject(new Error('表单校验失败'))
           }

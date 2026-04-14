@@ -176,7 +176,16 @@ export default {
       if (this.readonly) return Promise.resolve({ ...this.form })
       return new Promise((resolve, reject) => {
         this.$refs.formRef.validate((valid) => {
-          if (valid) resolve({ ...this.form })
+          if (valid) {
+            const result = { ...this.form }
+            if (Array.isArray(result.reports)) {
+              result.reports = result.reports.map(r => Object.assign({}, r, {
+                materialName: this.form.materialName || r.materialName || '',
+                materialQuantity: this.form.outQuantity != null ? this.form.outQuantity : r.materialQuantity
+              }))
+            }
+            resolve(result)
+          }
           else reject(new Error('表单校验失败'))
         })
       })

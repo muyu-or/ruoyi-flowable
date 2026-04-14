@@ -138,7 +138,7 @@
         </template>
       </el-table-column>
       <el-table-column label="操作人员" align="center" prop="operator" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
         <template slot-scope="scope">
           <el-button
             type="text"
@@ -387,3 +387,8 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+::v-deep .el-table th.el-table__cell > .cell { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+::v-deep .el-table th .caret-wrapper { flex-shrink: 0; margin-left: 2px; }
+</style>

@@ -1311,4 +1311,6 @@ export default {
 .action-btns { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
 .mb8 { margin-bottom: 8px; }
 .batch-label { font-size: 13px; color: #606266; margin-right: 6px; }
+::v-deep .el-table th.el-table__cell > .cell { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+::v-deep .el-table th .caret-wrapper { flex-shrink: 0; margin-left: 2px; }
 </style>

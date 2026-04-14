@@ -114,6 +114,9 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
     private IReportLinkageService reportLinkageService;
 
     @Resource
+    private com.ruoyi.system.service.ISysDictDataService sysDictDataService;
+
+    @Resource
     private IFlowTeamService flowTeamService;
 
     @Resource
@@ -1277,16 +1280,7 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                             if (ed != null) flowTask.setPlanEndDate(ed.toString());
                         }
                     }
-                    if (StringUtils.isNotBlank(histIns.getAssignee())) {
-                        SysUser sysUser = sysUserService.selectUserById(Long.parseLong(histIns.getAssignee()));
-                        flowTask.setAssigneeId(sysUser.getUserId());
-                        flowTask.setAssigneeName(sysUser.getNickName());
-                        flowTask.setDeptName(Objects.nonNull(sysUser.getDept()) ? sysUser.getDept().getDeptName() : "");
-                    }
-                    // 展示审批人员
-                    List<HistoricIdentityLink> linksForTask = historyService.getHistoricIdentityLinksForTask(histIns.getTaskId());
-                    StringBuilder stringBuilder = new StringBuilder();
-                    // 获取该任务所属班组ID，用于精确查询候选人在该班组中的职位
+                    // 获取该任务所属班组ID，用于精确查询职位
                     Long taskTeamId = null;
                     try {
                         com.ruoyi.system.domain.TaskNodeExecution tne = taskNodeExecutionMapper.selectByTaskId(histIns.getTaskId());
@@ -1296,6 +1290,34 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                     } catch (Exception e) {
                         log.warn("查询节点执行记录获取班组ID失败，taskId={}", histIns.getTaskId(), e);
                     }
+                    if (StringUtils.isNotBlank(histIns.getAssignee())) {
+                        SysUser sysUser = sysUserService.selectUserById(Long.parseLong(histIns.getAssignee()));
+                        flowTask.setAssigneeId(sysUser.getUserId());
+                        flowTask.setAssigneeName(sysUser.getNickName());
+                        // 优先显示职位，无职位时降级显示部门
+                        String assigneePosition = null;
+                        try {
+                            if (taskTeamId != null) {
+                                assigneePosition = productionTeamMapper.selectPositionByUserIdAndTeamId(sysUser.getUserId(), taskTeamId);
+                            } else {
+                                assigneePosition = productionTeamMapper.selectPositionByUserId(sysUser.getUserId());
+                            }
+                            if (StringUtils.isNotBlank(assigneePosition)) {
+                                String label = sysDictDataService.selectDictLabel("team_position", assigneePosition);
+                                assigneePosition = StringUtils.isNotBlank(label) ? label : assigneePosition;
+                            }
+                        } catch (Exception e) {
+                            // ignore
+                        }
+                        if (StringUtils.isNotBlank(assigneePosition)) {
+                            flowTask.setDeptName(assigneePosition);
+                        } else {
+                            flowTask.setDeptName(Objects.nonNull(sysUser.getDept()) ? sysUser.getDept().getDeptName() : "");
+                        }
+                    }
+                    // 展示审批人员
+                    List<HistoricIdentityLink> linksForTask = historyService.getHistoricIdentityLinksForTask(histIns.getTaskId());
+                    StringBuilder stringBuilder = new StringBuilder();
                     for (HistoricIdentityLink identityLink : linksForTask) {
                         // 获选人,候选组/角色(多个)
                         if ("candidate".equals(identityLink.getType())) {
@@ -1329,6 +1351,33 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                     Object handlersVal = allProcVars.get(handlersKey);
                     if (handlersVal != null && StringUtils.isNotBlank(handlersVal.toString())) {
                         flowTask.setHandlers(handlersVal.toString());
+                    }
+                    // 填入处理人员职位
+                    String positionsKey = histIns.getActivityId() + "__handlerPositions";
+                    Object positionsVal = allProcVars.get(positionsKey);
+                    if (positionsVal != null && StringUtils.isNotBlank(positionsVal.toString())) {
+                        flowTask.setHandlerPositions(positionsVal.toString());
+                    } else if (handlersVal != null) {
+                        // 兼容旧流程：没有 __handlerPositions 变量时，用 __handlerUserIds 查职位
+                        String userIdsKey = histIns.getActivityId() + "__handlerUserIds";
+                        Object userIdsVal = allProcVars.get(userIdsKey);
+                        if (userIdsVal != null && StringUtils.isNotBlank(userIdsVal.toString())) {
+                            String[] uids = userIdsVal.toString().split(",");
+                            StringBuilder posBuilder = new StringBuilder();
+                            for (int pi = 0; pi < uids.length; pi++) {
+                                if (pi > 0) posBuilder.append(",");
+                                try {
+                                    String pos = productionTeamMapper.selectPositionByUserId(Long.parseLong(uids[pi].trim()));
+                                    if (StringUtils.isNotBlank(pos)) {
+                                        String label = sysDictDataService.selectDictLabel("team_position", pos);
+                                        posBuilder.append(StringUtils.isNotBlank(label) ? label : pos);
+                                    }
+                                } catch (Exception e) {
+                                    posBuilder.append("");
+                                }
+                            }
+                            flowTask.setHandlerPositions(posBuilder.toString());
+                        }
                     }
 
                     flowTask.setDuration(histIns.getDurationInMillis() == null || histIns.getDurationInMillis() == 0 ? null : getDate(histIns.getDurationInMillis()));
