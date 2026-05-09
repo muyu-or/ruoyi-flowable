@@ -95,7 +95,7 @@
       background-color: #f8f8f9;
       color: #515a6e;
       height: 40px;
-      font-size: 13px;
+      font-size: 14px;
     }
   }
 
@@ -108,7 +108,7 @@
 
 /** 表单布局 **/
 .form-header {
-  font-size: 15px;
+  font-size: 14px;
   color: #6379bb;
   border-bottom: 1px solid #ddd;
   margin: 8px 10px 25px 10px;
@@ -140,9 +140,11 @@
 }
 
 .el-table .fixed-width .el-button--mini {
-  padding-left: 0;
-  padding-right: 0;
-  width: inherit;
+  padding: 0 16px;
+  height: 36px;
+  font-size: 14px;
+  width: auto;
+  min-width: 50px;
 }
 
 /** 表格更多操作下拉样式 */
@@ -177,7 +179,7 @@
   border-top: 1px solid #e7eaec;
   margin-bottom: -1px;
   padding: 11px 0px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .pull-right {
@@ -284,4 +286,818 @@
 /* 分割面板样式 */
 .splitpanes.default-theme .splitpanes__pane {
   background-color: #fff!important;
+}
+
+/* ========== 全局字体优化 ========== */
+
+/* 全局字体增大 */
+html, body {
+  font-size: 14px;
+}
+
+/* 表格字体 */
+.el-table {
+  font-size: 14px;
+}
+
+.el-table .el-table__body-wrapper td {
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.el-table .el-table__header-wrapper th .cell {
+  font-size: 14px;
+}
+
+/* 表单字体 */
+.el-form-item__label {
+  font-size: 14px;
+}
+
+.el-input__inner {
+  font-size: 14px;
+}
+
+/* ========== 表单布局统一 ========== */
+
+/* 搜索表单 - 确保美观布局 */
+.el-form--inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  .el-form-item {
+    margin-right: 16px;
+    margin-bottom: 12px;
+
+    /* 表单项标签宽度统一 */
+    .el-form-item__label {
+      width: 100px;
+      min-width: 100px;
+      text-align: right;
+      padding-right: 12px;
+    }
+
+    /* 输入框宽度统一 */
+    .el-form-item__content {
+      width: 200px;
+      min-width: 200px;
+    }
+  }
+}
+
+/* 日期选择器宽度统一 */
+.el-form--inline .el-date-editor.el-input,
+.el-form--inline .el-date-editor {
+  width: 200px;
+}
+
+/* 选择器宽度统一 */
+.el-form--inline .el-select {
+  width: 200px;
+}
+
+/* 输入框统一高度 */
+.el-form--inline .el-input__inner {
+  height: 36px;
+  line-height: 36px;
+}
+
+/* ========== 按钮尺寸统一 ========== */
+
+/* 覆盖 size="mini" 和 size="small" */
+.el-button--mini,
+.el-button--small {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+/* 工具栏按钮 */
+.el-row .el-col .el-button {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* 搜索按钮 */
+.el-form--inline .el-button {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+/* 弹窗按钮 */
+.dialog-footer .el-button {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+/* ========== 表格头部样式优化 ========== */
+
+/* 1. 表格操作按钮 - 不同操作颜色区分 */
+
+/* 操作列按钮容器 */
+/* ========== 表格操作按钮样式 ========== */
+
+/* 操作列容器 - 紧凑布局 */
+.el-table .fixed-width .cell {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  width: auto;
+  padding: 0;
+}
+
+/* 操作按钮统一尺寸 */
+.el-table .el-button--text {
+  padding: 4px 10px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 操作列第一个按钮（编辑）- 青绿色 */
+.el-table .fixed-width .el-button--text:first-child {
+  color: #4A9B8C;
+  &:hover { color: #73B5A8; background: rgba(74, 155, 140, 0.12); }
+}
+
+/* 操作列最后一个按钮（删除）- 红色 */
+.el-table .fixed-width .el-button--text:last-child:not(:first-child) {
+  color: #FF4D4F;
+  &:hover { color: #FF7875; background: rgba(255, 77, 79, 0.12); }
+}
+
+/* 中间按钮 - 蓝灰色 */
+.el-table .fixed-width .el-button--text:not(:first-child):not(:last-child) {
+  color: #5B8A9F;
+  &:hover { color: #7BA5B8; background: rgba(91, 138, 159, 0.12); }
+}
+
+/* 辅助 class */
+.el-table .el-button--text.edit-btn { color: #4A9B8C; &:hover { color: #73B5A8; background: rgba(74, 155, 140, 0.12); } }
+.el-table .el-button--text.delete-btn { color: #FF4D4F; &:hover { color: #FF7875; background: rgba(255, 77, 79, 0.12); } }
+.el-table .el-button--text.view-btn { color: #5B8A9F; &:hover { color: #7BA5B8; background: rgba(91, 138, 159, 0.12); } }
+.el-table .el-button--text.process-btn { color: #E8A653; &:hover { color: #F0B86A; background: rgba(232, 166, 83, 0.12); } }
+.el-table .el-button--text.more-btn { color: #909399; &:hover { color: #A6ADB4; background: rgba(144, 147, 153, 0.12); } }
+
+/* danger 类型 */
+.el-table .el-button--text.el-button--danger { color: #FF4D4F; &:hover { color: #FF7875; background: rgba(255, 77, 79, 0.12); } }
+
+/* 有内联样式的按钮 */
+.el-table .el-button--text[style*="F56C6C"], .el-table .el-button--text[style*="#F56C6C"] { color: #FF4D4F; }
+.el-table .el-button--text[style*="#409EFF"] { color: #5B8A9F; }
+.el-table .el-button--text[style*="#67C23A"] { color: #52C41A; }
+.el-table .el-button--text[style*="#E6A23C"] { color: #FAAD14; }
+
+/* danger 类型 */
+.el-table .el-button--text.el-button--danger { color: #FF4D4F; &:hover { color: #FF7875; background: rgba(255, 77, 79, 0.12); } }
+
+/* 2. 状态标签圆点样式 */
+.status-tag-dot {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+}
+
+.status-tag-dot .status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-tag-dot .status-dot.dot-success {
+  background-color: #52C41A;
+}
+
+.status-tag-dot .status-dot.dot-warning {
+  background-color: #FAAD14;
+}
+
+.status-tag-dot .status-dot.dot-danger {
+  background-color: #FF4D4F;
+}
+
+.status-tag-dot .status-dot.dot-info {
+  background-color: #909399;
+}
+
+.status-tag-dot .status-dot.dot-primary {
+  background-color: #4A9B8C;
+}
+
+.status-tag-dot .status-dot.dot-processing {
+  background-color: #4A9B8C;
+  animation: dot-pulse 1.5s ease-in-out infinite;
+}
+
+.status-tag-dot .status-text {
+  color: #595959;
+  font-weight: 400;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* 5. 搜索按钮样式优化 */
+.el-form .el-form-item .el-button--primary:not(.is-plain) {
+  background-color: #4A9B8C;
+  border-color: #4A9B8C;
+
+  &:hover {
+    background-color: #73B5A8;
+    border-color: #73B5A8;
+  }
+}
+
+/* 6. 重置按钮幽灵样式 */
+.el-form .el-form-item .el-button:not([type]):not(.is-plain) {
+  background: transparent;
+  border-color: #D9D9D9;
+  color: #595959;
+
+  &:hover {
+    color: #4A9B8C;
+    border-color: #4A9B8C;
+    background: transparent;
+  }
+}
+
+/* 7. 工具栏按钮 hover 效果 */
+.el-row .el-col .el-button.is-plain {
+  border-radius: 4px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* 8. 弹窗按钮样式 */
+.dialog-footer .el-button--primary {
+  background-color: #4A9B8C;
+  border-color: #4A9B8C;
+
+  &:hover {
+    background-color: #73B5A8;
+    border-color: #73B5A8;
+  }
+}
+
+.dialog-footer .el-button:not([type]) {
+  background: transparent;
+  border-color: #D9D9D9;
+
+  &:hover {
+    color: #4A9B8C;
+    border-color: #4A9B8C;
+  }
+}
+
+/* 9. 文字颜色类更新 */
+.text-success {
+  color: #52C41A;
+}
+
+.text-info {
+  color: #4A9B8C;
+}
+
+.text-warning {
+  color: #FAAD14;
+}
+
+.text-danger {
+  color: #FF4D4F;
+}
+
+/* ========== 整体视觉增强 ========== */
+
+/* 10. 卡片样式增强 */
+.el-card {
+  border-radius: 8px;
+  border: 1px solid #E8E8E8;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.el-card__header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #E8E8E8;
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.el-card__body {
+  padding: 20px 24px;
+}
+
+/* 11. 表格整体美化 */
+.el-table {
+  border-radius: 8px;
+  border: 1px solid #E8E8E8;
+
+  &::before {
+    height: 0;
+  }
+
+  /* 表头增加底色渐变效果 */
+  .el-table__header-wrapper th {
+    background: linear-gradient(180deg, #F5F7FA 0%, #EFEFEF 100%);
+    border-bottom: 2px solid #E0E0E0;
+
+    .cell {
+      font-size: 14px;
+      font-weight: 600;
+    }
+  }
+
+  /* 表格单元格垂直居中 */
+  .el-table__body td {
+    vertical-align: middle;
+  }
+
+  /* 隔行变色 */
+  .el-table__body tr:nth-child(even) td {
+    background-color: #FAFBFC;
+  }
+
+  /* 行悬停效果增强 */
+  .el-table__body tr:hover > td {
+    background-color: #E6F4F1 !important;
+    transition: background-color 0.2s ease;
+  }
+
+  /* 操作列确保不换行 */
+  .el-table__body td.small-padding.fixed-width,
+  .el-table__body td.fixed-width {
+    vertical-align: middle;
+
+    .cell {
+      overflow: visible;
+      white-space: nowrap;
+      width: 100%;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+
+    /* action-btns 容器样式 */
+    .action-btns {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      width: 100%;
+      padding: 0;
+    }
+  }
+
+  /* 操作列按钮紧凑 */
+  .el-table__body .fixed-width .el-button--text {
+    padding: 4px 8px;
+    font-size: 14px;
+    margin: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+/* 12. 分页样式优化 - 放大尺寸 */
+.pagination-container .el-pagination {
+  font-size: 14px;
+
+  .el-pagination__total,
+  .el-pagination__jump {
+    font-size: 14px;
+    height: 36px;
+    line-height: 36px;
+  }
+
+  .el-pager li {
+    font-size: 14px;
+    border-radius: 6px;
+    margin: 0 3px;
+    min-width: 36px;
+    height: 36px;
+    line-height: 36px;
+
+    &.active {
+      background-color: #4A9B8C;
+      color: #fff;
+    }
+
+    &:hover {
+      color: #4A9B8C;
+    }
+  }
+
+  .btn-prev, .btn-next {
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
+    font-size: 14px;
+  }
+
+  .el-pagination__sizes .el-select .el-input__inner {
+    height: 36px;
+    font-size: 14px;
+  }
+}
+
+/* 13. 对话框样式优化 */
+.el-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+
+  .el-dialog__header {
+    padding: 18px 24px;
+    background: linear-gradient(135deg, #F5F7FA 0%, #EFEFEF 100%);
+    border-bottom: 1px solid #E8E8E8;
+
+    .el-dialog__title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #262626;
+    }
+  }
+
+  .el-dialog__body {
+    padding: 24px;
+    font-size: 14px;
+  }
+
+  .el-dialog__footer {
+    padding: 16px 24px;
+    border-top: 1px solid #E8E8E8;
+    background: #FAFBFC;
+  }
+}
+
+/* 14. 按钮样式增强 */
+.el-button {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.25s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+/* 主按钮渐变效果 */
+.el-button--primary {
+  background: linear-gradient(135deg, #4A9B8C 0%, #3A8B7C 100%);
+  border-color: #4A9B8C;
+
+  &:hover {
+    background: linear-gradient(135deg, #5BAC9D 0%, #4A9B8C 100%);
+  }
+}
+
+/* 成功按钮 */
+.el-button--success {
+  background: linear-gradient(135deg, #52C41A 0%, #42B311 100%);
+  border-color: #52C41A;
+
+  &:hover {
+    background: linear-gradient(135deg, #62D42A 0%, #52C41A 100%);
+  }
+}
+
+/* 警告按钮 */
+.el-button--warning {
+  background: linear-gradient(135deg, #FAAD14 0%, #EA9D04 100%);
+  border-color: #FAAD14;
+
+  &:hover {
+    background: linear-gradient(135deg, #FFBD24 0%, #FAAD14 100%);
+  }
+}
+
+/* 危险按钮 */
+.el-button--danger {
+  background: linear-gradient(135deg, #FF4D4F 0%, #EF3D3F 100%);
+  border-color: #FF4D4F;
+
+  &:hover {
+    background: linear-gradient(135deg, #FF5D5F 0%, #FF4D4F 100%);
+  }
+}
+
+/* 15. 输入框样式增强 */
+.el-input__inner {
+  border-radius: 6px;
+  border: 1px solid #D9D9D9;
+  transition: all 0.25s ease;
+
+  &:focus {
+    border-color: #4A9B8C;
+    box-shadow: 0 0 0 3px rgba(74, 155, 140, 0.15);
+  }
+
+  &:hover {
+    border-color: #BFBFBF;
+  }
+}
+
+/* 16. 下拉选择框样式 */
+.el-select .el-input__inner {
+  border-radius: 6px;
+}
+
+/* 17. 标签样式增强 - 文字居中 */
+.el-tag {
+  border-radius: 6px;
+  font-size: 14px;
+  padding: 6px 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  line-height: 1;
+}
+
+/* mini 尺寸标签 */
+.el-tag--mini,
+.el-tag.el-tag--mini {
+  font-size: 12px;
+  padding: 4px 8px;
+  height: 22px;
+}
+
+/* small 尺寸标签 */
+.el-tag--small,
+.el-tag.el-tag--small {
+  font-size: 12px;
+  padding: 5px 10px;
+  height: 24px;
+}
+
+/* medium 尺寸标签 */
+.el-tag--medium,
+.el-tag.el-tag--medium {
+  font-size: 14px;
+  padding: 6px 12px;
+  height: 28px;
+}
+
+.el-tag--success {
+  background-color: #F6FFED;
+  border-color: #B7EB8F;
+  color: #52C41A;
+}
+
+.el-tag--warning {
+  background-color: #FFFBE6;
+  border-color: #FFE58F;
+  color: #FAAD14;
+}
+
+.el-tag--danger {
+  background-color: #FFF2F0;
+  border-color: #FFCCC7;
+  color: #FF4D4F;
+}
+
+.el-tag--info {
+  background-color: #F4F5F7;
+  border-color: #D9D9D9;
+  color: #595959;
+}
+
+/* 18. 面包屑样式 */
+.el-breadcrumb {
+  font-size: 14px;
+
+  .el-breadcrumb__inner {
+    color: #595959;
+    font-weight: 400;
+
+    &.is-link:hover {
+      color: #4A9B8C;
+    }
+  }
+
+  .el-breadcrumb__separator {
+    color: #D9D9D9;
+  }
+}
+
+/* 19. 菜单选中态增强 */
+.el-menu-item.is-active {
+  background-color: rgba(74, 155, 140, 0.15) !important;
+  border-right: 3px solid #4A9B8C;
+}
+
+/* 20. 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #C1C1C1;
+  border-radius: 4px;
+
+  &:hover {
+    background-color: #A8A8A8;
+  }
+}
+
+::-webkit-scrollbar-track {
+  background-color: #F1F1F1;
+}
+
+/* ========== 固定列（fixed）样式修复 ========== */
+
+/* 1. 固定列补丁区域完全不占用宽度 */
+.el-table__fixed-right-patch {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  background-color: transparent !important;
+  border-left: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+/* 2. 隐藏固定列阴影，消除视觉断层 */
+.el-table__fixed-right,
+.el-table__fixed {
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+}
+
+/* 3. 固定列表头背景与普通表头一致 */
+.el-table__fixed-right .el-table__fixed-header-wrapper th,
+.el-table__fixed .el-table__fixed-header-wrapper th {
+  background: linear-gradient(180deg, #F5F7FA 0%, #EFEFEF 100%) !important;
+  border-bottom: 2px solid #E0E0E0 !important;
+}
+
+/* 4. 固定列单元格默认背景透明（继承主表格） */
+.el-table__fixed-right .el-table__fixed-body-wrapper td,
+.el-table__fixed .el-table__fixed-body-wrapper td {
+  background-color: transparent;
+}
+
+/* 5. 固定列隔行变色与主表格同步 */
+.el-table__fixed-right .el-table__fixed-body-wrapper tr:nth-child(even) td,
+.el-table__fixed .el-table__fixed-body-wrapper tr:nth-child(even) td {
+  background-color: #FAFBFC;
+}
+
+/* 6. 主表格 hover 效果 */
+.el-table__body-wrapper tr:hover > td {
+  background-color: #E6F4F1;
+}
+
+/* 7. 固定列 hover 效果 - Element-UI 通过 JS 同步，需要用 .hover-row 类 */
+.el-table__fixed-right .el-table__fixed-body-wrapper tr.hover-row td,
+.el-table__fixed .el-table__fixed-body-wrapper tr.hover-row td,
+.el-table__fixed-right .el-table__fixed-body-wrapper tr:hover td,
+.el-table__fixed .el-table__fixed-body-wrapper tr:hover td {
+  background-color: #E6F4F1;
+}
+
+/* 8. 固定列选中行背景 */
+.el-table__body-wrapper tr.current-row > td,
+.el-table__fixed-right .el-table__fixed-body-wrapper tr.current-row > td,
+.el-table__fixed .el-table__fixed-body-wrapper tr.current-row > td {
+  background-color: #E6F4F1;
+}
+
+/* 9. 固定列边框与主表格一致 */
+.el-table__fixed-right {
+  border-left: 1px solid #EBEEF5 !important;
+  right: 0 !important;
+}
+
+.el-table__fixed-right .el-table__fixed-body-wrapper td,
+.el-table__fixed-right .el-table__fixed-header-wrapper th {
+  border-right: none !important;
+}
+
+/* 10. 固定列内表格高度同步 */
+.el-table__fixed-right .el-table__fixed-body-wrapper {
+  overflow-y: hidden !important;
+}
+
+/* 11. 固定列操作按钮样式继承主表格 */
+.el-table__fixed-right .fixed-width .cell,
+.el-table__fixed .fixed-width .cell {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  width: auto;
+  padding: 0;
+}
+
+/* 12. 固定列按钮样式一致 */
+.el-table__fixed-right .el-button--text,
+.el-table__fixed .el-button--text {
+  padding: 4px 8px;
+  font-size: 14px;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* 13. 确保 fixed-right 列正确对齐 */
+.el-table--scrollable-x .el-table__fixed-right,
+.el-table--scrollable-y .el-table__fixed-right {
+  right: 0 !important;
+}
+
+/* 14. 消除固定列与主表格之间的间隙 */
+.el-table__fixed-right::before,
+.el-table__fixed::before {
+  display: none !important;
+}
+
+/* 15. 固定列单元格垂直居中 */
+.el-table__fixed-right td,
+.el-table__fixed td {
+  vertical-align: middle !important;
+}
+
+/* 16. 固定列行高与主表格一致 */
+.el-table__fixed-right .el-table__row,
+.el-table__fixed .el-table__row {
+  height: 100%;
+}
+
+/* 17. 移除固定列额外边框 */
+.el-table__fixed-right-patch::before,
+.el-table__fixed-right::after,
+.el-table__fixed::after {
+  display: none !important;
+}
+
+/* 18. 固定列表头单元格垂直居中 */
+.el-table__fixed-right .el-table__fixed-header-wrapper th .cell,
+.el-table__fixed .el-table__fixed-header-wrapper th .cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 19. 隐藏 gutter 宽度（无横向滚动时不显示） */
+.el-table__gutter {
+  width: 0 !important;
+  min-width: 0 !important;
+}
+
+/* 20. 确保表格列正确填充 */
+.el-table .el-table__body-wrapper,
+.el-table .el-table__header-wrapper {
+  width: 100% !important;
 }

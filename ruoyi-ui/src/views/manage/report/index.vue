@@ -26,21 +26,21 @@
     </el-row>
 
     <!-- 表格 -->
-    <el-table v-loading="loading" :data="reportList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="reportList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="报告编码" align="center" prop="reportCode" width="180" />
-      <el-table-column label="报告名称" align="center" prop="reportName" show-overflow-tooltip />
-      <el-table-column label="物料名称" align="center" prop="materialName" width="140" show-overflow-tooltip />
+      <el-table-column label="报告名称" align="center" prop="reportName" min-width="140" show-overflow-tooltip />
+      <el-table-column label="物料名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
       <el-table-column label="物料数量" align="center" prop="materialQuantity" width="100" />
       <el-table-column label="节点名称" align="center" prop="nodeName" width="120" />
       <el-table-column label="上传人" align="center" prop="uploader" width="100" />
       <el-table-column label="审批人" align="center" prop="createBy" width="100" />
       <el-table-column label="上传时间" align="center" prop="createTime" width="160" />
-      <el-table-column label="操作" align="center" width="180">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
         <template slot-scope="scope">
-          <el-button v-hasPermi="['manage:report:query']" type="text" icon="el-icon-view" @click="handlePreview(scope.row)">预览</el-button>
-          <el-button type="text" icon="el-icon-download" @click="handleDownload(scope.row)">下载</el-button>
-          <el-button v-hasPermi="['manage:report:remove']" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)">删除</el-button>
+          <el-button v-hasPermi="['manage:report:query']" type="text" icon="el-icon-view" class="view-btn" @click="handlePreview(scope.row)">预览</el-button>
+          <el-button type="text" icon="el-icon-download" class="view-btn" @click="handleDownload(scope.row)">下载</el-button>
+          <el-button v-hasPermi="['manage:report:remove']" type="text" icon="el-icon-delete" class="delete-btn" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

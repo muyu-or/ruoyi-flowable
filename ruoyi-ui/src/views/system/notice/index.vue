@@ -69,7 +69,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="noticeList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="noticeList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="noticeId" width="100" />
       <el-table-column
@@ -94,12 +94,13 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160">
         <template slot-scope="scope">
           <el-button
             size="mini"
             type="text"
             icon="el-icon-edit"
+            class="edit-btn"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:notice:edit']"
           >修改</el-button>
@@ -107,6 +108,7 @@
             size="mini"
             type="text"
             icon="el-icon-delete"
+            class="delete-btn"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:notice:remove']"
           >删除</el-button>

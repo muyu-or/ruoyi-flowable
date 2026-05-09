@@ -49,7 +49,7 @@
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="formList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="formList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="表单主键" align="center" prop="formId" />
       <el-table-column label="表单名称" align="center" prop="formName" />
@@ -66,12 +66,13 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
         <template slot-scope="scope">
           <el-button
             size="mini"
             type="text"
             icon="el-icon-view"
+            class="view-btn"
             @click="handleDetail(scope.row)"
           >详情</el-button>
           <el-button
@@ -80,6 +81,7 @@
             size="mini"
             type="text"
             icon="el-icon-edit"
+            class="edit-btn"
             @click="handleUpdate(scope.row)"
           >修改</el-button>
           <el-button
@@ -87,6 +89,7 @@
             size="mini"
             type="text"
             icon="el-icon-delete"
+            class="delete-btn"
             @click="handleDelete(scope.row)"
           >删除</el-button>
         </template>

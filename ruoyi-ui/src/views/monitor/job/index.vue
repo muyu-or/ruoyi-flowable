@@ -91,18 +91,18 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="jobList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="jobList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="任务编号" width="100" align="center" prop="jobId" />
-      <el-table-column label="任务名称" align="center" prop="jobName" :show-overflow-tooltip="true" />
-      <el-table-column label="任务组名" align="center" prop="jobGroup">
+      <el-table-column label="任务名称" align="center" prop="jobName" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="任务组名" align="center" prop="jobGroup" width="100">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.sys_job_group" :value="scope.row.jobGroup"/>
         </template>
       </el-table-column>
-      <el-table-column label="调用目标字符串" align="center" prop="invokeTarget" :show-overflow-tooltip="true" />
-      <el-table-column label="cron执行表达式" align="center" prop="cronExpression" :show-overflow-tooltip="true" />
-      <el-table-column label="状态" align="center">
+      <el-table-column label="调用目标字符串" align="center" prop="invokeTarget" min-width="160" :show-overflow-tooltip="true" />
+      <el-table-column label="cron执行表达式" align="center" prop="cronExpression" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="状态" align="center" width="80">
         <template slot-scope="scope">
           <el-switch
             v-model="scope.row.status"
@@ -112,33 +112,13 @@
           ></el-switch>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="200" class-name="small-padding fixed-width">
         <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['monitor:job:edit']"
-          >修改</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['monitor:job:remove']"
-          >删除</el-button>
-          <el-dropdown size="mini" @command="(command) => handleCommand(command, scope.row)" v-hasPermi="['monitor:job:changeStatus', 'monitor:job:query']">
-            <el-button size="mini" type="text" icon="el-icon-d-arrow-right">更多</el-button>
-            <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item command="handleRun" icon="el-icon-caret-right"
-                v-hasPermi="['monitor:job:changeStatus']">执行一次</el-dropdown-item>
-              <el-dropdown-item command="handleView" icon="el-icon-view"
-                v-hasPermi="['monitor:job:query']">任务详细</el-dropdown-item>
-              <el-dropdown-item command="handleJobLog" icon="el-icon-s-operation"
-                v-hasPermi="['monitor:job:query']">调度日志</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
+          <el-button size="mini" type="text" icon="el-icon-edit" class="edit-btn" @click="handleUpdate(scope.row)" v-hasPermi="['monitor:job:edit']">修改</el-button>
+          <el-button size="mini" type="text" icon="el-icon-delete" class="delete-btn" @click="handleDelete(scope.row)" v-hasPermi="['monitor:job:remove']">删除</el-button>
+          <el-button size="mini" type="text" icon="el-icon-caret-right" class="view-btn" @click="handleRun(scope.row)" v-hasPermi="['monitor:job:changeStatus']">执行</el-button>
+          <el-button size="mini" type="text" icon="el-icon-view" class="view-btn" @click="handleView(scope.row)" v-hasPermi="['monitor:job:query']">详细</el-button>
+          <el-button size="mini" type="text" icon="el-icon-s-operation" class="view-btn" @click="handleJobLog(scope.row)" v-hasPermi="['monitor:job:query']">日志</el-button>
         </template>
       </el-table-column>
     </el-table>

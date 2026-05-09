@@ -91,55 +91,25 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table ref="tables" v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
+    <el-table ref="tables" v-loading="loading" :data="tableList" border v-table-col-width="'main'" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
       <el-table-column type="selection" align="center" width="55"></el-table-column>
       <el-table-column label="序号" type="index" width="50" align="center">
         <template slot-scope="scope">
           <span>{{(queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1}}</span>
         </template>
       </el-table-column>
-      <el-table-column label="表名称" align="center" prop="tableName" :show-overflow-tooltip="true" width="120" />
-      <el-table-column label="表描述" align="center" prop="tableComment" :show-overflow-tooltip="true" width="120" />
-      <el-table-column label="实体" align="center" prop="className" :show-overflow-tooltip="true" width="120" />
+      <el-table-column label="表名称" align="center" prop="tableName" :show-overflow-tooltip="true" min-width="140" />
+      <el-table-column label="表描述" align="center" prop="tableComment" :show-overflow-tooltip="true" min-width="180" />
+      <el-table-column label="实体" align="center" prop="className" :show-overflow-tooltip="true" min-width="140" />
       <el-table-column label="创建时间" align="center" prop="createTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="160" />
       <el-table-column label="更新时间" align="center" prop="updateTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="160" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
         <template slot-scope="scope">
-          <el-button
-            type="text"
-            size="small"
-            icon="el-icon-view"
-            @click="handlePreview(scope.row)"
-            v-hasPermi="['tool:gen:preview']"
-          >预览</el-button>
-          <el-button
-            type="text"
-            size="small"
-            icon="el-icon-edit"
-            @click="handleEditTable(scope.row)"
-            v-hasPermi="['tool:gen:edit']"
-          >编辑</el-button>
-          <el-button
-            type="text"
-            size="small"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['tool:gen:remove']"
-          >删除</el-button>
-          <el-button
-            type="text"
-            size="small"
-            icon="el-icon-refresh"
-            @click="handleSynchDb(scope.row)"
-            v-hasPermi="['tool:gen:edit']"
-          >同步</el-button>
-          <el-button
-            type="text"
-            size="small"
-            icon="el-icon-download"
-            @click="handleGenTable(scope.row)"
-            v-hasPermi="['tool:gen:code']"
-          >生成代码</el-button>
+          <el-button type="text" size="mini" icon="el-icon-view" class="view-btn" @click="handlePreview(scope.row)" v-hasPermi="['tool:gen:preview']">预览</el-button>
+          <el-button type="text" size="mini" icon="el-icon-edit" class="edit-btn" @click="handleEditTable(scope.row)" v-hasPermi="['tool:gen:edit']">编辑</el-button>
+          <el-button type="text" size="mini" icon="el-icon-delete" class="delete-btn" @click="handleDelete(scope.row)" v-hasPermi="['tool:gen:remove']">删除</el-button>
+          <el-button type="text" size="mini" icon="el-icon-refresh" class="view-btn" @click="handleSynchDb(scope.row)" v-hasPermi="['tool:gen:edit']">同步</el-button>
+          <el-button type="text" size="mini" icon="el-icon-download" class="view-btn" @click="handleGenTable(scope.row)" v-hasPermi="['tool:gen:code']">生成</el-button>
         </template>
       </el-table-column>
     </el-table>

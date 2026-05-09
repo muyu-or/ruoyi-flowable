@@ -65,22 +65,23 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="teamList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="teamList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" width="60" />
-      <el-table-column label="班组名称" align="center" prop="teamName" />
-      <el-table-column label="班组长姓名" align="center" prop="leaderName" />
+      <el-table-column label="班组名称" align="center" prop="teamName" min-width="120" />
+      <el-table-column label="班组长姓名" align="center" prop="leaderName" min-width="100" />
       <el-table-column label="状态" align="center" prop="teamStatus">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.team_status" :value="scope.row.teamStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="260">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
         <template slot-scope="scope">
           <el-button
             size="mini"
             type="text"
             icon="el-icon-view"
+            class="view-btn"
             @click="handleView(scope.row)"
             v-hasPermi="['manage:team:query']"
           >查看</el-button>
@@ -88,6 +89,7 @@
             size="mini"
             type="text"
             icon="el-icon-edit"
+            class="edit-btn"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['manage:team:edit']"
           >修改</el-button>
@@ -96,7 +98,7 @@
             size="mini"
             type="text"
             icon="el-icon-open"
-            style="color: #67C23A;"
+            class="view-btn"
             @click="handleStatusChange(scope.row, '1')"
             v-hasPermi="['manage:team:edit']"
           >启用</el-button>
@@ -105,7 +107,7 @@
             size="mini"
             type="text"
             icon="el-icon-turn-off"
-            style="color: #E6A23C;"
+            class="view-btn"
             @click="handleStatusChange(scope.row, '0')"
             v-hasPermi="['manage:team:edit']"
           >停用</el-button>
@@ -113,7 +115,7 @@
             size="mini"
             type="text"
             icon="el-icon-delete"
-            style="color: #F56C6C;"
+            class="delete-btn"
             @click="handleDiscard(scope.row)"
             v-hasPermi="['manage:team:edit']"
           >废弃</el-button>
@@ -151,7 +153,7 @@
         </el-form-item>
         <el-form-item label="班组成员">
           <el-button type="primary" size="mini" icon="el-icon-plus" @click="handleSelectUser('member')" style="margin-bottom: 10px;">添加成员</el-button>
-          <el-table :data="selectedMembers" border style="width: 100%">
+          <el-table :data="selectedMembers" border v-table-col-width="'members'" style="width: 100%">
             <el-table-column label="用户名称" align="center">
               <template slot-scope="scope">
                 {{ scope.row.nickName }}
@@ -210,7 +212,7 @@
 
         <el-divider content-position="center">班组成员信息</el-divider>
         
-        <el-table :data="viewForm.userList" border style="width: 100%">
+        <el-table :data="viewForm.userList" border v-table-col-width="'viewMembers'" style="width: 100%">
           <el-table-column prop="nickName" label="用户名称" align="center">
              <template slot-scope="scope">
                 {{ scope.row.nickName }}

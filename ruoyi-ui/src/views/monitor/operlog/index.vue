@@ -111,7 +111,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table ref="tables" v-loading="loading" :data="list" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
+    <el-table ref="tables" v-loading="loading" :data="list" border v-table-col-width="'main'" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="日志编号" align="center" prop="operId" />
       <el-table-column label="系统模块" align="center" prop="title" :show-overflow-tooltip="true" />
@@ -138,12 +138,13 @@
           <span>{{ scope.row.costTime }}毫秒</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="80">
         <template slot-scope="scope">
           <el-button
             size="mini"
             type="text"
             icon="el-icon-view"
+            class="view-btn"
             @click="handleView(scope.row,scope.index)"
             v-hasPermi="['monitor:operlog:query']"
           >详细</el-button>

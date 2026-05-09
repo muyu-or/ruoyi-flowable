@@ -160,78 +160,186 @@ export default {
   background-image: url("../assets/images/img_20260428_124000_faee30.jpg");
   background-size: cover;
   background-position: center;
+  position: relative;
+
+  /* 背景遮罩层增强 */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(30, 42, 58, 0.7) 0%, rgba(45, 74, 111, 0.6) 100%);
+    z-index: 1;
+  }
 }
+
 .title {
-  margin: 0px auto 30px auto;
+  margin: 0px auto 35px auto;
   text-align: center;
   color: #fff;
-  font-size: 28px;
-  font-weight: 500;
-  letter-spacing: 2px;
+  font-size: 33px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .login-form {
-  border-radius: 12px;
-  background: rgba(30, 60, 114, 0.85);
-  backdrop-filter: blur(10px);
-  width: 420px;
-  padding: 40px 35px 15px 35px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(30, 42, 58, 0.92) 0%, rgba(45, 74, 111, 0.85) 100%);
+  backdrop-filter: blur(12px);
+  width: 450px;
+  padding: 45px 40px 25px 40px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(255, 255, 255, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 2;
+  position: relative;
+
+  /* 输入框样式增强 */
   .el-input {
-    height: 44px;
+    height: 48px;
+
     input {
-      height: 44px;
-      background: rgba(255, 255, 255, 0.1);
+      height: 48px;
+      background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
       color: #fff;
+      font-size: 17px;
+      padding-left: 40px;
+      transition: all 0.3s ease;
+
       &::placeholder {
-        color: rgba(255, 255, 255, 0.6);
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 13px;
+      }
+
+      &:focus {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(74, 155, 140, 0.6);
+        box-shadow: 0 0 0 3px rgba(74, 155, 140, 0.2);
+      }
+
+      &:hover {
+        border-color: rgba(255, 255, 255, 0.3);
       }
     }
   }
+
   .input-icon {
-    height: 44px;
-    width: 16px;
-    margin-left: 4px;
-    color: rgba(255, 255, 255, 0.7);
+    height: 48px;
+    width: 18px;
+    margin-left: 6px;
+    color: rgba(255, 255, 255, 0.6);
+    transition: color 0.3s ease;
   }
+
+  .el-input:focus-within .input-icon {
+    color: rgba(74, 155, 140, 0.9);
+  }
+
+  /* 表单项间距 */
   .el-form-item {
-    margin-bottom: 22px;
+    margin-bottom: 24px;
   }
+
+  /* 记住密码样式 */
   .el-checkbox {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+
     .el-checkbox__label {
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 13px;
+    }
+
+    .el-checkbox__inner {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.3);
+
+      &:hover {
+        border-color: rgba(74, 155, 140, 0.6);
+      }
+    }
+
+    &.is-checked .el-checkbox__inner {
+      background-color: #4A9B8C;
+      border-color: #4A9B8C;
     }
   }
+
+  /* 登录按钮样式 - 青绿渐变 */
   .el-button--primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #4A9B8C 0%, #3A8B7C 50%, #2A7B6C 100%);
     border: none;
-    height: 44px;
-    font-size: 16px;
-    letter-spacing: 4px;
+    height: 48px;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 8px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(74, 155, 140, 0.4);
+
     &:hover {
-      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-      opacity: 0.9;
+      background: linear-gradient(135deg, #5BAC9D 0%, #4A9B8C 50%, #3A8B7C 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(74, 155, 140, 0.5);
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 15px rgba(74, 155, 140, 0.4);
+    }
+  }
+
+  /* 注册链接样式 */
+  .link-type {
+    color: rgba(74, 155, 140, 0.8);
+    font-size: 13px;
+
+    &:hover {
+      color: #73B5A8;
+      text-decoration: underline;
     }
   }
 }
+
 .login-tip {
   font-size: 13px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.5);
 }
+
 .login-code {
   width: 33%;
-  height: 38px;
+  height: 48px;
   float: right;
+
   img {
     cursor: pointer;
     vertical-align: middle;
+    border-radius: 8px;
+    height: 48px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 }
+
 .login-code-img {
-  height: 38px;
+  height: 48px;
+}
+
+/* 响应式调整 */
+@media (max-width: 500px) {
+  .login-form {
+    width: 90%;
+    padding: 30px 25px 20px 25px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
 }
 </style>

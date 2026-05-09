@@ -75,11 +75,11 @@
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="templateList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="templateList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" width="60" />
-      <el-table-column label="模板编码" align="center" prop="templateCode" />
-      <el-table-column label="模板名称" align="center" prop="templateName" show-overflow-tooltip />
+      <el-table-column label="模板编码" align="center" prop="templateCode" min-width="120" />
+      <el-table-column label="模板名称" align="center" prop="templateName" min-width="140" show-overflow-tooltip />
       <el-table-column label="测试类型" align="center" prop="testType">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.test_type" :value="scope.row.testType" />
@@ -101,17 +101,20 @@
             v-hasPermi="['manage:template:edit']"
             type="text"
             icon="el-icon-edit"
+            class="edit-btn"
             @click="handleUpdate(scope.row)"
           >修改</el-button>
           <el-button
             v-if="scope.row.storagePath"
             type="text"
             icon="el-icon-download"
+            class="view-btn"
             @click="handleDownloadTemplate(scope.row)"
           >下载</el-button>
           <el-button
             type="text"
             icon="el-icon-view"
+            class="view-btn"
             @click="handlePreview(scope.row)"
           >预览</el-button>
         </template>

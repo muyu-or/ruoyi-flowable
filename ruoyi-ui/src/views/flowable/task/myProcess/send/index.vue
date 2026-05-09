@@ -132,7 +132,7 @@
             <el-descriptions-item label="业务单号">{{ startForm.businessKey }}</el-descriptions-item>
             <el-descriptions-item label="流程名称">{{ procName }}</el-descriptions-item>
           </el-descriptions>
-          <el-table :data="confirmTableData" border size="small">
+          <el-table :data="confirmTableData" border size="small" v-table-col-width="'confirm'">
             <el-table-column label="节点名称" prop="nodeName" />
             <el-table-column label="分配班组" prop="teamName">
               <template slot-scope="scope">

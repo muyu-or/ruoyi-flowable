@@ -39,29 +39,23 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="finishedList" border @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="finishedList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="任务编号" align="center" prop="taskId" :show-overflow-tooltip="true"/>
-      <el-table-column label="任务名称" align="center" prop="businessTaskName" :show-overflow-tooltip="true"/>
-      <el-table-column label="流程名称" align="center" prop="procDefName" :show-overflow-tooltip="true"/>
-      <el-table-column label="任务节点" align="center" prop="taskName" />
-      <el-table-column label="流程发起人" align="center">
+      <el-table-column label="任务编号" align="center" prop="taskId" min-width="120" :show-overflow-tooltip="true"/>
+      <el-table-column label="任务名称" align="center" prop="businessTaskName" min-width="120" :show-overflow-tooltip="true"/>
+      <el-table-column label="流程名称" align="center" prop="procDefName" min-width="120" :show-overflow-tooltip="true"/>
+      <el-table-column label="任务节点" align="center" prop="taskName" width="100" :show-overflow-tooltip="true"/>
+      <el-table-column label="流程发起人" align="center" width="140">
         <template slot-scope="scope">
           <label>{{scope.row.startUserName}} <el-tag type="info" size="mini">{{scope.row.startDeptName}}</el-tag></label>
         </template>
       </el-table-column>
-      <el-table-column label="接收时间" align="center" prop="createTime" width="180"/>
-      <el-table-column label="审批时间" align="center" prop="finishTime" width="180"/>
-      <el-table-column label="耗时" align="center" prop="duration" width="180"/>
-      <el-table-column label="操作" width="150" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="接收时间" align="center" prop="createTime" width="160"/>
+      <el-table-column label="审批时间" align="center" prop="finishTime" width="160"/>
+      <el-table-column label="耗时" align="center" prop="duration" width="100"/>
+      <el-table-column label="操作" width="60" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-refresh-left"
-            @click="handleRevoke(scope.row)"
-          >撤回
-          </el-button>
+          <el-button size="mini" type="text" icon="el-icon-refresh-left" class="view-btn" @click="handleRevoke(scope.row)">撤回</el-button>
         </template>
       </el-table-column>
     </el-table>

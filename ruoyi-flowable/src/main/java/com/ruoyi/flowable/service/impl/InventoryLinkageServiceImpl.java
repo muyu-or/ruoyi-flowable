@@ -107,7 +107,8 @@ public class InventoryLinkageServiceImpl implements IInventoryLinkageService {
         dto.setMaterialCategory(toStr(form.get("materialCategory")));
         dto.setMaterialSubcategory(toStr(form.get("materialSubcategory")));
         dto.setInboundType(PRODUCT_INBOUND_TYPE);
-        log.info("产品入库：productName={}, quantity={}", dto.getMaterialName(), dto.getQuantity());
+        dto.setUnitCost(toBigDecimal(form.get("unitCost")));
+        log.info("产品入库：productName={}, quantity={}, unitCost={}", dto.getMaterialName(), dto.getQuantity(), dto.getUnitCost());
         int result = inventoryService.insertInventory(dto);
         if (result <= 0) {
             throw new ServiceException("产品入库失败，请联系管理员");

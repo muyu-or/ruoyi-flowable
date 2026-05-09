@@ -82,7 +82,7 @@
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="backupList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="backupList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="设备名称" align="center" prop="deviceName" :show-overflow-tooltip="true" />
       <el-table-column label="录像日期" align="center" prop="recordDate" width="110" />

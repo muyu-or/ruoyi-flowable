@@ -117,12 +117,12 @@
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="inventoryList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="inventoryList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" />
       <el-table-column label="物料ID" align="center" prop="materialId" />
-      <el-table-column label="物料名称" align="center" prop="materialName" sortable />
-      <el-table-column label="物料大类" align="center" prop="materialCategory" sortable>
+      <el-table-column label="物料名称" align="center" prop="materialName" sortable min-width="120" />
+      <el-table-column label="物料大类" align="center" prop="materialCategory" sortable min-width="100">
         <template slot-scope="scope">
           <span>{{ displayLabel(dict.type.material_category, scope.row.materialCategory) }}</span>
         </template>
@@ -163,18 +163,18 @@
           <span>{{ parseTime(scope.row.lastInboundTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
         <template slot-scope="scope">
           <div class="action-btns">
-            <el-button v-hasPermi="['manage:inventory:edit']" type="text" icon="el-icon-upload" @click="handleStockOut(scope.row)">出库</el-button>
+            <el-button v-hasPermi="['manage:inventory:edit']" type="text" icon="el-icon-upload" class="edit-btn" @click="handleStockOut(scope.row)">出库</el-button>
             <el-button
               v-hasPermi="['manage:inventory:edit']"
               type="text"
               :icon="isPending(scope.row) ? 'el-icon-check' : 'el-icon-minus'"
-              :style="isPending(scope.row) ? 'color:#67C23A' : 'color:#E6A23C'"
+              class="view-btn"
               @click="handleToggle(scope.row)"
             >{{ isPending(scope.row) ? '启用' : '禁用' }}</el-button>
-            <el-button v-hasPermi="['manage:inventory:startFlow']" type="text" icon="el-icon-s-promotion" style="color:#409EFF" @click="handleStartFlow(scope.row)">发起流程</el-button>
+            <el-button v-hasPermi="['manage:inventory:startFlow']" type="text" icon="el-icon-s-promotion" class="view-btn" @click="handleStartFlow(scope.row)">发起流程</el-button>
           </div>
         </template>
       </el-table-column>

@@ -89,7 +89,7 @@
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="deviceList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="deviceList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="设备编号" align="center" prop="deviceNo" width="120" />
       <el-table-column label="设备名称" align="center" prop="deviceName" :show-overflow-tooltip="true" />

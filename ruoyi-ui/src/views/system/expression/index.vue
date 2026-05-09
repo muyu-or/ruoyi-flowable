@@ -71,7 +71,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="expressionList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="expressionList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键" align="center" prop="id" />
       <el-table-column label="名称" align="center" prop="name" />

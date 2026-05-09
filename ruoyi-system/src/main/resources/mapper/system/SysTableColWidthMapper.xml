@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.SysTableColWidthMapper">
+
+    <resultMap type="SysTableColWidth" id="SysTableColWidthResult">
+        <id     property="id"            column="id"             />
+        <result property="routePath"     column="route_path"     />
+        <result property="tableId"       column="table_id"       />
+        <result property="columnsConfig" column="columns_config" />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"      column="update_by"      />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"        column="remark"         />
+    </resultMap>
+
+    <sql id="selectConfigVo">
+        select id, route_path, table_id, columns_config, create_by, create_time, update_by, update_time, remark
+        from sys_table_col_width
+    </sql>
+
+    <select id="selectConfigByRoute" parameterType="map" resultMap="SysTableColWidthResult">
+        <include refid="selectConfigVo"/>
+        where route_path = #{routePath} and table_id = #{tableId}
+    </select>
+
+    <select id="selectConfigsByRoutePath" parameterType="String" resultMap="SysTableColWidthResult">
+        <include refid="selectConfigVo"/>
+        where route_path = #{routePath}
+    </select>
+
+    <select id="selectConfigList" resultMap="SysTableColWidthResult">
+        <include refid="selectConfigVo"/>
+        order by route_path, table_id
+    </select>
+
+    <insert id="insertConfig" parameterType="SysTableColWidth">
+        insert into sys_table_col_width (
+            route_path,
+            table_id,
+            columns_config,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        ) values (
+            #{routePath},
+            #{tableId},
+            #{columnsConfig},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateConfig" parameterType="SysTableColWidth">
+        update sys_table_col_width
+        <set>
+            columns_config = #{columnsConfig},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where route_path = #{routePath} and table_id = #{tableId}
+    </update>
+
+    <delete id="deleteConfig" parameterType="map">
+        delete from sys_table_col_width
+        where route_path = #{routePath} and table_id = #{tableId}
+    </delete>
+
+    <delete id="deleteConfigsByRoutePath" parameterType="String">
+        delete from sys_table_col_width
+        where route_path = #{routePath}
+    </delete>
+
+    <delete id="deleteAllConfig">
+        delete from sys_table_col_width
+    </delete>
+
+</mapper>

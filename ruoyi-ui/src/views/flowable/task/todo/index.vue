@@ -40,36 +40,37 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="todoList" border @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="todoList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center"/>
-      <el-table-column label="任务编号" align="center" prop="taskId" :show-overflow-tooltip="true"/>
-      <el-table-column label="任务名称" align="center" prop="businessTaskName" :show-overflow-tooltip="true"/>
-      <el-table-column label="流程名称" align="center" prop="procDefName"/>
-      <el-table-column label="当前节点" align="center" prop="taskName"/>
-      <el-table-column label="流程版本" align="center">
+      <el-table-column label="任务编号" align="center" prop="taskId" min-width="120" :show-overflow-tooltip="true"/>
+      <el-table-column label="任务名称" align="center" prop="businessTaskName" min-width="120" :show-overflow-tooltip="true"/>
+      <el-table-column label="流程名称" align="center" prop="procDefName" min-width="120" :show-overflow-tooltip="true"/>
+      <el-table-column label="当前节点" align="center" prop="taskName" width="100" :show-overflow-tooltip="true"/>
+      <el-table-column label="流程版本" align="center" width="60">
         <template slot-scope="scope">
           <el-tag size="medium" >v{{scope.row.procDefVersion}}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="流程发起人" align="center">
+      <el-table-column label="流程发起人" align="center" width="140">
         <template slot-scope="scope">
           <label>{{scope.row.startUserName}} <el-tag type="info" size="mini">{{scope.row.startDeptName}}</el-tag></label>
         </template>
       </el-table-column>
-      <el-table-column label="接收时间" align="center" prop="createTime" width="180"/>
-      <el-table-column label="状态" align="center" width="100">
+      <el-table-column label="接收时间" align="center" prop="createTime" width="160"/>
+      <el-table-column label="状态" align="center" width="80">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.nodeStatus === 'submitted'" type="warning" size="mini">待审批</el-tag>
           <el-tag v-else type="info" size="mini">待处理</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="60">
         <template slot-scope="scope">
           <el-button
             v-if="!isLeader && scope.row.nodeStatus === 'submitted'"
             size="mini"
             type="text"
             icon="el-icon-edit"
+            class="edit-btn"
             @click="handleProcess(scope.row)"
           >修改</el-button>
           <el-button
@@ -77,6 +78,7 @@
             size="mini"
             type="text"
             icon="el-icon-edit-outline"
+            class="edit-btn"
             @click="handleProcess(scope.row)"
           >处理</el-button>
         </template>

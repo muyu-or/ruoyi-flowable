@@ -51,19 +51,19 @@
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="myProcessList" border @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="myProcessList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="流程编号" align="center" prop="procInsId" :show-overflow-tooltip="true" />
-      <el-table-column label="任务名称" align="center" prop="businessTaskName" :show-overflow-tooltip="true" />
-      <el-table-column label="流程名称" align="center" prop="procDefName" :show-overflow-tooltip="true" />
-      <el-table-column label="流程类别" align="center" prop="category" width="100px" />
-      <el-table-column label="流程版本" align="center" width="80px">
+      <el-table-column label="流程编号" align="center" prop="procInsId" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="任务名称" align="center" prop="businessTaskName" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="流程名称" align="center" prop="procDefName" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="流程类别" align="center" prop="category" width="80" />
+      <el-table-column label="流程版本" align="center" width="60">
         <template slot-scope="scope">
           <el-tag size="medium">v{{ scope.row.procDefVersion }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="提交时间" align="center" prop="createTime" width="180" />
-      <el-table-column label="流程状态" align="center" width="100">
+      <el-table-column label="提交时间" align="center" prop="createTime" width="160" />
+      <el-table-column label="流程状态" align="center" width="80">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.procStatus === 'running'" type="primary" size="mini">进行中</el-tag>
           <el-tag v-else-if="scope.row.procStatus === 'finished'" type="success" size="mini">已完成</el-tag>
@@ -72,13 +72,13 @@
           <el-tag v-else size="mini">{{ scope.row.finishTime == null ? '进行中' : '已完成' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="耗时" align="center" prop="duration" width="180" />
-      <el-table-column label="当前节点" align="center" prop="taskName" />
-      <el-table-column label="操作" width="150" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="耗时" align="center" prop="duration" width="100" />
+      <el-table-column label="当前节点" align="center" prop="taskName" width="100" :show-overflow-tooltip="true" />
+      <el-table-column label="操作" width="160" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
-          <el-button type="text" size="small" @click="handleFlowRecord(scope.row)">详情</el-button>
-          <el-button v-if="scope.row.procStatus === 'running'" type="text" size="small" style="color:#F56C6C" @click="handleStop(scope.row)">取消申请</el-button>
-          <el-button v-hasPermi="['flowable:process:remove']" type="text" size="small" style="color:#F56C6C" @click="handleDelete(scope.row)">删除</el-button>
+          <el-button type="text" size="mini" class="view-btn" @click="handleFlowRecord(scope.row)">详情</el-button>
+          <el-button v-if="scope.row.procStatus === 'running'" type="text" size="mini" class="delete-btn" @click="handleStop(scope.row)">取消</el-button>
+          <el-button v-hasPermi="['flowable:process:remove']" type="text" size="mini" class="delete-btn" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -108,7 +108,7 @@
           <el-button icon="el-icon-refresh" size="mini" @click="resetProcessQuery">重置</el-button>
         </el-form-item>
       </el-form>
-      <el-table v-loading="processLoading" fit :data="definitionList" border>
+      <el-table v-loading="processLoading" fit :data="definitionList" border v-table-col-width="'dialog'">
         <el-table-column label="流程名称" align="center" prop="name" />
         <el-table-column label="流程版本" align="center">
           <template slot-scope="scope">

@@ -71,7 +71,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="expressionList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="expressionList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键" align="center" prop="id" />
       <el-table-column label="名称" align="center" prop="name" />
@@ -81,12 +81,13 @@
           <dict-tag :options="dict.type.exp_data_type" :value="scope.row.dataType"/>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160">
         <template slot-scope="scope">
           <el-button
             size="mini"
             type="text"
             icon="el-icon-edit"
+            class="edit-btn"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:expression:edit']"
           >修改</el-button>
@@ -94,6 +95,7 @@
             size="mini"
             type="text"
             icon="el-icon-delete"
+            class="delete-btn"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:expression:remove']"
           >删除</el-button>
