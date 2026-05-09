@@ -28,7 +28,7 @@
         :disabled="readonly"
       />
     </el-form-item>
-    <el-form-item label="测试报告">
+    <el-form-item label="预处理报告">
       <report-uploader
         v-model="form.reports"
         :readonly="readonly"

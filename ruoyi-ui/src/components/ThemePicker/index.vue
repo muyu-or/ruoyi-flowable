@@ -100,6 +100,7 @@ export default {
           }
         }
         xhr.open('GET', url)
+        xhr.overrideMimeType('text/css; charset=utf-8')
         xhr.send()
       })
     },

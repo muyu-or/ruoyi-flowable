@@ -7,9 +7,9 @@ function resolve(dir) {
 
 const CompressionPlugin = require('compression-webpack-plugin')
 
-const name = process.env.VUE_APP_TITLE || '自动化生产管理系统' // 网页标题
+const name = process.env.VUE_APP_TITLE || '自动化生产线管理系统' // 网页标题
 
-const port = process.env.port || process.env.npm_config_port || 80 // 端口
+const port = 80 // 开发服务器端口固定为 80
 
 // vue.config.js 配置说明
 //官方vue.config.js 参考文档 https://cli.vuejs.org/zh/config/#css-loaderoptions

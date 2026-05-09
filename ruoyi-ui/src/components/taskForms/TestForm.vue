@@ -1,26 +1,70 @@
 <template>
-  <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-    <el-form-item label="测试项目" prop="testItems">
-      <el-input v-model="form.testItems" placeholder="请输入测试项目" :disabled="readonly" />
+  <el-form ref="formRef" :model="form" :rules="rules" label-width="150px" label-position="right">
+    <el-form-item label="表面打点情况" prop="surfaceDots">
+      <el-radio-group v-model="form.surfaceDots" :disabled="readonly" class="inline-radio">
+        <el-radio label="pass">通过</el-radio>
+        <el-radio label="fail">不通过</el-radio>
+        <el-radio label="na">不适用</el-radio>
+      </el-radio-group>
     </el-form-item>
-    <el-form-item label="测试数值" prop="testValue">
-      <el-input
-        v-model="form.testValue"
-        placeholder="请输入测试数值（含单位，如：99.5%）"
-        :disabled="readonly"
-      />
+    <el-form-item label="附着力" prop="adhesion">
+      <el-radio-group v-model="form.adhesion" :disabled="readonly" class="inline-radio">
+        <el-radio label="pass">通过</el-radio>
+        <el-radio label="fail">不通过</el-radio>
+        <el-radio label="na">不适用</el-radio>
+      </el-radio-group>
     </el-form-item>
-    <el-form-item label="是否合格" prop="qualified">
-      <el-radio-group v-model="form.qualified" :disabled="readonly">
-        <el-radio label="yes">合格</el-radio>
-        <el-radio label="no">不合格</el-radio>
+    <el-form-item label="膜层表面粗糙度" prop="coatingRoughness">
+      <el-radio-group v-model="form.coatingRoughness" :disabled="readonly" class="inline-radio">
+        <el-radio label="pass">通过</el-radio>
+        <el-radio label="fail">不通过</el-radio>
+        <el-radio label="na">不适用</el-radio>
+      </el-radio-group>
+    </el-form-item>
+    <el-form-item label="光谱测试" prop="spectrumTest">
+      <el-radio-group v-model="form.spectrumTest" :disabled="readonly" class="inline-radio">
+        <el-radio label="pass">通过</el-radio>
+        <el-radio label="fail">不通过</el-radio>
+        <el-radio label="na">不适用</el-radio>
+      </el-radio-group>
+    </el-form-item>
+    <el-form-item label="面形测试" prop="surfaceShapeTest">
+      <el-radio-group v-model="form.surfaceShapeTest" :disabled="readonly" class="inline-radio">
+        <el-radio label="pass">通过</el-radio>
+        <el-radio label="fail">不通过</el-radio>
+        <el-radio label="na">不适用</el-radio>
+      </el-radio-group>
+    </el-form-item>
+    <el-form-item label="CRD测试" prop="crdTest">
+      <el-radio-group v-model="form.crdTest" :disabled="readonly" class="inline-radio">
+        <el-radio label="pass">通过</el-radio>
+        <el-radio label="fail">不通过</el-radio>
+        <el-radio label="na">不适用</el-radio>
+      </el-radio-group>
+    </el-form-item>
+    <el-form-item label="损伤测试" prop="damageTest">
+      <el-radio-group v-model="form.damageTest" :disabled="readonly" class="inline-radio">
+        <el-radio label="pass">通过</el-radio>
+        <el-radio label="fail">不通过</el-radio>
+        <el-radio label="na">不适用</el-radio>
+      </el-radio-group>
+    </el-form-item>
+    <el-form-item label="弱吸收测试" prop="weakAbsorptionTest">
+      <el-radio-group v-model="form.weakAbsorptionTest" :disabled="readonly" class="inline-radio">
+        <el-radio label="pass">通过</el-radio>
+        <el-radio label="fail">不通过</el-radio>
+        <el-radio label="na">不适用</el-radio>
+      </el-radio-group>
+    </el-form-item>
+    <el-form-item label="温升测试" prop="temperatureRiseTest">
+      <el-radio-group v-model="form.temperatureRiseTest" :disabled="readonly" class="inline-radio">
+        <el-radio label="pass">通过</el-radio>
+        <el-radio label="fail">不通过</el-radio>
+        <el-radio label="na">不适用</el-radio>
       </el-radio-group>
     </el-form-item>
     <el-form-item label="检测人" prop="inspector">
       <el-input v-model="form.inspector" :disabled="true" />
-    </el-form-item>
-    <el-form-item label="报告编号" prop="reportNo">
-      <el-input v-model="form.reportNo" placeholder="请输入报告编号" :disabled="readonly" />
     </el-form-item>
     <el-form-item label="备注" prop="remark">
       <el-input
@@ -30,7 +74,7 @@
         :disabled="readonly"
       />
     </el-form-item>
-    <el-form-item label="测试报告">
+    <el-form-item label="检测报告">
       <report-uploader
         v-model="form.reports"
         :readonly="readonly"
@@ -53,21 +97,21 @@ export default {
       readonly: false,
       extraContext: { materialName: '', materialQuantity: null },
       form: {
-        testItems: '',
-        testValue: '',
-        qualified: '',
+        surfaceDots: '',
+        adhesion: '',
+        coatingRoughness: '',
+        spectrumTest: '',
+        surfaceShapeTest: '',
+        crdTest: '',
+        damageTest: '',
+        weakAbsorptionTest: '',
+        temperatureRiseTest: '',
         inspector: '',
-        reportNo: '',
         remark: '',
         reportIds: [],
         reports: []
       },
-      rules: {
-        testItems: [{ required: true, message: '请输入测试项目', trigger: 'blur' }],
-        testValue: [{ required: true, message: '请输入测试数值', trigger: 'blur' }],
-        qualified: [{ required: true, message: '请选择是否合格', trigger: 'change' }],
-        reportNo: [{ required: true, message: '请输入报告编号', trigger: 'blur' }]
-      }
+      rules: {}
     }
   },
   created() {
@@ -112,3 +156,12 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.inline-radio {
+  white-space: nowrap;
+}
+.inline-radio .el-radio {
+  margin-right: 20px;
+}
+</style>

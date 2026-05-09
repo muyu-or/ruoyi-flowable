@@ -117,14 +117,14 @@
       />
     </el-form-item>
 
-    <el-form-item label="测试报告">
+    <el-form-item label="入库报告">
       <report-uploader
         v-model="form.reports"
         :readonly="readonly"
         :material-name="form.materialName"
         :material-quantity="form.quantity"
-        node-name="原料检测入库"
-        test-type="原料检测入库"
+        node-name="入库"
+        test-type="入库"
       />
     </el-form-item>
   </el-form>

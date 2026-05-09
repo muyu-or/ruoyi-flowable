@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ruoyi-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: flowable
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # 按文件名顺序依次执行，初始化库表
+      - ./sql/ry_20240629.sql:/docker-entrypoint-initdb.d/01_ry_system.sql:ro
+      - ./sql/tony-flowable.sql:/docker-entrypoint-initdb.d/02_tony_flowable.sql:ro
+      - ./sql/quartz.sql:/docker-entrypoint-initdb.d/03_quartz.sql:ro
+      - ./sql/deploy/01_system_extension.sql:/docker-entrypoint-initdb.d/04_system_extension.sql:ro
+      - ./sql/deploy/02_org_and_roles.sql:/docker-entrypoint-initdb.d/05_org_and_roles.sql:ro
+      - ./sql/deploy/03_inventory.sql:/docker-entrypoint-initdb.d/06_inventory.sql:ro
+      - ./sql/deploy/04_team.sql:/docker-entrypoint-initdb.d/07_team.sql:ro
+      - ./sql/deploy/05_workflow_execution.sql:/docker-entrypoint-initdb.d/08_workflow_execution.sql:ro
+      - ./sql/deploy/06_report.sql:/docker-entrypoint-initdb.d/09_report.sql:ro
+      - ./sql/deploy/07_monitor.sql:/docker-entrypoint-initdb.d/10_monitor.sql:ro
+      - ./sql/deploy/08_warning.sql:/docker-entrypoint-initdb.d/11_warning.sql:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+      - --lower_case_table_names=1
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: ruoyi-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local

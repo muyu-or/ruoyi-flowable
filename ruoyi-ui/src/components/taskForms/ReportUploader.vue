@@ -2,7 +2,7 @@
   <div class="report-uploader">
     <!-- 只读模式 -->
     <template v-if="readonly">
-      <span v-if="!reportList || reportList.length === 0" style="color:#c0c4cc">未上传测试报告</span>
+      <span v-if="!reportList || reportList.length === 0" style="color:#c0c4cc">未上传{{ reportLabel }}</span>
       <template v-else>
         <span
           v-for="r in reportList"
@@ -45,7 +45,7 @@
         :on-error="handleUploadError"
         style="display:inline-block"
       >
-        <el-button size="mini" icon="el-icon-upload2" :loading="uploading">上传测试报告</el-button>
+        <el-button size="mini" icon="el-icon-upload2" :loading="uploading">上传{{ reportLabel }}</el-button>
       </el-upload>
       <el-dropdown v-if="templateList.length > 1" trigger="click" style="margin-left:8px" @command="handleDownloadTemplate">
         <el-button size="mini" type="success" plain icon="el-icon-download">下载模板<i class="el-icon-arrow-down el-icon--right" /></el-button>
@@ -101,6 +101,11 @@ export default {
       previewUrl: '',
       previewHtml: '',
       templateList: []
+    }
+  },
+  computed: {
+    reportLabel() {
+      return this.nodeName ? this.nodeName + '报告' : '测试报告'
     }
   },
   watch: {

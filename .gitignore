@@ -1,12 +1,24 @@
 ######################################################################
 # Build Tools
 
+### Gradle ###
 .gradle
 /build/
 !gradle/wrapper/gradle-wrapper.jar
 
+### Maven ###
 target/
 !.mvn/wrapper/maven-wrapper.jar
+
+### Node.js / Vue ###
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+dist/
+temp/
 
 ######################################################################
 # IDE
@@ -24,6 +36,7 @@ target/
 *.iws
 *.iml
 *.ipr
+out/
 
 ### JRebel ###
 rebel.xml
@@ -36,12 +49,53 @@ dist/
 nbdist/
 .nb-gradle/
 
+### VS Code ###
+.vscode/
+
 ######################################################################
-# Others
+# System Files
+
+### macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+### Windows ###
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+### Linux ###
+*~
+
+######################################################################
+# Logs & Temp
+
 *.log
+logs/
+*.tmp
+*.bak
+*.cache
 *.xml.versionsBackup
 *.swp
+
+
+
+
+
+
+### Temporary screenshots ###
+img_*.png
+img_*.jpg
+img_*.jpeg
+
+######################################################################
+# Others
 
 !*/build/*.java
 !*/build/*.html
 !*/build/*.xml
+
+### Docker (optional, keep docker-compose.yml if needed for team) ###
+# docker-compose.override.yml

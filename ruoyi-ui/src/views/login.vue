@@ -54,10 +54,6 @@
         </div>
       </el-form-item>
     </el-form>
-    <!--  底部  -->
-    <div class="el-login-footer">
-      <span>Copyright © 2018-2025 ruoyi.vip All Rights Reserved.</span>
-    </div>
   </div>
 </template>
 
@@ -89,8 +85,8 @@ export default {
         code: [{ required: true, trigger: "change", message: "请输入验证码" }]
       },
       loading: false,
-      // 验证码开关
-      captchaEnabled: true,
+      // 验证码开关（已禁用）
+      captchaEnabled: false,
       // 注册开关
       register: false,
       redirect: undefined
@@ -105,7 +101,6 @@ export default {
     }
   },
   created() {
-    this.getCode();
     this.getCookie();
   },
   methods: {
@@ -162,36 +157,70 @@ export default {
   justify-content: center;
   align-items: center;
   height: 100%;
-  background-image: url("../assets/images/login-background.jpg");
+  background-image: url("../assets/images/img_20260428_124000_faee30.jpg");
   background-size: cover;
+  background-position: center;
 }
 .title {
   margin: 0px auto 30px auto;
   text-align: center;
-  color: #707070;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 2px;
 }
 
 .login-form {
-  border-radius: 6px;
-  background: #ffffff;
-  width: 400px;
-  padding: 25px 25px 5px 25px;
+  border-radius: 12px;
+  background: rgba(30, 60, 114, 0.85);
+  backdrop-filter: blur(10px);
+  width: 420px;
+  padding: 40px 35px 15px 35px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   .el-input {
-    height: 38px;
+    height: 44px;
     input {
-      height: 38px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+      }
     }
   }
   .input-icon {
-    height: 39px;
-    width: 14px;
-    margin-left: 2px;
+    height: 44px;
+    width: 16px;
+    margin-left: 4px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .el-form-item {
+    margin-bottom: 22px;
+  }
+  .el-checkbox {
+    color: rgba(255, 255, 255, 0.8);
+    .el-checkbox__label {
+      color: rgba(255, 255, 255, 0.8);
+    }
+  }
+  .el-button--primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    height: 44px;
+    font-size: 16px;
+    letter-spacing: 4px;
+    &:hover {
+      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+      opacity: 0.9;
+    }
   }
 }
 .login-tip {
   font-size: 13px;
   text-align: center;
-  color: #bfbfbf;
+  color: rgba(255, 255, 255, 0.6);
 }
 .login-code {
   width: 33%;
@@ -201,18 +230,6 @@ export default {
     cursor: pointer;
     vertical-align: middle;
   }
-}
-.el-login-footer {
-  height: 40px;
-  line-height: 40px;
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  text-align: center;
-  color: #fff;
-  font-family: Arial;
-  font-size: 12px;
-  letter-spacing: 1px;
 }
 .login-code-img {
   height: 38px;

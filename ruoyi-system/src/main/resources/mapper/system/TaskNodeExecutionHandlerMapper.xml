@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.TaskNodeExecutionHandlerMapper">
+
+    <resultMap type="com.ruoyi.system.domain.TaskNodeExecutionHandler" id="TaskNodeExecutionHandlerResult">
+        <result property="id"               column="id" />
+        <result property="nodeExecutionId"  column="node_execution_id" />
+        <result property="userId"           column="user_id" />
+        <result property="userName"         column="user_name" />
+    </resultMap>
+
+    <insert id="batchInsert">
+        INSERT INTO task_node_execution_handler (node_execution_id, user_id, user_name)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.nodeExecutionId}, #{item.userId}, #{item.userName})
+        </foreach>
+    </insert>
+
+    <select id="selectByNodeExecutionId" resultMap="TaskNodeExecutionHandlerResult">
+        SELECT id, node_execution_id, user_id, user_name
+        FROM task_node_execution_handler
+        WHERE node_execution_id = #{nodeExecutionId}
+    </select>
+
+</mapper>

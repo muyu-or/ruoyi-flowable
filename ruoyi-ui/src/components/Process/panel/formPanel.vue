@@ -46,10 +46,14 @@ export default {
         { label: 'StockInForm（原料检测入库）',  value: 'StockInForm' },
         { label: 'StockOutForm（出库）',         value: 'StockOutForm' },
         { label: 'PreprocessForm（预处理）',     value: 'PreprocessForm' },
-        { label: 'VacuumForm（真空处理）',       value: 'VacuumForm' },
-        { label: 'BakingForm（烘烤镀膜）',       value: 'BakingForm' },
+        { label: 'VacuumForm（真空处理-旧）',    value: 'VacuumForm' },
+        { label: 'BakingForm（烘烤镀膜-旧）',    value: 'BakingForm' },
         { label: 'TestForm（检测）',             value: 'TestForm' },
-        { label: 'FinalStockInForm（产品入库）', value: 'FinalStockInForm' }
+        { label: 'FinalStockInForm（产品入库）', value: 'FinalStockInForm' },
+        { label: 'DrawingForm（图纸下发）',      value: 'DrawingForm' },
+        { label: 'CoatingFixtureForm（镀膜工装设计）', value: 'CoatingFixtureForm' },
+        { label: 'FilmDesignForm（膜系设计）',   value: 'FilmDesignForm' },
+        { label: 'VacuumBakingForm（开机真空烘烤）', value: 'VacuumBakingForm' }
       ],
       bpmnFormData: {
         formKey: '',

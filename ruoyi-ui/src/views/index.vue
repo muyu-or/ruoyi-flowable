@@ -1,61 +1,11 @@
 <template>
   <div class="app-container home">
     <el-row :gutter="20">
-      <el-col :xs="24" :sm="24" :md="12" :lg="14">
-        <el-card class="update-log">
-          <div slot="header" class="clearfix">
-            <span>联系信息</span>
-          </div>
-          <div class="body">
-            <p>
-              <i class="el-icon-user-solid"></i> QQ群：
-              <a href="https://jq.qq.com/?_wv=1027&k=2zE87c2G" target="_blank"
-              > 782924350</a
-              >
-            </p>
-            <p>
-              <i class="el-icon-chat-dot-round"></i> 微信：<a
-            >Almost-2y</a
-            >
-            </p>
-            <p style="color: #f54a4a;font-size:16px">
-              <i class="el-icon-bell"></i> 说明：<a
-            >技术咨询、业务定制等其它支持可添加 微信: Almost-2y / QQ: 846249920 进行沟通交流</a
-            >
-            </p>
-            <p>
-              <i class="el-icon-shopping-bag-2"></i> 腾讯云秒杀：<a style="color: #365be4" href="https://curl.qcloud.com/W5KFkBG4" target="_blank"
-            >点我进入</a>
-            </p>
-            <p>
-              <i class="el-icon-shopping-bag-2"></i> 腾讯云服务器：<a style="color: #365be4" href="https://curl.qcloud.com/AacfyRxq" target="_blank"
-            >点我进入</a>
-            </p>
-            <p>
-              <i class="el-icon-shopping-bag-2"></i> 阿里云优惠：<a style="color: #365be4" href="https://www.aliyun.com/activity/daily/bestoffer?userCode=q2b8atsa" target="_blank"
-            >点我进入</a>
-            </p>
-            <p>
-              <i class="el-icon-shopping-bag-2"></i> 阿里云服务器：<a style="color: #365be4" href="https://www.aliyun.com/daily-act/ecs/activity_selection?userCode=q2b8atsa" target="_blank"
-            >点我进入</a>
-            </p>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="12" :lg="10">
-        <el-card class="update-log">
-          <div slot="header" class="clearfix">
-            <span>捐赠支持</span>
-          </div>
-          <div class="body">
-            <img
-              src="https://foruda.gitee.com/images/1672215449995765124/596b46c3_2042292.png"
-              alt="donate"
-              width="100%"
-            />
-            <span style="display: inline-block; height: 30px; line-height: 30px"
-            >可以请作者喝杯咖啡以示鼓励！</span
-            >
+      <el-col :span="24">
+        <el-card class="welcome-card">
+          <div class="welcome-content">
+            <h2>欢迎使用自动化生产线管理系统</h2>
+            <p>系统提供生产流程管理、库存跟踪、班组管理、测试报告等功能，助力企业实现智能化生产管理。</p>
           </div>
         </el-card>
       </el-col>
@@ -65,21 +15,41 @@
       <el-col :xs="24" :sm="24" :md="12" :lg="8">
         <el-card class="update-log">
           <div slot="header" class="clearfix">
-            <span>流程功能列表</span>
+            <span>系统功能</span>
           </div>
-          <p>1.单节点配置表单</p>
-          <p>2.多实例会签任务</p>
-          <p>3.节点任务/执行监听器</p>
-          <p>4.动态配置任务候选人</p>
-          <p>5.其它模块优化</p>
+          <div class="body">
+            <p><i class="el-icon-s-platform"></i> 流程管理：可视化流程设计与审批</p>
+            <p><i class="el-icon-s-order"></i> 库存管理：物料入库、出库实时跟踪</p>
+            <p><i class="el-icon-s-custom"></i> 班组管理：生产班组人员配置</p>
+            <p><i class="el-icon-document"></i> 测试报告：检测数据记录与模板管理</p>
+            <p><i class="el-icon-bell"></i> 预警系统：节点超时自动预警通知</p>
+          </div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="24" :md="12" :lg="16">
+      <el-col :xs="24" :sm="24" :md="12" :lg="8">
         <el-card class="update-log">
           <div slot="header" class="clearfix">
-            <span>流程演示</span>
+            <span>快捷入口</span>
           </div>
-          <img style="width: 850px" src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f248dea817f74341b70f4087f425975b~tplv-k3u1fbpfcp-watermark.image?"/>
+          <div class="body">
+            <p><a href="#/flowable/definition"><i class="el-icon-s-management"></i> 流程定义</a></p>
+            <p><a href="#/manage/inventory"><i class="el-icon-s-grid"></i> 库存列表</a></p>
+            <p><a href="#/manage/team"><i class="el-icon-s-team"></i> 班组管理</a></p>
+            <p><a href="#/manage/report"><i class="el-icon-document-checked"></i> 测试报告</a></p>
+            <p><a href="#/bi/dashboard"><i class="el-icon-data-line"></i> BI大屏</a></p>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="24" :md="12" :lg="8">
+        <el-card class="update-log">
+          <div slot="header" class="clearfix">
+            <span>系统信息</span>
+          </div>
+          <div class="body">
+            <p><i class="el-icon-time"></i> 版本：v1.0.0</p>
+            <p><i class="el-icon-user"></i> 当前用户：{{ userName }}</p>
+            <p><i class="el-icon-date"></i> 登录时间：{{ loginTime }}</p>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -91,9 +61,17 @@ export default {
   name: "index",
   data() {
     return {
-      // 版本号
-      version: "3.4.0",
+      version: "1.0.0",
     };
+  },
+  computed: {
+    userName() {
+      return this.$store.state.user.name || '未知'
+    },
+    loginTime() {
+      const now = new Date()
+      return now.toLocaleDateString() + ' ' + now.toLocaleTimeString()
+    }
   },
   methods: {
     goTarget(href) {
@@ -153,17 +131,35 @@ export default {
     }
   }
 
+  .welcome-card {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #fff;
+    .welcome-content {
+      padding: 30px;
+      h2 {
+        color: #fff;
+        margin-bottom: 15px;
+      }
+      p {
+        color: rgba(255, 255, 255, 0.9);
+      }
+    }
+  }
+
   .update-log {
-    ol {
-      display: block;
-      list-style-type: decimal;
-      margin-block-start: 1em;
-      margin-block-end: 1em;
-      margin-inline-start: 0;
-      margin-inline-end: 0;
-      padding-inline-start: 40px;
+    .body {
+      p {
+        margin: 12px 0;
+        i {
+          margin-right: 8px;
+          color: #409EFF;
+        }
+        a {
+          color: #409EFF;
+          text-decoration: none;
+        }
+      }
     }
   }
 }
 </style>
-
