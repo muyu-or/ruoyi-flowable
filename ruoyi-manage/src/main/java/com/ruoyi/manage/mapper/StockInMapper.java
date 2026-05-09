@@ -86,6 +86,19 @@ public interface StockInMapper
                                                      @Param("dateFormat") String dateFormat);
 
     /**
+     * BI大屏：统计原料入库、产品入库和产品转化率
+     */
+    Map<String, Object> selectMaterialConversionSummary(@Param("startDate") Date startDate,
+                                                        @Param("endDate") Date endDate);
+
+    /**
+     * BI大屏：按时间段统计原料/产品入库转化趋势
+     */
+    List<Map<String, Object>> selectMaterialConversionTrend(@Param("startDate") Date startDate,
+                                                            @Param("endDate") Date endDate,
+                                                            @Param("dateFormat") String dateFormat);
+
+    /**
      * BI大屏：查询全部入库金额总和
      */
     java.math.BigDecimal selectTotalStockInAmount();

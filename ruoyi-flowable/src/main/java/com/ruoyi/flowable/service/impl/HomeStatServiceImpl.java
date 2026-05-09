@@ -111,6 +111,8 @@ public class HomeStatServiceImpl implements IHomeStatService {
             result.setTeamStability(buildTeamStability());
             result.setNodeStatusSummary(buildNodeStatusSummary());
             result.setSubcategoryCount(inventoryMapper.countDistinctSubcategory());
+            result.setMaterialConversion(buildMaterialConversion(dateRange));
+            result.setMaterialConversionTrend(buildMaterialConversionTrend(dateRange));
         }
 
         if (isLeader || !isAdmin) { // leader + 成员都能看到班组效率
@@ -141,6 +143,7 @@ public class HomeStatServiceImpl implements IHomeStatService {
             result.setRecentTasks(buildRecentTasks(recentRows));
         }
 
+        result.setRealtimeStatus(buildRealtimeStatus(period));
         return result;
     }
 
@@ -649,6 +652,14 @@ public class HomeStatServiceImpl implements IHomeStatService {
         List<Map<String, Object>> onTimeRows = taskNodeExecutionMapper.selectTeamOnTimeStats();
         // 按班组统计均值耗时
         List<Map<String, Object>> durationRows = taskNodeExecutionMapper.selectCompletedDurationsByTeam();
+        // 按班组统计当前超时未解决任务数
+        List<Map<String, Object>> unresolvedRows = taskNodeExecutionMapper.selectTeamUnresolvedOverdue();
+        Map<String, Long> unresolvedMap = new LinkedHashMap<>();
+        for (Map<String, Object> row : unresolvedRows) {
+            String teamName = (String) row.get("teamName");
+            unresolvedMap.put(teamName, toLong(row.get("unresolvedCount")));
+        }
+
         Map<String, List<Long>> durationGrouped = new LinkedHashMap<>();
         for (Map<String, Object> row : durationRows) {
             String teamName = (String) row.get("teamName");
@@ -661,7 +672,9 @@ public class HomeStatServiceImpl implements IHomeStatService {
             String teamName = (String) row.get("teamName");
             long completed = toLong(row.get("completedCount"));
             long onTime = toLong(row.get("onTimeCount"));
-            double rate = completed > 0 ? (double) onTime / completed : 0.0;
+            long unresolved = unresolvedMap.getOrDefault(teamName, 0L);
+            // 准时完成率 = 按时完成数 / (已完成数 + 当前超时未解决数)
+            double rate = (completed + unresolved) > 0 ? (double) onTime / (completed + unresolved) : 0.0;
 
             List<Long> durations = durationGrouped.get(teamName);
             if (durations == null || durations.isEmpty()) {
@@ -695,6 +708,50 @@ public class HomeStatServiceImpl implements IHomeStatService {
             list.add(dto);
         }
         return list;
+    }
+
+    /**
+     * 产线物料/产品转化统计（产品入库量 / 原料入库量）
+     */
+    private HomeStatDto.MaterialConversionDto buildMaterialConversion(DateRange dateRange) {
+        Map<String, Object> row = stockInMapper.selectMaterialConversionSummary(dateRange.startDate, dateRange.endDate);
+        HomeStatDto.MaterialConversionDto dto = new HomeStatDto.MaterialConversionDto();
+        if (row != null) {
+            dto.setRawInboundQty(toLong(row.get("rawInboundQty")));
+            dto.setProductInboundQty(toLong(row.get("productInboundQty")));
+            dto.setConversionRate(toDouble(row.get("conversionRate")));
+        }
+        return dto;
+    }
+
+    /**
+     * 产线物料/产品转化趋势
+     */
+    private List<HomeStatDto.MaterialConversionTrendPoint> buildMaterialConversionTrend(DateRange dateRange) {
+        String dateFormat = getDateFormatForPeriod(dateRange.period);
+        List<Map<String, Object>> rows = stockInMapper.selectMaterialConversionTrend(
+            dateRange.startDate, dateRange.endDate, dateFormat);
+        List<HomeStatDto.MaterialConversionTrendPoint> list = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            HomeStatDto.MaterialConversionTrendPoint point = new HomeStatDto.MaterialConversionTrendPoint();
+            point.setLabel(String.valueOf(row.get("label")));
+            point.setRawInboundQty(toLong(row.get("rawInboundQty")));
+            point.setProductInboundQty(toLong(row.get("productInboundQty")));
+            point.setConversionRate(toDouble(row.get("conversionRate")));
+            list.add(point);
+        }
+        return list;
+    }
+
+    /**
+     * 大屏实时对接状态
+     */
+    private HomeStatDto.RealtimeStatusDto buildRealtimeStatus(String period) {
+        HomeStatDto.RealtimeStatusDto dto = new HomeStatDto.RealtimeStatusDto();
+        dto.setServerTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+        dto.setRefreshIntervalSeconds(60);
+        dto.setDataScope(period == null ? "all" : period);
+        return dto;
     }
 
     // =============== 统计辅助方法 ===============
@@ -741,6 +798,19 @@ public class HomeStatServiceImpl implements IHomeStatService {
             return Long.parseLong(val.toString());
         } catch (NumberFormatException e) {
             return 0L;
+        }
+    }
+
+    /**
+     * 转换为浮点数
+     */
+    private double toDouble(Object val) {
+        if (val == null) return 0.0;
+        if (val instanceof Number) return ((Number) val).doubleValue();
+        try {
+            return Double.parseDouble(val.toString());
+        } catch (NumberFormatException e) {
+            return 0.0;
         }
     }
 

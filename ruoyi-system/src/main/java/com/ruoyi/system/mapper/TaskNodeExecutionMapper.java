@@ -209,4 +209,11 @@ public interface TaskNodeExecutionMapper
      * @return 每行含 nodeName, activeCount, completedCount
      */
     List<java.util.Map<String, Object>> selectNodeStatusSummary();
+
+    /**
+     * BI大屏：按班组统计当前超时未解决的任务数（活跃状态 + 未解决逾期预警）
+     *
+     * @return 每行含 teamName, unresolvedCount
+     */
+    List<java.util.Map<String, Object>> selectTeamUnresolvedOverdue();
 }

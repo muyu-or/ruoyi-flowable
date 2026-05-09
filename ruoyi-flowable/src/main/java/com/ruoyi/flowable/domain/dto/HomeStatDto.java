@@ -44,6 +44,9 @@ public class HomeStatDto {
     private List<NodeBottleneckDto> nodeBottleneck;
     private List<TeamStabilityDto> teamStability;
     private List<NodeStatusSummaryDto> nodeStatusSummary;
+    private MaterialConversionDto materialConversion;
+    private List<MaterialConversionTrendPoint> materialConversionTrend;
+    private RealtimeStatusDto realtimeStatus;
 
     // ⑩ 物料子类数量（库存中不同 material_subcategory 的种类数）
     private int subcategoryCount;
@@ -81,6 +84,12 @@ public class HomeStatDto {
     public void setTeamStability(List<TeamStabilityDto> teamStability) { this.teamStability = teamStability; }
     public List<NodeStatusSummaryDto> getNodeStatusSummary() { return nodeStatusSummary; }
     public void setNodeStatusSummary(List<NodeStatusSummaryDto> nodeStatusSummary) { this.nodeStatusSummary = nodeStatusSummary; }
+    public MaterialConversionDto getMaterialConversion() { return materialConversion; }
+    public void setMaterialConversion(MaterialConversionDto materialConversion) { this.materialConversion = materialConversion; }
+    public List<MaterialConversionTrendPoint> getMaterialConversionTrend() { return materialConversionTrend; }
+    public void setMaterialConversionTrend(List<MaterialConversionTrendPoint> materialConversionTrend) { this.materialConversionTrend = materialConversionTrend; }
+    public RealtimeStatusDto getRealtimeStatus() { return realtimeStatus; }
+    public void setRealtimeStatus(RealtimeStatusDto realtimeStatus) { this.realtimeStatus = realtimeStatus; }
     public int getSubcategoryCount() { return subcategoryCount; }
     public void setSubcategoryCount(int subcategoryCount) { this.subcategoryCount = subcategoryCount; }
 
@@ -363,5 +372,50 @@ public class HomeStatDto {
         public void setActiveCount(long activeCount) { this.activeCount = activeCount; }
         public long getCompletedCount() { return completedCount; }
         public void setCompletedCount(long completedCount) { this.completedCount = completedCount; }
+    }
+
+    // MaterialConversionDto（产线物料/产品转化统计）
+    public static class MaterialConversionDto {
+        private long rawInboundQty;
+        private long productInboundQty;
+        private double conversionRate;
+
+        public long getRawInboundQty() { return rawInboundQty; }
+        public void setRawInboundQty(long rawInboundQty) { this.rawInboundQty = rawInboundQty; }
+        public long getProductInboundQty() { return productInboundQty; }
+        public void setProductInboundQty(long productInboundQty) { this.productInboundQty = productInboundQty; }
+        public double getConversionRate() { return conversionRate; }
+        public void setConversionRate(double conversionRate) { this.conversionRate = conversionRate; }
+    }
+
+    // MaterialConversionTrendPoint（物料/产品转化趋势）
+    public static class MaterialConversionTrendPoint {
+        private String label;
+        private long rawInboundQty;
+        private long productInboundQty;
+        private double conversionRate;
+
+        public String getLabel() { return label; }
+        public void setLabel(String label) { this.label = label; }
+        public long getRawInboundQty() { return rawInboundQty; }
+        public void setRawInboundQty(long rawInboundQty) { this.rawInboundQty = rawInboundQty; }
+        public long getProductInboundQty() { return productInboundQty; }
+        public void setProductInboundQty(long productInboundQty) { this.productInboundQty = productInboundQty; }
+        public double getConversionRate() { return conversionRate; }
+        public void setConversionRate(double conversionRate) { this.conversionRate = conversionRate; }
+    }
+
+    // RealtimeStatusDto（大屏实时对接状态）
+    public static class RealtimeStatusDto {
+        private String serverTime;
+        private int refreshIntervalSeconds;
+        private String dataScope;
+
+        public String getServerTime() { return serverTime; }
+        public void setServerTime(String serverTime) { this.serverTime = serverTime; }
+        public int getRefreshIntervalSeconds() { return refreshIntervalSeconds; }
+        public void setRefreshIntervalSeconds(int refreshIntervalSeconds) { this.refreshIntervalSeconds = refreshIntervalSeconds; }
+        public String getDataScope() { return dataScope; }
+        public void setDataScope(String dataScope) { this.dataScope = dataScope; }
     }
 }

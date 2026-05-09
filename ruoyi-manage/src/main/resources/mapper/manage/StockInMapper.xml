@@ -119,6 +119,45 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY label
     </select>
 
+    <!-- BI大屏：原料入库、产品入库和产品转化率 -->
+    <select id="selectMaterialConversionSummary" resultType="java.util.Map">
+        SELECT
+            IFNULL(SUM(CASE WHEN inbound_type = '1' THEN quantity ELSE 0 END), 0) AS rawInboundQty,
+            IFNULL(SUM(CASE WHEN inbound_type = '4' THEN quantity ELSE 0 END), 0) AS productInboundQty,
+            CASE
+                WHEN IFNULL(SUM(CASE WHEN inbound_type = '1' THEN quantity ELSE 0 END), 0) &gt; 0
+                    THEN ROUND(
+                        IFNULL(SUM(CASE WHEN inbound_type = '4' THEN quantity ELSE 0 END), 0)
+                        / IFNULL(SUM(CASE WHEN inbound_type = '1' THEN quantity ELSE 0 END), 0),
+                        4
+                    )
+                ELSE 0
+            END AS conversionRate
+        FROM stock_in
+        WHERE inbound_time BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <!-- BI大屏：按时间段统计原料/产品入库转化趋势 -->
+    <select id="selectMaterialConversionTrend" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(inbound_time, #{dateFormat}) AS label,
+            IFNULL(SUM(CASE WHEN inbound_type = '1' THEN quantity ELSE 0 END), 0) AS rawInboundQty,
+            IFNULL(SUM(CASE WHEN inbound_type = '4' THEN quantity ELSE 0 END), 0) AS productInboundQty,
+            CASE
+                WHEN IFNULL(SUM(CASE WHEN inbound_type = '1' THEN quantity ELSE 0 END), 0) &gt; 0
+                    THEN ROUND(
+                        IFNULL(SUM(CASE WHEN inbound_type = '4' THEN quantity ELSE 0 END), 0)
+                        / IFNULL(SUM(CASE WHEN inbound_type = '1' THEN quantity ELSE 0 END), 0),
+                        4
+                    )
+                ELSE 0
+            END AS conversionRate
+        FROM stock_in
+        WHERE inbound_time BETWEEN #{startDate} AND #{endDate}
+        GROUP BY label
+        ORDER BY label
+    </select>
+
     <!-- BI大屏：全部入库金额总和 -->
     <select id="selectTotalStockInAmount" resultType="java.math.BigDecimal">
         SELECT IFNULL(SUM(total_amount), 0) FROM stock_in WHERE total_amount IS NOT NULL

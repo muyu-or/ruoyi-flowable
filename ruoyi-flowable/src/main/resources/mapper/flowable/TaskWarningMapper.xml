@@ -163,9 +163,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                SUM(CASE WHEN tw.resolved = 0 THEN 1 ELSE 0 END) AS unresolvedCount,
                IFNULL(AVG(
                    CASE WHEN tw.resolved = 1 AND tne.complete_time IS NOT NULL
-                        THEN GREATEST(TIMESTAMPDIFF(MINUTE, tw.create_time, STR_TO_DATE(tne.complete_time, '%Y-%m-%d %H:%i:%s')), 1)
+                        THEN GREATEST(TIMESTAMPDIFF(MINUTE, tw.create_time, tne.complete_time), 1)
                         WHEN tw.resolved = 1
                         THEN GREATEST(TIMESTAMPDIFF(MINUTE, tw.create_time, IFNULL(tw.end_date, tw.create_time)), 1)
+                        WHEN tw.resolved = 0
+                        THEN GREATEST(TIMESTAMPDIFF(MINUTE, tw.create_time, NOW()), 1)
                         ELSE NULL
                    END
                ), 0) AS avgResponseMinutes

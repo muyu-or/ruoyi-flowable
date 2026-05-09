@@ -32,29 +32,29 @@
                   </div>
                 </div>
               </div>
-              <!-- Panel 2: Warning — carousel -->
+              <!-- Panel 2: carousel (节点进度 / 班组进度) -->
               <div class="panel carousel-host">
                 <span class="cut-corner lt" /><span class="cut-corner rt" />
                 <span class="cut-corner lb" /><span class="cut-corner rb" />
-                <!-- Page 0: Radar -->
+                <!-- Page 0: Node Realtime Progress -->
                 <div :class="['carousel-page', carouselPage === 0 ? 'active' : '']">
-                  <h3 class="panel-title">风险雷达</h3>
+                  <h3 class="panel-title">节点实时进度统计</h3>
                   <div class="triple-stats">
-                    <div class="mini-stat"><strong id="warnTotal">0</strong><span>预警总数</span></div>
-                    <div class="mini-stat"><strong id="warnAvgResp">0m</strong><span>平均响应</span></div>
-                    <div class="mini-stat"><strong id="warnUnresolved">0</strong><span>未处理</span></div>
+                    <div class="mini-stat"><strong id="nodeActiveTotal">0</strong><span>活跃总数</span></div>
+                    <div class="mini-stat"><strong id="nodeCompletedTotal">0</strong><span>完成总数</span></div>
+                    <div class="mini-stat"><strong id="nodeCount">0</strong><span>节点数</span></div>
                   </div>
-                  <div id="riskRadarChart" ref="riskRadarChartDom" class="chart" style="height:180px;" />
+                  <div id="nodeProgressTableTop" class="grid-table" style="max-height:200px;overflow-y:auto;" />
                 </div>
-                <!-- Page 1: Warning Table -->
+                <!-- Page 1: Team Realtime Progress -->
                 <div :class="['carousel-page', carouselPage === 1 ? 'active' : '']">
-                  <h3 class="panel-title">预警响应明细</h3>
+                  <h3 class="panel-title">班组实时进度明细</h3>
                   <div class="triple-stats">
-                    <div class="mini-stat"><strong id="warnTotal2">0</strong><span>预警总数</span></div>
-                    <div class="mini-stat"><strong id="warnAvgResp2">0m</strong><span>平均响应</span></div>
-                    <div class="mini-stat"><strong id="warnUnresolved2">0</strong><span>未处理</span></div>
+                    <div class="mini-stat"><strong id="teamPendingTotal">0</strong><span>待办总数</span></div>
+                    <div class="mini-stat"><strong id="teamRunningTotal">0</strong><span>进行中</span></div>
+                    <div class="mini-stat"><strong id="teamFinishedTotal">0</strong><span>完成总数</span></div>
                   </div>
-                  <div id="warningTable" class="grid-table" style="max-height:200px;overflow-y:auto;" />
+                  <div id="teamProgressTableTop" class="grid-table four-cols" style="max-height:200px;overflow-y:auto;" />
                 </div>
               </div>
             </section>
@@ -110,13 +110,16 @@
                   </div>
                   <svg id="costTrendChart2" class="chart" viewBox="0 0 300 120" preserveAspectRatio="none" />
                 </div>
-                <!-- Page 1: 物料周转分析 -->
+                <!-- Page 1: 物料转化分析 -->
                 <div :class="['carousel-page', carouselPage === 1 ? 'active' : '']">
-                  <h3 class="panel-title">物料周转分析</h3>
-                  <div class="energy-metrics" style="margin-top:8px;margin-bottom:14px;">
+                  <h3 class="panel-title">物料转化分析</h3>
+                  <div class="energy-metrics" style="margin-top:4px;margin-bottom:6px;">
                     <div class="energy-card"><strong id="turnoverTotal">0</strong><span>总入库批次</span></div>
                     <div class="energy-card"><strong id="turnoverAvgDaily">0</strong><span>日均入库量</span></div>
                     <div class="energy-card"><strong id="turnoverCategories">0</strong><span>物料子类数</span></div>
+                    <div class="energy-card"><strong id="conversionRaw">0</strong><span>原料入库</span></div>
+                    <div class="energy-card"><strong id="conversionProduct">0</strong><span>产品入库</span></div>
+                    <div class="energy-card"><strong id="conversionRate">0%</strong><span>产品转化率</span></div>
                   </div>
                   <svg id="turnoverTrendChart" class="chart" viewBox="0 0 300 120" preserveAspectRatio="none" />
                 </div>
@@ -128,32 +131,52 @@
               <span class="cut-corner lt" /><span class="cut-corner rt" />
               <span class="cut-corner lb" /><span class="cut-corner rb" />
               <div class="inner" style="padding:10px;">
-                <div class="center-shell">
-                  <div class="center-title">生产监控</div>
-                  <div class="chip" style="left:46px;top:68px;"><span class="badge">&#128230;</span>入库监控</div>
-                  <div class="chip" style="right:46px;top:68px;"><span class="badge">&#128300;</span>质量检测</div>
-                  <div class="chip" style="left:46px;bottom:88px;"><span class="badge">&#9881;</span>生产加工</div>
-                  <div class="chip" style="right:46px;bottom:88px;"><span class="badge">&#128228;</span>出库调度</div>
-                  <!-- Carousel metric boxes: Set A -->
-                  <div :class="['hub-metrics', carouselPage === 0 ? 'active' : '']">
-                    <div class="metric-box" style="left:22%;top:110px;"><strong id="hubOnTime">0%</strong><span>准时完成率</span></div>
-                    <div class="metric-box" style="left:22%;top:200px;"><strong id="hubDaily">0</strong><span>日均完成数</span></div>
-                    <div class="metric-box" style="right:22%;top:110px;"><strong id="hubTeamQual">0%</strong><span>班组达标率</span></div>
-                    <div class="metric-box" style="right:22%;top:200px;"><strong id="hubFastTeam">--</strong><span>最优班组</span></div>
-                  </div>
-                  <!-- Carousel metric boxes: Set B -->
-                  <div :class="['hub-metrics', carouselPage === 1 ? 'active' : '']">
-                    <div class="metric-box" style="left:22%;top:110px;"><strong id="hubFlowEff">0%</strong><span>流转效率</span></div>
-                    <div class="metric-box" style="left:22%;top:200px;"><strong id="hubAvgNode">0m</strong><span>平均节点耗时</span></div>
-                    <div class="metric-box" style="right:22%;top:110px;"><strong id="hubOnTime2">0%</strong><span>准时完成率</span></div>
-                    <div class="metric-box" style="right:22%;top:200px;"><strong id="hubDaily2">0</strong><span>日均完成数</span></div>
-                  </div>
-                  <div class="hub-zone">
-                    <div id="liquidChart" ref="liquidChartDom" style="width:220px;height:220px;" />
+                <div class="center-shell monitor-shell">
+                  <div class="center-title">实时监控</div>
+                  <div class="monitor-grid-wrap">
+                    <div v-for="(dev, idx) in deviceList.slice(0, 4)" :key="idx" class="monitor-cell" :class="{'offline': dev.status !== '1', 'fault': dev.status === '3'}">
+                      <div class="video-area">
+                        <img :src="getSceneImage(dev, idx)" class="scene-img" :class="{'img-offline': dev.status !== '1'}">
+                        <div class="cctv-filter"></div>
+                        <canvas :ref="'noise_' + idx" class="noise-canvas"></canvas>
+                        <div class="scanline"></div>
+                        <div class="crt-lines"></div>
+                        <div v-if="dev.status !== '1'" class="offline-overlay">
+                          <i :class="dev.status === '3' ? 'el-icon-warning' : 'el-icon-video-pause'"></i>
+                          <span>{{ dev.status === '3' ? '设备故障' : '设备离线' }}</span>
+                        </div>
+                      </div>
+                      <div class="info-overlay">
+                        <div class="info-top-left">
+                          <span class="device-name">{{ dev.deviceName }}</span>
+                          <span class="device-no">{{ dev.deviceNo }}</span>
+                        </div>
+                        <div class="info-top-right">
+                          <span class="status-dot" :class="'status-' + dev.status"></span>
+                          <span class="status-text">{{ statusLabel(dev.status) }}</span>
+                        </div>
+                        <div class="info-bottom-left">
+                          <i class="el-icon-location-outline"></i>
+                          <span>{{ dev.location || '未知位置' }}</span>
+                        </div>
+                        <div class="info-bottom-right">
+                          <span class="live-time">{{ monitorTime }}</span>
+                        </div>
+                      </div>
+                      <div v-if="dev.status === '1'" class="rec-indicator">
+                        <span class="rec-dot"></span>
+                        <span>REC</span>
+                      </div>
+                    </div>
+                    <div v-for="n in (4 - Math.min(deviceList.length, 4))" :key="'empty-' + n" class="monitor-cell empty-slot">
+                      <div class="empty-slot">
+                        <i class="el-icon-video-camera"></i>
+                        <span>无信号</span>
+                      </div>
+                    </div>
                   </div>
                   <div class="runtime">
-                    <div id="totalCompleted" class="days">0</div>
-                    <div class="tag">已完成任务</div>
+                    <div class="tag">在线 {{ onlineCount }} / {{ deviceList.length }}</div>
                   </div>
                 </div>
               </div>
@@ -189,12 +212,24 @@
             </section>
 
             <!-- Right Bottom -->
-            <section class="panel right-bottom">
+            <section class="panel right-bottom carousel-host">
               <span class="cut-corner lt" /><span class="cut-corner rt" />
               <span class="cut-corner lb" /><span class="cut-corner rb" />
-              <div class="inner">
-                <h3 class="panel-title">班组效率 Top</h3>
-                <div id="stabilityTable" class="grid-table" />
+              <!-- Page 0: Team Efficiency Top -->
+              <div :class="['carousel-page', carouselPage === 0 ? 'active' : '']">
+                <div class="inner">
+                  <h3 class="panel-title">班组效率 Top</h3>
+                  <div id="stabilityTable" class="grid-table" />
+                </div>
+              </div>
+              <!-- Page 1: Warning Response Details -->
+              <div :class="['carousel-page', carouselPage === 1 ? 'active' : '']">
+                <div class="inner">
+                  <h3 class="panel-title">预警响应明细</h3>
+                  <div id="warningTable2" class="grid-table" />
+                </div>
+              </div>
+            </section>
               </div>
             </section>
           </div>
@@ -206,15 +241,25 @@
 
 <script>
 import { getHomeStats } from '@/api/flowable/stat'
+import { listDevice } from '@/api/monitor/device'
 var echarts = require('echarts')
 require('echarts/theme/macarons')
 require('echarts-liquidfill')
 
 var NODE_ICONS = { '\u539f\u6599\u5165\u5e93': '\u26a1', '\u539f\u6599\u68c0\u6d4b\u5165\u5e93': '\u26a1', '\u6d4b\u8bd5': '\u2726', '\u9884\u5904\u7406': '\u2699', '\u771f\u7a7a': '\u269b', '\u70d8\u70e4': '\u2b50', '\u68c0\u6d4b': '\u2726', '\u4ea7\u54c1\u5165\u5e93': '\u2713' }
 
+var SCENE_IMAGES = {
+  '1': ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&h=600&fit=crop&q=60', 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&h=600&fit=crop&q=60'],
+  '2': ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&h=600&fit=crop&q=60', 'https://images.unsplash.com/photo-1565043666747-69f6646db940?w=800&h=600&fit=crop&q=60'],
+  '3': ['https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=800&h=600&fit=crop&q=60', 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=600&fit=crop&q=60'],
+  '4': ['https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800&h=600&fit=crop&q=60', 'https://images.unsplash.com/photo-1621929747188-0b4dc28498d2?w=800&h=600&fit=crop&q=60'],
+  '5': ['https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&h=600&fit=crop&q=60', 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&h=600&fit=crop&q=60'],
+  '6': ['https://images.unsplash.com/photo-1572025442646-866d16c84a54?w=800&h=600&fit=crop&q=60', 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&h=600&fit=crop&q=60']
+}
+
 export default {
   name: 'BiDashboard',
-  dicts: ['material_category'],
+  dicts: ['material_category', 'monitor_area_type', 'monitor_device_status'],
   data: function() {
     return {
       currentPeriod: 'all',
@@ -229,7 +274,11 @@ export default {
       clockTimer: null,
       refreshTimer: null,
       prevTagsView: null,
-      prevSidebarHide: null
+      prevSidebarHide: null,
+      deviceList: [],
+      monitorTime: '',
+      noiseTimer: null,
+      monitorTimeTimer: null
     }
   },
   computed: {
@@ -246,6 +295,9 @@ export default {
     },
     categoryDicts: function() {
       return (this.dict && this.dict.type && this.dict.type.material_category) || []
+    },
+    onlineCount: function() {
+      return this.deviceList.filter(function(d) { return d.status === '1' }).length
     }
   },
   mounted: function() {
@@ -269,23 +321,21 @@ export default {
       window.addEventListener('resize', self._onResize)
       self.loadData()
       self.clockTimer = setInterval(function() { self.updateClock() }, 1000)
-      self.refreshTimer = setInterval(function() { self.loadData() }, 60000)
-      // Carousel: toggle page every 10s
+      self.refreshTimer = setInterval(function() { self.loadData() }, 30000)
+      self.updateMonitorTime()
+      self.monitorTimeTimer = setInterval(function() { self.updateMonitorTime() }, 1000)
+      // Carousel: toggle page every 10s (2 pages: 0, 1)
       self.carouselTimer = setInterval(function() {
         self.carouselPage = self.carouselPage === 0 ? 1 : 0
-        self.$nextTick(function() {
-          // Resize radar chart when page 0 becomes active again
-          if (self.carouselPage === 0 && self.chartInstances.riskRadar) {
-            self.chartInstances.riskRadar.resize()
-          }
-        })
-      }, 30000)
+      }, 10000)
     })
   },
   beforeDestroy: function() {
     if (this.clockTimer) clearInterval(this.clockTimer)
     if (this.refreshTimer) clearInterval(this.refreshTimer)
     if (this.carouselTimer) clearInterval(this.carouselTimer)
+    if (this.noiseTimer) clearInterval(this.noiseTimer)
+    if (this.monitorTimeTimer) clearInterval(this.monitorTimeTimer)
     if (this._onResize) window.removeEventListener('resize', this._onResize)
     if (this.chartInstances) {
       Object.keys(this.chartInstances).forEach(function(k) {
@@ -314,10 +364,16 @@ export default {
     onPeriodChange: function() { this.loadData() },
     loadData: function() {
       var self = this
+      // 获取统计数据
       getHomeStats({ period: this.currentPeriod }).then(function(res) {
         self.statsData = (res && res.data) || {}
         self.$nextTick(function() { self.renderAll() })
       }).catch(function(err) { console.error('BI loadData error:', err) })
+      // 获取监控设备
+      listDevice({ pageNum: 1, pageSize: 9 }).then(function(res) {
+        self.deviceList = res.rows || []
+        self.$nextTick(function() { self.startNoiseAnimation() })
+      }).catch(function(err) { console.error('BI loadDevice error:', err) })
     },
 
     // ============ Derived KPIs ============
@@ -330,14 +386,16 @@ export default {
       var st = sd.stockTrend || []
       var nb = sd.nodeBottleneck || []
       var ts = sd.teamStability || []
+      var tp = sd.teamProgress || []
       var finished = cs.finished || 0
 
-      // 准时完成率: (finished - 有预警的已完成任务数) / finished
-      var warnedFinished = 0
+      // 准时完成率: 已完成数 / (已完成数 + 当前超时未解决数)
+      // 分母包含当前仍在超时活跃的任务，避免所有预警未解决时显示100%
+      var unresolvedTotal = 0
       for (var i = 0; i < ws.length; i++) {
-        warnedFinished += Math.max(0, (ws[i].warningCount || 0) - (ws[i].unresolvedCount || 0))
+        unresolvedTotal += (ws[i].unresolvedCount || 0)
       }
-      var onTimeRate = finished > 0 ? Math.round(Math.max(0, (finished - warnedFinished) / finished * 100)) : 0
+      var onTimeRate = (finished + unresolvedTotal) > 0 ? Math.round(finished / (finished + unresolvedTotal) * 100) : 0
 
       // 日均产出（按数据跨度天数计算）
       var periodDays = Math.max(1, st.length > 0 ? st.length : 30)
@@ -395,6 +453,12 @@ export default {
         }
       }
 
+      // 作业班组实时进度：有待办/进行中任务的班组数 / 全部班组数
+      var activeTeamCount = 0
+      for (var q = 0; q < tp.length; q++) {
+        if ((tp[q].pending || 0) + (tp[q].running || 0) > 0) activeTeamCount++
+      }
+
       return {
         onTimeRate: onTimeRate,
         dailyOutput: dailyOutput,
@@ -403,7 +467,8 @@ export default {
         teamQualRate: teamQualRate,
         flowEff: flowEff,
         avgNodeTime: avgNodeTime,
-        fastestTeam: fastestTeam
+        fastestTeam: fastestTeam,
+        teamProgressText: activeTeamCount + '/' + tp.length
       }
     },
 
@@ -417,6 +482,9 @@ export default {
       var ts = sd.teamStability || []
       var ns = sd.nodeStatusSummary || []
       var st = sd.stockTrend || []
+      var mc = sd.materialConversion || {}
+      var mct = sd.materialConversionTrend || []
+      var tp = sd.teamProgress || []
 
       var userTop = sd.userTop5 || []
 
@@ -433,41 +501,32 @@ export default {
       var ringEl = document.getElementById('completionRing')
       if (ringEl) ringEl.style.background = 'conic-gradient(#ffe27a 0 ' + rate + '%, rgba(106,250,255,0.92) ' + rate + '% 100%)'
 
-      // --- Left-top Panel 2: Warning Stats (both pages) ---
-      var warnTotalCount = 0
-      var warnAvgTotal = 0
-      var warnAvgCount = 0
-      var totalUnresolved = 0
-      for (var wi = 0; wi < ws.length; wi++) {
-        warnTotalCount += ws[wi].warningCount || 0
-        totalUnresolved += ws[wi].unresolvedCount || 0
-        var resolvedInNode = (ws[wi].warningCount || 0) - (ws[wi].unresolvedCount || 0)
-        if (resolvedInNode > 0 && (ws[wi].avgResponseMinutes || 0) > 0) {
-          warnAvgTotal += (ws[wi].avgResponseMinutes || 0) * resolvedInNode
-          warnAvgCount += resolvedInNode
-        }
+      // --- Left-top Panel 2: Node Progress / Warning / Team Progress (3 pages) ---
+      // Page 0: Node Realtime Progress Stats
+      var nodeActiveTotal = 0
+      var nodeCompletedTotal = 0
+      for (var ni = 0; ni < ns.length; ni++) {
+        nodeActiveTotal += ns[ni].activeCount || 0
+        nodeCompletedTotal += ns[ni].completedCount || 0
       }
-      var globalAvgResp = warnAvgCount > 0 ? Math.round(warnAvgTotal / warnAvgCount) : 0
-      var unresolvedDisplay = totalUnresolved
-      var avgRespStr = globalAvgResp >= 1440 ? (Math.round(globalAvgResp / 1440 * 10) / 10) + '\u5929' : globalAvgResp > 0 ? (Math.round(globalAvgResp / 60 * 10) / 10) + '\u5c0f\u65f6' : '-'
-      // Page 0 stats
-      this.setTextById('warnTotal', warnTotalCount)
-      this.setTextById('warnAvgResp', avgRespStr)
-      this.setTextById('warnUnresolved', unresolvedDisplay)
-      // Page 1 stats (duplicate)
-      this.setTextById('warnTotal2', warnTotalCount)
-      this.setTextById('warnAvgResp2', avgRespStr)
-      this.setTextById('warnUnresolved2', unresolvedDisplay)
-      // Radar chart
-      this.initCharts()
-      this.renderRiskRadar(ws)
-      // Warning table (page 1, scrollable)
-      this.renderTable('warningTable', '\u8282\u70b9', '\u54cd\u5e94(\u5929)', '\u6b21\u6570',
-        ws.map(function(n) {
-          var mins = n.avgResponseMinutes || 0
-          var resp = mins > 0 ? (Math.round(mins / 1440 * 10) / 10) + '\u5929' : '-'
-          return [n.nodeName, resp, (n.warningCount || 0) + '\u6b21']
-        }))
+      this.setTextById('nodeActiveTotal', nodeActiveTotal)
+      this.setTextById('nodeCompletedTotal', nodeCompletedTotal)
+      this.setTextById('nodeCount', ns.length)
+      this.renderNodeProgressTableTop(ns)
+
+      // Page 1: Team Realtime Progress Stats
+      var teamPendingTotal = 0
+      var teamRunningTotal = 0
+      var teamFinishedTotal = 0
+      for (var ti = 0; ti < tp.length; ti++) {
+        teamPendingTotal += tp[ti].pending || 0
+        teamRunningTotal += tp[ti].running || 0
+        teamFinishedTotal += tp[ti].finished || 0
+      }
+      this.setTextById('teamPendingTotal', teamPendingTotal)
+      this.setTextById('teamRunningTotal', teamRunningTotal)
+      this.setTextById('teamFinishedTotal', teamFinishedTotal)
+      this.renderTeamProgressTableTop(tp)
 
       // --- Top Strip: Status Grid (de-duplicated last 3) ---
       var statusList = []
@@ -477,7 +536,7 @@ export default {
       // New KPI cards (no longer duplicating completion rate / warnings / stock-in amount)
       statusList.push({ count: kpis.onTimeRate + '%', icon: '\ud83c\udfaf', name: '\u51c6\u65f6\u7387' })
       statusList.push({ count: kpis.flowEff + '%', icon: '\ud83d\udd04', name: '\u6d41\u8f6c\u6548\u7387' })
-      statusList.push({ count: warnTotalCount, icon: '\u26a0\ufe0f', name: '\u9884\u8b66\u603b\u6570' })
+      statusList.push({ count: Math.round((mc.conversionRate || 0) * 100) + '%', icon: '\u21c4', name: '\u4ea7\u54c1\u8f6c\u5316\u7387' })
       this.renderStatus(statusList.slice(0, 9))
 
       // --- Right-top Panel 1 Page 0: 产能概览 ---
@@ -508,7 +567,7 @@ export default {
         this.drawLine('costTrendChart2', effQtyValues, null, effQtyLabels, '2', '\u5165\u5e93\u6570\u91cf\u8d8b\u52bf')
       }
 
-      // --- Right-top Panel 2 Page 1: 物料周转分析 ---
+      // --- Right-top Panel 2 Page 1: 物料转化分析 ---
       var totalInboundQty = 0
       if (st.length > 0) {
         for (var si = 0; si < st.length; si++) totalInboundQty += (st[si].inboundQty || 0)
@@ -517,7 +576,15 @@ export default {
       this.setTextById('turnoverTotal', st.length)
       this.setTextById('turnoverAvgDaily', totalInboundQty > 0 ? (totalInboundQty / periodDaysForTurnover).toFixed(1) : '0')
       this.setTextById('turnoverCategories', sd.subcategoryCount || 0)
-      if (st.length > 0) {
+      this.setTextById('conversionRaw', this.formatCompactQty(mc.rawInboundQty || 0))
+      this.setTextById('conversionProduct', this.formatCompactQty(mc.productInboundQty || 0))
+      this.setTextById('conversionRate', Math.round((mc.conversionRate || 0) * 100) + '%')
+      if (mct.length > 0) {
+        var rawQtyValues = mct.map(function(p) { return p.rawInboundQty || 0 })
+        var productQtyValues = mct.map(function(p) { return p.productInboundQty || 0 })
+        var conversionLabels = mct.map(function(p) { return p.label || '' })
+        this.drawLine('turnoverTrendChart', rawQtyValues, productQtyValues, conversionLabels, '3', '\u539f\u6599/\u4ea7\u54c1\u8f6c\u5316\u8d8b\u52bf')
+      } else if (st.length > 0) {
         var inQtyValues = st.map(function(p) { return p.inboundQty || 0 })
         var inQtyLabels = st.map(function(p) { return p.label || '' })
         this.drawLine('turnoverTrendChart', inQtyValues, null, inQtyLabels, '3', '\u5165\u5e93\u91cf\u6ce2\u52a8')
@@ -530,7 +597,7 @@ export default {
       this.setTextById('hubOnTime', kpis.onTimeRate + '%')
       this.setTextById('hubDaily', kpis.dailyOutput)
       this.setTextById('hubTeamQual', kpis.teamQualRate + '%')
-      this.setTextById('hubFastTeam', kpis.fastestTeam)
+      this.setTextById('hubTeamProgress', kpis.teamProgressText)
       // Hub KPIs (Set B page 1)
       this.setTextById('hubFlowEff', kpis.flowEff + '%')
       this.setTextById('hubAvgNode', (Math.round(kpis.avgNodeTime / 1440 * 10) / 10) + '天')
@@ -545,11 +612,20 @@ export default {
       this.renderRankTable('userTop5Table', userTop)
 
       // --- Center Bottom: Stock Trend ---
+      this.initCharts()
       this.renderStockTrend(st)
 
-      // --- Right Bottom: Team Stability ---
+      // --- Right Bottom Page 0: Team Stability ---
       this.renderTable('stabilityTable', '\u73ed\u7ec4', '\u51c6\u65f6\u7387', '\u5747\u503c\u8017\u65f6',
         ts.slice(0, 5).map(function(t) { return [t.teamName, Math.round((t.onTimeRate || 0) * 100) + '%', (Math.round((t.meanSeconds || 0) / 86400 * 10) / 10) + '\u5929'] }))
+
+      // --- Right Bottom Page 1: Warning Response Details ---
+      this.renderTable('warningTable2', '\u8282\u70b9', '\u54cd\u5e94(\u5929)', '\u6b21\u6570',
+        ws.map(function(n) {
+          var mins = n.avgResponseMinutes || 0
+          var resp = mins > 0 ? (Math.round(mins / 1440 * 10) / 10) + '\u5929' : '-'
+          return [n.nodeName, resp, (n.warningCount || 0) + '\u6b21']
+        }))
 
       this.updateClock()
     },
@@ -557,41 +633,12 @@ export default {
     // ============ Charts ============
     initCharts: function() {
       if (!this.chartInstances) this.chartInstances = {}
-      if (this.$refs.riskRadarChartDom && !this.chartInstances.riskRadar) {
-        this.chartInstances.riskRadar = echarts.init(this.$refs.riskRadarChartDom, 'macarons')
-      }
       if (this.$refs.stockTrendChartDom && !this.chartInstances.stockTrend) {
         this.chartInstances.stockTrend = echarts.init(this.$refs.stockTrendChartDom, 'macarons')
       }
       if (this.$refs.liquidChartDom && !this.chartInstances.liquid) {
         this.chartInstances.liquid = echarts.init(this.$refs.liquidChartDom)
       }
-    },
-    renderRiskRadar: function(ws) {
-      if (!this.chartInstances || !this.chartInstances.riskRadar || !ws || !ws.length) return
-      var chart = this.chartInstances.riskRadar
-      var maxCount = 1
-      var maxResp = 1
-      for (var i = 0; i < ws.length; i++) {
-        maxCount = Math.max(maxCount, ws[i].warningCount || 0)
-        maxResp = Math.max(maxResp, ws[i].avgResponseMinutes || 0)
-      }
-      var categories = ws.slice(0, 6).map(function(n) { return n.nodeName })
-      var values = ws.slice(0, 6).map(function(n) {
-        return Math.max(0, Math.min(100, 0.55 * ((n.warningCount || 0) / maxCount) * 100 + 0.45 * ((n.avgResponseMinutes || 0) / maxResp) * 100))
-      })
-      chart.setOption({
-        backgroundColor: 'transparent', tooltip: { show: true },
-        radar: {
-          radius: '52%', center: ['50%', '55%'],
-          indicator: categories.map(function(name) { return { name: name, max: 100 } }),
-          axisLine: { lineStyle: { color: 'rgba(0,175,255,0.18)' }},
-          splitLine: { lineStyle: { color: 'rgba(0,175,255,0.10)' }},
-          splitArea: { areaStyle: { color: ['rgba(0,175,255,0.02)', 'rgba(0,175,255,0.05)'] }},
-          name: { textStyle: { color: 'rgba(226,243,255,0.72)', fontSize: 10 }}
-        },
-        series: [{ type: 'radar', data: [{ value: values, name: 'risk', areaStyle: { color: 'rgba(0,175,255,0.10)' }, lineStyle: { color: 'rgba(71,243,255,0.85)', width: 2 }, itemStyle: { color: 'rgba(71,243,255,0.85)' }}] }]
-      }, true)
     },
     renderLiquid: function(rate) {
       if (!this.chartInstances || !this.chartInstances.liquid) return
@@ -637,7 +684,16 @@ export default {
         grid: { left: 44, right: 18, top: 28, bottom: 28 },
         xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: 'rgba(0,175,255,0.12)' }}, axisLabel: { color: 'rgba(226,243,255,0.45)', fontSize: 10, rotate: labels.length > 12 ? 45 : 0, interval: labels.length > 20 ? Math.floor(labels.length / 10) : 0 }},
         yAxis: { type: 'value', axisLine: { show: false }, axisLabel: { color: 'rgba(226,243,255,0.45)', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(0,175,255,0.08)' }}},
-        graphic: [],
+        graphic: [{
+          type: 'text',
+          right: 18,
+          top: 4,
+          style: {
+            text: 'r=' + r.toFixed(2),
+            fill: '#8ffcff',
+            font: '12px Microsoft YaHei'
+          }
+        }],
         series: [
           { name: '\u5165\u5e93', type: 'line', smooth: true, showSymbol: false, lineStyle: { width: 2, color: 'rgba(0,175,255,0.95)' }, areaStyle: { color: 'rgba(0,175,255,0.10)' }, data: inArr },
           { name: '\u51fa\u5e93', type: 'line', smooth: true, showSymbol: false, lineStyle: { width: 2, color: 'rgba(38,222,129,0.90)' }, areaStyle: { color: 'rgba(38,222,129,0.08)' }, data: outArr }
@@ -675,6 +731,34 @@ export default {
         (rows || []).map(function(row) {
           return '<div class="item"><span>' + row[0] + '</span><span>' + row[1] + '</span><span>' + row[2] + '</span></div>'
         }).join('')
+    },
+    renderNodeProgressTableTop: function(ns) {
+      var el = document.getElementById('nodeProgressTableTop')
+      if (!el) return
+      var html = '<div class="head"><span>\u8282\u70b9</span><span>\u6d3b\u8dc3</span><span>\u5b8c\u6210</span></div>'
+      for (var i = 0; i < Math.min(ns.length, 8); i++) {
+        var n = ns[i]
+        var active = n.activeCount || 0
+        var completed = n.completedCount || 0
+        var highlight = active > 3 ? ' style="color:#ff9b61;font-weight:700;"' : ''
+        html += '<div class="item"' + highlight + '><span>' + (n.nodeName || '--') + '</span><span>' + active + '</span><span>' + completed + '</span></div>'
+      }
+      el.innerHTML = html
+    },
+    renderTeamProgressTableTop: function(tp) {
+      var el = document.getElementById('teamProgressTableTop')
+      if (!el) return
+      el.className = 'grid-table four-cols'
+      var html = '<div class="head"><span>\u73ed\u7ec4</span><span>\u5f85\u5b8c</span><span>\u8fdb\u884c</span><span>\u5b8c\u6210</span></div>'
+      for (var i = 0; i < Math.min(tp.length, 6); i++) {
+        var t = tp[i]
+        var pending = t.pending || 0
+        var running = t.running || 0
+        var finished = t.finished || 0
+        var warn = pending > 5 ? ' style="color:#ff6b6b;"' : ''
+        html += '<div class="item"' + warn + '><span>' + (t.teamName || '--') + '</span><span>' + pending + '</span><span>' + running + '</span><span>' + finished + '</span></div>'
+      }
+      el.innerHTML = html
     },
     renderBottleneckTable: function(nb) {
       var el = document.getElementById('bottleneckTable')
@@ -758,7 +842,9 @@ export default {
       var week = ['\u661f\u671f\u65e5', '\u661f\u671f\u4e00', '\u661f\u671f\u4e8c', '\u661f\u671f\u4e09', '\u661f\u671f\u56db', '\u661f\u671f\u4e94', '\u661f\u671f\u516d']
       var pad = function(n) { return String(n).padStart(2, '0') }
       var el = document.getElementById('timeBoard')
-      if (el) el.innerHTML = d.getFullYear() + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate()) + ' ' + week[d.getDay()] + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds())
+      if (el) {
+        el.innerHTML = d.getFullYear() + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate()) + ' ' + week[d.getDay()] + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds())
+      }
     },
 
     // ============ Helpers ============
@@ -775,6 +861,11 @@ export default {
       if (n >= 100000000) return '\u00a5' + (n / 100000000).toFixed(1) + '\u4ebf'
       if (n >= 10000) return '\u00a5' + (n / 10000).toFixed(1) + '\u4e07'
       return '\u00a5' + n.toFixed(0)
+    },
+    formatCompactQty: function(val) {
+      var n = parseFloat(val || 0)
+      if (n >= 10000) return (n / 10000).toFixed(1) + '\u4e07'
+      return String(Math.round(n))
     },
     _pearson: function(x, y) {
       if (!x || !y || x.length !== y.length || x.length === 0) return 0
@@ -794,6 +885,69 @@ export default {
       }
       var den = Math.sqrt(den1) * Math.sqrt(den2)
       return den ? (num / den) : 0
+    },
+    // 监控相关方法
+    getSceneImage: function(device, index) {
+      var areaType = device.areaType || '6'
+      var images = SCENE_IMAGES[areaType] || SCENE_IMAGES['6']
+      return images[index % images.length]
+    },
+    statusLabel: function(status) {
+      var map = { '1': '在线', '2': '离线', '3': '故障' }
+      return map[status] || '未知'
+    },
+    updateMonitorTime: function() {
+      var now = new Date()
+      var y = now.getFullYear()
+      var mo = String(now.getMonth() + 1).padStart(2, '0')
+      var d = String(now.getDate()).padStart(2, '0')
+      var hh = String(now.getHours()).padStart(2, '0')
+      var mm = String(now.getMinutes()).padStart(2, '0')
+      var ss = String(now.getSeconds()).padStart(2, '0')
+      this.monitorTime = y + '-' + mo + '-' + d + ' ' + hh + ':' + mm + ':' + ss
+    },
+    startNoiseAnimation: function() {
+      if (this.noiseTimer) clearInterval(this.noiseTimer)
+      this.noiseTimer = setInterval(function() { this.drawNoise() }.bind(this), 180)
+    },
+    drawNoise: function() {
+      var count = Math.min(this.deviceList.length, 4)
+      for (var i = 0; i < count; i++) {
+        var refKey = 'noise_' + i
+        var refArr = this.$refs[refKey]
+        if (!refArr || !refArr.length) continue
+        var canvas = refArr[0]
+        if (!canvas) continue
+        var parent = canvas.parentElement
+        if (!parent) continue
+
+        var w = parent.clientWidth
+        var h = parent.clientHeight
+        if (w === 0 || h === 0) continue
+
+        var scale = 0.25
+        canvas.width = Math.floor(w * scale)
+        canvas.height = Math.floor(h * scale)
+
+        var ctx = canvas.getContext('2d')
+        var cw = canvas.width
+        var ch = canvas.height
+
+        ctx.clearRect(0, 0, cw, ch)
+
+        var imgData = ctx.createImageData(cw, ch)
+        var data = imgData.data
+        for (var p = 0; p < data.length; p += 4) {
+          if (Math.random() < 0.04) {
+            var v = Math.floor(Math.random() * 80) + 40
+            data[p] = v
+            data[p + 1] = v
+            data[p + 2] = v
+            data[p + 3] = Math.floor(Math.random() * 40) + 15
+          }
+        }
+        ctx.putImageData(imgData, 0, 0)
+      }
     }
   }
 }
@@ -844,6 +998,7 @@ export default {
 .grid-table { margin-top: 4px; font-size: 12px; border-top: 1px solid rgba(82,244,255,.14); }
 .grid-table::-webkit-scrollbar { width: 4px; } .grid-table::-webkit-scrollbar-track { background: transparent; } .grid-table::-webkit-scrollbar-thumb { background: rgba(82,244,255,.2); border-radius: 2px; }
 .grid-table .head, .grid-table .item { display: grid; grid-template-columns: 82px 1fr 64px; gap: 4px; align-items: center; padding: 6px 5px; }
+.grid-table.four-cols .head, .grid-table.four-cols .item { grid-template-columns: 70px 48px 48px 56px; }
 .grid-table .head { color: #94f6ff; background: rgba(44,164,203,0.15); font-weight: 700; }
 .grid-table .item:nth-child(odd) { background: rgba(255,255,255,.018); } .grid-table .item:nth-child(even) { background: rgba(0,0,0,.08); }
 .grid-table .item span:first-child, .grid-table .head span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -880,6 +1035,47 @@ export default {
 .legend .people::before { background: #54f7ff; } .legend .car::before { background: #6dffcf; }
 .time-board { text-align: center; color: #35f2ff; font-size: 20px; font-weight: 700; text-shadow: 0 0 10px rgba(82,244,255,.18); margin-top: 4px; padding: 6px 0; }
 .time-board small { display: block; color: #86d9e3; font-size: 11px; margin-top: 3px; }
+
+/* Monitor grid styles */
+.monitor-shell .monitor-grid-wrap { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; height: calc(100% - 50px); margin-top: 30px; }
+.monitor-cell { position: relative; background: rgba(4,14,24,0.85); border: 1px solid rgba(82,244,255,.15); border-radius: 4px; overflow: hidden; }
+.monitor-cell:hover { border-color: rgba(82,244,255,.35); box-shadow: 0 0 12px rgba(82,244,255,.15); }
+.monitor-cell.offline { border-color: rgba(248,81,73,.4); }
+.monitor-cell.fault { border-color: rgba(248,81,73,.6); }
+.monitor-cell .video-area { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,30,20,0.3), rgba(0,15,10,0.15), rgba(0,25,15,0.25)); }
+.monitor-cell .cctv-filter { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,30,20,0.3), rgba(0,15,10,0.15), rgba(0,25,15,0.25)); }
+.monitor-cell .scene-img { display: block; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.55) contrast(1.15) saturate(0.5); }
+.monitor-cell .img-offline { filter: brightness(0.3) contrast(1.1) saturate(0) blur(1px); }
+.monitor-cell .noise-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.6; mix-blend-mode: screen; }
+.monitor-cell .scanline { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent); animation: scanMove 4s linear infinite; pointer-events: none; }
+@keyframes scanMove { 0% { top: 0; } 100% { top: 100%; } }
+.monitor-cell .crt-lines { position: absolute; inset: 0; background: repeating-linear-gradient(to bottom, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px); pointer-events: none; }
+.monitor-cell .offline-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.55); z-index: 5; }
+.monitor-cell .offline-overlay i { font-size: 32px; color: #f85149; margin-bottom: 6px; }
+.monitor-cell .offline-overlay span { color: #f85149; font-size: 12px; font-weight: 600; letter-spacing: 2px; }
+.monitor-cell .info-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
+.monitor-cell .info-top-left { position: absolute; top: 8px; left: 10px; display: flex; flex-direction: column; }
+.monitor-cell .device-name { color: #fff; font-size: 11px; font-weight: 700; font-family: 'Courier New', monospace; text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
+.monitor-cell .device-no { color: rgba(255,255,255,0.6); font-size: 9px; margin-top: 1px; font-family: 'Courier New', monospace; }
+.monitor-cell .info-top-right { position: absolute; top: 8px; right: 10px; display: flex; align-items: center; }
+.monitor-cell .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
+.monitor-cell .status-1 { background: #3fb950; box-shadow: 0 0 6px rgba(63,185,80,0.8); animation: statusPulse 2s ease-in-out infinite; }
+.monitor-cell .status-2 { background: #6e7681; }
+.monitor-cell .status-3 { background: #f85149; box-shadow: 0 0 6px rgba(248,81,73,0.8); animation: statusPulse 1s ease-in-out infinite; }
+@keyframes statusPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.monitor-cell .status-text { color: rgba(255,255,255,0.7); font-size: 9px; font-family: 'Courier New', monospace; }
+.monitor-cell .info-bottom-left { position: absolute; bottom: 8px; left: 10px; color: rgba(255,255,255,0.6); font-size: 9px; font-family: 'Courier New', monospace; }
+.monitor-cell .info-bottom-left i { margin-right: 3px; }
+.monitor-cell .info-bottom-right { position: absolute; bottom: 8px; right: 10px; }
+.monitor-cell .live-time { color: #fff; font-size: 10px; font-family: 'Courier New', monospace; }
+.monitor-cell .rec-indicator { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; z-index: 7; }
+.monitor-cell .rec-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #f85149; margin-right: 3px; box-shadow: 0 0 6px rgba(248,81,73,0.8); animation: recBlink 1s step-end infinite; }
+@keyframes recBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.monitor-cell .rec-indicator span { color: #f85149; font-size: 10px; font-weight: 700; font-family: 'Courier New', monospace; }
+.monitor-cell.empty-slot { border-style: dashed; border-color: rgba(82,244,255,.1); }
+.monitor-cell .empty-slot { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; color: rgba(82,244,255,.3); }
+.monitor-cell .empty-slot i { font-size: 28px; margin-bottom: 4px; }
+.monitor-cell .empty-slot span { font-size: 11px; font-family: 'Courier New', monospace; }
 
 /* Carousel pages */
 .carousel-host { position: relative; }

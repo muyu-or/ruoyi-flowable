@@ -419,4 +419,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         GROUP BY node_name
         ORDER BY completedCount DESC
     </select>
+
+    <!-- BI大屏：按班组统计当前超时未解决的预警数（从task_warning直接取team_name，与production_team对齐） -->
+    <select id="selectTeamUnresolvedOverdue" resultType="java.util.HashMap">
+        SELECT pt.team_name AS teamName,
+               COUNT(*) AS unresolvedCount
+        FROM task_warning tw
+        JOIN production_team pt ON pt.team_name = tw.team_name AND pt.team_status = '1'
+        WHERE tw.warn_type = 'overdue'
+          AND tw.resolved = 0
+          AND tw.team_name IS NOT NULL
+          AND tw.team_name != ''
+        GROUP BY pt.team_name
+    </select>
 </mapper>
