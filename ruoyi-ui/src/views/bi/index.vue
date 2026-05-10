@@ -595,11 +595,9 @@ export default {
       var totalInvQty = 0
       for (var ii = 0; ii < inv.length; ii++) totalInvQty += (inv[ii].totalQty || 0)
       this.renderDigits('inventoryDigits', totalInvQty, 5)
-      var maxInvQty = 1
-      for (var ij = 0; ij < inv.length; ij++) maxInvQty = Math.max(maxInvQty, inv[ij].totalQty || 0)
       var self = this
       var progressData = inv.slice(0, 5).map(function(item) {
-        return { name: self.getCategoryLabel(item.category), value: Math.max(0, Math.min(100, Math.round((item.totalQty || 0) / maxInvQty * 100))) }
+        return { name: self.getCategoryLabel(item.category), value: totalInvQty > 0 ? Math.round((item.totalQty || 0) / totalInvQty * 100) : 0 }
       })
       this.renderProgress(progressData)
 
