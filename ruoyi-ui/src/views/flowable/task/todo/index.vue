@@ -51,7 +51,7 @@
           <el-tag size="medium" >v{{scope.row.procDefVersion}}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="流程发起人" align="center" width="140">
+      <el-table-column label="流程发起人" align="center" min-width="140" :show-overflow-tooltip="true">
         <template slot-scope="scope">
           <label>{{scope.row.startUserName}} <el-tag type="info" size="mini">{{scope.row.startDeptName}}</el-tag></label>
         </template>

@@ -108,7 +108,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="出库记录ID" align="center" prop="id" />
       <el-table-column label="物料ID" align="center" prop="materialId" />
-      <el-table-column label="物料名称" align="center" prop="materialName" sortable />
+      <el-table-column label="物料名称" align="center" prop="materialName" sortable min-width="120" :show-overflow-tooltip="true" />
       <el-table-column label="出库类型" align="center" prop="outboundType" sortable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.outbound_type" :value="scope.row.outboundType"/>
@@ -120,7 +120,7 @@
           <dict-tag :options="dict.type.warehouse_area" :value="scope.row.warehouseArea"/>
         </template>
       </el-table-column>
-      <el-table-column label="操作人员" align="center" prop="operator" />
+      <el-table-column label="操作人员" align="center" prop="operator" min-width="100" :show-overflow-tooltip="true" />
       <el-table-column label="出库时间" align="center" prop="outboundTime" width="140" sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.outboundTime, '{y}-{m}-{d}') }}</span>

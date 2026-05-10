@@ -121,13 +121,13 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" />
       <el-table-column label="物料ID" align="center" prop="materialId" />
-      <el-table-column label="物料名称" align="center" prop="materialName" sortable min-width="120" />
-      <el-table-column label="物料大类" align="center" prop="materialCategory" sortable min-width="100">
+      <el-table-column label="物料名称" align="center" prop="materialName" sortable min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="物料大类" align="center" prop="materialCategory" sortable min-width="100" :show-overflow-tooltip="true">
         <template slot-scope="scope">
           <span>{{ displayLabel(dict.type.material_category, scope.row.materialCategory) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="物料子类" align="center" prop="materialSubcategory" sortable>
+      <el-table-column label="物料子类" align="center" prop="materialSubcategory" sortable min-width="100" :show-overflow-tooltip="true">
         <template slot-scope="scope">
           <span>{{ displayLabel(dict.type.material_subcategory, scope.row.materialSubcategory) }}</span>
         </template>

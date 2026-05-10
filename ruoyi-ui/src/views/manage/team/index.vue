@@ -68,8 +68,8 @@
     <el-table v-loading="loading" :data="teamList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" width="60" />
-      <el-table-column label="班组名称" align="center" prop="teamName" min-width="120" />
-      <el-table-column label="班组长姓名" align="center" prop="leaderName" min-width="100" />
+      <el-table-column label="班组名称" align="center" prop="teamName" min-width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="班组长姓名" align="center" prop="leaderName" min-width="100" :show-overflow-tooltip="true" />
       <el-table-column label="状态" align="center" prop="teamStatus">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.team_status" :value="scope.row.teamStatus"/>

@@ -52,7 +52,7 @@
     <el-table v-loading="loading" :data="formList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="表单主键" align="center" prop="formId" />
-      <el-table-column label="表单名称" align="center" prop="formName" />
+      <el-table-column label="表单名称" align="center" prop="formName" min-width="140" :show-overflow-tooltip="true" />
       <el-table-column label="类型" align="center" width="100">
         <template slot-scope="scope">
           <el-tag v-if="!scope.row.formType || scope.row.formType === 'vform'" type="primary" size="small">vForm</el-tag>
@@ -65,7 +65,7 @@
           <span v-else style="color:#c0c4cc">—</span>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" />
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" :show-overflow-tooltip="true" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
         <template slot-scope="scope">
           <el-button

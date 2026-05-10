@@ -108,7 +108,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="入库记录ID" align="center" prop="id" />
       <el-table-column label="物料ID" align="center" prop="materialId" />
-      <el-table-column label="物料名称" align="center" prop="materialName" sortable />
+      <el-table-column label="物料名称" align="center" prop="materialName" sortable min-width="120" :show-overflow-tooltip="true" />
       <el-table-column label="入库类型" align="center" prop="inboundType" sortable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.inbound_type" :value="scope.row.inboundType"/>
@@ -137,7 +137,7 @@
           <span>{{ parseTime(scope.row.inboundTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作人员" align="center" prop="operator" />
+      <el-table-column label="操作人员" align="center" prop="operator" min-width="100" :show-overflow-tooltip="true" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
         <template slot-scope="scope">
           <el-button

@@ -58,19 +58,19 @@
       :default-expand-all="isExpandAll"
       :tree-props="{children: 'children', hasChildren: 'hasChildren'}"
     >
-      <el-table-column prop="deptName" label="部门名称" min-width="200" />
-      <el-table-column prop="orderNum" label="排序" width="200" />
-      <el-table-column prop="status" label="状态" width="100">
+      <el-table-column prop="deptName" label="部门名称" min-width="160" :show-overflow-tooltip="true" />
+      <el-table-column prop="orderNum" label="排序" width="70" />
+      <el-table-column prop="status" label="状态" width="80">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="200">
+      <el-table-column label="创建时间" align="center" prop="createTime" min-width="140">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="200" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="260" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
             v-hasPermi="['system:dept:edit']"

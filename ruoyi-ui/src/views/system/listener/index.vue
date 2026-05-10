@@ -73,7 +73,7 @@
 
     <el-table v-loading="loading" :data="listenerList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="名称" align="center" prop="name" />
+      <el-table-column label="名称" align="center" prop="name" min-width="120" :show-overflow-tooltip="true" />
       <el-table-column label="监听类型" align="center" prop="type">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.sys_listener_type" :value="scope.row.type"/>
@@ -85,8 +85,8 @@
           <dict-tag :options="dict.type.sys_listener_value_type" :value="scope.row.valueType"/>
         </template>
       </el-table-column>
-      <el-table-column label="执行内容" align="center" prop="value" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="执行内容" align="center" prop="value" min-width="200" :show-overflow-tooltip="true" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160">
         <template slot-scope="scope">
           <el-button
             size="mini"

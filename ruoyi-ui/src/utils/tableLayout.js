@@ -1,108 +1,149 @@
 /**
  * 全局表格自适应布局工具
  *
- * 单例模式：维护一个全局 resize/zoom/侧边栏 监听器，
+ * 单例模式：维护全局 resize/zoom/侧边栏/容器尺寸 监听器，
  * 所有注册的 el-table 实例在触发时自动 doLayout()。
  *
- * 解决浏览器缩放、窗口大小变化、侧边栏展开收起时
- * 表格列宽异常（右侧留白、操作列溢出、列断层）的问题。
+ * 核心改进：
+ * - ResizeObserver 监听每个表格容器真实尺寸变化（浏览器缩放、父容器变化、标签页切换）
+ * - transitionend 精确捕获侧边栏动画结束
+ * - 防抖 + rAF 合并快速连续触发
  */
-
 import store from '@/store'
 
-// 已注册的表格实例集合
+const DEBUG = false
+
+function log(...args) {
+  if (DEBUG) console.debug('[tableLayout]', ...args)
+}
+
 const tables = new Set()
+const observers = new Map()
 let resizeTimer = null
-let sidebarUnwatch = null
+let sidebarTransitionAttached = false
 let initialized = false
 
 function init() {
   if (initialized) return
   initialized = true
 
-  // 窗口大小变化（含浏览器缩放触发）
-  window.addEventListener('resize', onResize, { passive: true })
-
-  // 标签页切换回来时（缩放后切标签页再切回也会触发）
+  window.addEventListener('resize', () => scheduleDoLayout(120), { passive: true })
   document.addEventListener('visibilitychange', onVisibilityChange)
+  attachSidebarTransition()
 
-  // 侧边栏展开/收起（只监听 opened 原始值，避免 deep 监听不必要的内部属性变化）
   if (store && store.watch) {
-    sidebarUnwatch = store.watch(
+    store.watch(
       state => state.app && state.app.sidebar && state.app.sidebar.opened,
-      () => scheduleDoLayout()
+      () => scheduleDoLayout(120)
     )
   }
 }
 
-function onResize() {
-  scheduleDoLayout()
+function attachSidebarTransition() {
+  if (sidebarTransitionAttached) return
+  const tryAttach = () => {
+    const sidebar = document.querySelector('.sidebar-container')
+    if (sidebar) {
+      sidebar.addEventListener('transitionend', (e) => {
+        if (e.propertyName === 'width' || e.propertyName === 'margin-left') {
+          log('侧边栏 transitionend:', e.propertyName)
+          scheduleDoLayout(50)
+        }
+      })
+      // 也监听 main-container 的 margin-left transition
+      const mainContainer = document.querySelector('.main-container')
+      if (mainContainer) {
+        mainContainer.addEventListener('transitionend', (e) => {
+          if (e.propertyName === 'margin-left') {
+            log('主容器 transitionend:', e.propertyName)
+            scheduleDoLayout(50)
+          }
+        })
+      }
+      sidebarTransitionAttached = true
+      log('侧边栏 transition 监听已绑定')
+    } else {
+      setTimeout(tryAttach, 300)
+    }
+  }
+  setTimeout(tryAttach, 500)
 }
 
 function onVisibilityChange() {
   if (!document.hidden) {
-    scheduleDoLayout()
+    scheduleDoLayout(60)
   }
 }
 
-/**
- * 防抖调度：200ms 内多次触发只执行一次
- */
-function scheduleDoLayout() {
+function scheduleDoLayout(delay = 100) {
   if (resizeTimer) clearTimeout(resizeTimer)
   resizeTimer = setTimeout(() => {
-    // 等待浏览器完成当前绘制周期后再触发布局重算
     requestAnimationFrame(() => {
       doLayoutAll()
     })
-  }, 100)
+  }, delay)
 }
 
-/**
- * 对所有已注册表格执行 doLayout()
- * 自动跳过已销毁的实例
- */
 function doLayoutAll() {
   const dead = []
   tables.forEach(table => {
     if (table && table.$el && table.doLayout) {
       try {
         table.doLayout()
-      } catch (e) {
-        // 静默
-      }
+      } catch (e) { /* 静默 */ }
     } else {
       dead.push(table)
     }
   })
-  // 清理已销毁的实例
-  dead.forEach(t => tables.delete(t))
+  dead.forEach(t => {
+    tables.delete(t)
+    if (observers.has(t)) {
+      observers.get(t).disconnect()
+      observers.delete(t)
+    }
+  })
 }
 
-/**
- * 注册表格实例
- * @param {Object} table el-table 组件实例
- */
+function setupTableObserver(table) {
+  if (!table.$el) return
+  if (observers.has(table)) {
+    observers.get(table).disconnect()
+  }
+  try {
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width
+        if (w > 0) {
+          log('ResizeObserver 触发, 容器宽度:', Math.round(w) + 'px')
+          scheduleDoLayout(100)
+          break
+        }
+      }
+    })
+    observer.observe(table.$el)
+    observers.set(table, observer)
+    log('ResizeObserver 已绑定:', table.$el.className || table.$el.tagName)
+  } catch (e) {
+    // ResizeObserver 不可用，回退到 window.resize 方案
+  }
+}
+
 export function register(table) {
   if (!table) return
   init()
   tables.add(table)
+  table.$nextTick(() => setupTableObserver(table))
 }
 
-/**
- * 注销表格实例
- * @param {Object} table el-table 组件实例
- */
 export function unregister(table) {
   tables.delete(table)
+  if (observers.has(table)) {
+    observers.get(table).disconnect()
+    observers.delete(table)
+  }
 }
 
-/**
- * 立即触发一次全局 doLayout（用于数据加载完成后）
- */
 export function refreshAll() {
-  // 当前帧立即执行一次
   doLayoutAll()
-  // 延迟再执行一次，处理可能级联渲染的列（固定列、tooltip 等）
   scheduleDoLayout()
 }

@@ -82,8 +82,8 @@
     <el-table v-loading="loading" :data="postList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="岗位编号" align="center" prop="postId" />
-      <el-table-column label="岗位编码" align="center" prop="postCode" />
-      <el-table-column label="岗位名称" align="center" prop="postName" />
+      <el-table-column label="岗位编码" align="center" prop="postCode" :show-overflow-tooltip="true" />
+      <el-table-column label="岗位名称" align="center" prop="postName" min-width="120" :show-overflow-tooltip="true" />
       <el-table-column label="岗位排序" align="center" prop="postSort" />
       <el-table-column label="状态" align="center" prop="status">
         <template slot-scope="scope">

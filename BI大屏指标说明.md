@@ -1,6 +1,8 @@
 # BI 大屏指标说明
 
 > 大屏每 30 秒自动刷新数据，每 10 秒轮播切换多页面板。所有指标均为全公司范围（admin 视角）。
+>
+> **时间周期选择器**位于 Header 右侧，支持 **本月** / **本季度** / **本年** 三个周期，默认**本月**。切换后所有指标按所选周期的日期范围过滤，后端通过 `startDate`/`endDate` 参数下推到所有 SQL 查询。
 
 ---
 
@@ -23,7 +25,7 @@
 | **完成总数** | 所有节点已完成的任务合计 | `SUM(completedCount)` across all nodes |
 | **节点数** | 流程中包含的节点类型数量 | `nodeStatusSummary` 数组长度 |
 
-下方表格按节点列出 **活跃数** 和 **完成数**，活跃 > 3 的节点高亮标记。
+下方表格按节点列出 **活跃数** 和 **完成数**，活跃 > 5 的节点高亮标记。显示所有节点，超出区域自动滚动。
 
 数据来源：`selectNodeStatusSummary` SQL（`task_node_execution` 表）。
 
@@ -35,7 +37,7 @@
 | **进行中** | 所有班组已认领（进行中）任务合计 | `SUM(running)` across all teams |
 | **完成总数** | 所有班组已完成任务合计 | `SUM(finished)` across all teams |
 
-下方表格按班组列出 **待办 / 进行中 / 完成** 数，待办 > 5 的班组高亮标记。
+下方表格按班组列出 **待办 / 进行中 / 完成** 数，待办 > 5 的班组高亮标记。显示所有班组，超出区域自动滚动。
 
 数据来源：`countTeamStatsByStatus` SQL（`task_node_execution` 表）。
 
@@ -80,7 +82,7 @@
 | 指标 | 含义 | 计算方式 |
 |------|------|---------|
 | **准时完成率** | 所有应有结果的任务中，实际完成了多少 | `finished / (finished + ΣunresolvedCount) × 100%` |
-| **日均完成数** | 每天平均完成几个任务 | `finished / 统计天数`（天数 = stockTrend 数据量，≥1） |
+| **日均完成数** | 每天平均完成几个任务 | `finished / 所选周期的实际日历天数`（月=当月天数，季=本季已过天数，年=365/366） |
 
 > 分子 = 全公司已完成数（`companyStats.finished`），分母包含当前超时未解决的任务（`warningStats[].unresolvedCount` 之和），使当前仍在超时中的任务能拉低准时率。当所有预警都未解决时，准时率会显著下降，不再显示 100%。
 
@@ -184,6 +186,8 @@
 
 ### 7.2 预警响应明细（轮播页 2）
 
+显示所有节点预警数据，超出区域自动滚动。
+
 | 指标 | 含义 | 计算方式 |
 |------|------|---------|
 | **响应(天)** | 该节点预警的平均响应时间 | `AVG(响应分钟数) / 1440`，保留一位小数 |
@@ -206,7 +210,7 @@
 | **班组准时率** | `onTimeCount / (completedCount + unresolvedCount)` |
 | **班组达标率** | `COUNT(onTimeRate ≥ 0.8) / COUNT(全部班组)` |
 | **流转效率** | `AVG( completed / (active + completed) )` per node |
-| **日均完成** | `finished / MAX(stockTrend.length, 1)` |
+| **日均完成** | `finished / 实际日历天数`（月=当月天数，季=本季已过天数，年=365/366） |
 | **产品转化率** | `productInboundQty / rawInboundQty` |
 | **相关系数 r** | 皮尔逊相关系数（入库量 vs 出库量） |
 | **P50/P90 耗时** | 已完成任务耗时的 50% / 90% 分位数 |
@@ -223,3 +227,22 @@ production_team     ──→ 班组名称、成员关联
 inventory           ──→ 库存分布、物料子类数、成本汇总
 device              ──→ 设备监控
 ```
+
+---
+
+## 日期过滤说明
+
+所有 BI 大屏指标均按所选周期（本月/本季度/本年）进行日期过滤，后端统一通过 `calculateDateRange(period)` 计算起止日期，传递给各 SQL 查询：
+
+| 查询 | 过滤字段 | 过滤逻辑 |
+|------|---------|---------|
+| `countAllStats` | `start_time` / `complete_time` | 活跃/拒绝按 `start_time`，已完成按 `complete_time` |
+| `countUserFinishedTop` | `complete_time` | 已完成且在周期内 |
+| `selectRecentCompleted` | `complete_time` | 已完成且在周期内 |
+| `selectCompletedDurationsByNode` | `complete_time` | 已完成且在周期内 |
+| `selectCompletedDurationsByTeam` | `complete_time` | 已完成且在周期内 |
+| `selectTeamOnTimeStats` | `complete_time` | 已完成且在周期内 |
+| `selectNodeStatusSummary` | `start_time` / `complete_time` | 活跃按 `start_time`，已完成按 `complete_time` |
+| `selectTeamUnresolvedOverdue` | `create_time` | 预警创建时间在周期内 |
+
+库存和出入库查询使用传入时间段的 `start_date`/`end_date` 过滤。

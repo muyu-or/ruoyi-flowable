@@ -124,6 +124,32 @@ aside {
   padding: 20px;
 }
 
+// 表格全局自适应样式
+.el-table {
+  width: 100% !important;
+}
+
+// 表格操作列按钮容器 —— 防止按钮被截断
+.el-table .cell {
+  .action-btns {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 0;
+    .el-button--text {
+      padding-left: 5px;
+      padding-right: 5px;
+    }
+  }
+}
+
+// 表格列头省略号（长文本列）
+.el-table th > .cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .components-container {
   margin: 30px 50px;
   position: relative;

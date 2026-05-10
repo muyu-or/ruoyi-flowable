@@ -45,7 +45,7 @@
       <el-table-column label="任务名称" align="center" prop="businessTaskName" min-width="120" :show-overflow-tooltip="true"/>
       <el-table-column label="流程名称" align="center" prop="procDefName" min-width="120" :show-overflow-tooltip="true"/>
       <el-table-column label="任务节点" align="center" prop="taskName" width="100" :show-overflow-tooltip="true"/>
-      <el-table-column label="流程发起人" align="center" width="140">
+      <el-table-column label="流程发起人" align="center" min-width="140" :show-overflow-tooltip="true">
         <template slot-scope="scope">
           <label>{{scope.row.startUserName}} <el-tag type="info" size="mini">{{scope.row.startDeptName}}</el-tag></label>
         </template>

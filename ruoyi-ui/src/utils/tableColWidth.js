@@ -8,7 +8,7 @@
 import store from '@/store'
 import { getTableColWidth, saveTableColWidth, resetTableColWidth } from '@/api/system/tableColWidth'
 
-const VERSION = '2.0'
+const VERSION = '2.1'
 
 /**
  * 判断当前用户是否为 admin

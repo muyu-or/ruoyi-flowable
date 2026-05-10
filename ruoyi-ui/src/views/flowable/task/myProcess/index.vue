@@ -73,7 +73,7 @@
         </template>
       </el-table-column>
       <el-table-column label="耗时" align="center" prop="duration" width="100" />
-      <el-table-column label="当前节点" align="center" prop="taskName" width="100" :show-overflow-tooltip="true" />
+      <el-table-column label="当前节点" align="center" prop="taskName" min-width="100" :show-overflow-tooltip="true" />
       <el-table-column label="操作" width="160" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button type="text" size="mini" class="view-btn" @click="handleFlowRecord(scope.row)">详情</el-button>
