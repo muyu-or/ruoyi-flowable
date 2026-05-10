@@ -106,17 +106,21 @@ public interface TaskNodeExecutionMapper
     List<java.util.Map<String, Object>> countMemberStatsByTeam(@org.apache.ibatis.annotations.Param("teamId") Long teamId);
 
     /**
-     * 查询最近完成的节点任务（用于首页展示）
+     * 查询最近完成的节点任务（用于首页展示，按时间范围过滤）
      *
-     * @param userId 用户ID（普通成员传值，班组长传 null）
-     * @param teamId 班组ID（班组长传值，普通成员传 null）
-     * @param limit  最大返回条数
+     * @param userId    用户ID（普通成员传值，班组长传 null）
+     * @param teamId    班组ID（班组长传值，普通成员传 null）
+     * @param limit     最大返回条数
+     * @param startDate 开始日期
+     * @param endDate   结束日期
      * @return 最近完成任务列表
      */
     List<java.util.Map<String, Object>> selectRecentCompleted(
         @org.apache.ibatis.annotations.Param("userId") Long userId,
         @org.apache.ibatis.annotations.Param("teamId") Long teamId,
-        @org.apache.ibatis.annotations.Param("limit") int limit
+        @org.apache.ibatis.annotations.Param("limit") int limit,
+        @org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate,
+        @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate
     );
 
     /**
@@ -130,19 +134,30 @@ public interface TaskNodeExecutionMapper
                           @org.apache.ibatis.annotations.Param("timeoutFlag") int timeoutFlag);
 
     /**
-     * 统计全公司所有成员的任务数量（不区分用户，排除已取消）
+     * 统计全公司所有成员的任务数量（不区分用户，排除已取消，按时间范围过滤）
      *
+     * @param startDate 开始日期
+     * @param endDate   结束日期
      * @return 状态→数量的 Map 列表，每行含 status 和 cnt 字段
      */
-    List<java.util.Map<String, Object>> countAllStats();
+    List<java.util.Map<String, Object>> countAllStats(
+        @org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate,
+        @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate
+    );
 
     /**
-     * 全公司个人完成数量 Top N（按 claim_user_id 分组，排除已取消）
+     * 全公司个人完成数量 Top N（按 claim_user_id 分组，按时间范围过滤）
      *
-     * @param limit 最大返回条数
+     * @param limit     最大返回条数
+     * @param startDate 开始日期
+     * @param endDate   结束日期
      * @return 每行含 userId, userName, finished 字段
      */
-    List<java.util.Map<String, Object>> countUserFinishedTop(@org.apache.ibatis.annotations.Param("limit") int limit);
+    List<java.util.Map<String, Object>> countUserFinishedTop(
+        @org.apache.ibatis.annotations.Param("limit") int limit,
+        @org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate,
+        @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate
+    );
 
     /**
      * 查询日历看板事件（按月份范围 + 角色过滤）
@@ -183,37 +198,62 @@ public interface TaskNodeExecutionMapper
     );
 
     /**
-     * BI大屏：查询已完成任务的原始耗时数据（按节点分组，用于 Java 计算 P50/P90）
+     * BI大屏：查询已完成任务的原始耗时数据（按节点分组，用于 Java 计算 P50/P90，按时间范围过滤）
      *
+     * @param startDate 开始日期
+     * @param endDate   结束日期
      * @return 每行含 nodeName, duration (秒)
      */
-    List<java.util.Map<String, Object>> selectCompletedDurationsByNode();
+    List<java.util.Map<String, Object>> selectCompletedDurationsByNode(
+        @org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate,
+        @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate
+    );
 
     /**
-     * BI大屏：查询已完成任务的原始耗时数据（按班组分组，用于 Java 计算稳定性）
+     * BI大屏：查询已完成任务的原始耗时数据（按班组分组，用于 Java 计算稳定性，按时间范围过滤）
      *
+     * @param startDate 开始日期
+     * @param endDate   结束日期
      * @return 每行含 teamName, duration (秒)
      */
-    List<java.util.Map<String, Object>> selectCompletedDurationsByTeam();
+    List<java.util.Map<String, Object>> selectCompletedDurationsByTeam(
+        @org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate,
+        @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate
+    );
 
     /**
-     * BI大屏：按班组统计准时完成率
+     * BI大屏：按班组统计准时完成率，按时间范围过滤
      *
+     * @param startDate 开始日期
+     * @param endDate   结束日期
      * @return 每行含 teamName, completedCount, onTimeCount
      */
-    List<java.util.Map<String, Object>> selectTeamOnTimeStats();
+    List<java.util.Map<String, Object>> selectTeamOnTimeStats(
+        @org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate,
+        @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate
+    );
 
     /**
-     * BI大屏：按节点统计活跃/已完成任务数量
+     * BI大屏：按节点统计活跃/已完成任务数量，按时间范围过滤
      *
+     * @param startDate 开始日期
+     * @param endDate   结束日期
      * @return 每行含 nodeName, activeCount, completedCount
      */
-    List<java.util.Map<String, Object>> selectNodeStatusSummary();
+    List<java.util.Map<String, Object>> selectNodeStatusSummary(
+        @org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate,
+        @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate
+    );
 
     /**
-     * BI大屏：按班组统计当前超时未解决的任务数（活跃状态 + 未解决逾期预警）
+     * BI大屏：按班组统计当前超时未解决的任务数，按时间范围过滤
      *
+     * @param startDate 开始日期
+     * @param endDate   结束日期
      * @return 每行含 teamName, unresolvedCount
      */
-    List<java.util.Map<String, Object>> selectTeamUnresolvedOverdue();
+    List<java.util.Map<String, Object>> selectTeamUnresolvedOverdue(
+        @org.apache.ibatis.annotations.Param("startDate") java.util.Date startDate,
+        @org.apache.ibatis.annotations.Param("endDate") java.util.Date endDate
+    );
 }

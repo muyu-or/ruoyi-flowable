@@ -15,6 +15,7 @@
           <el-table
             v-loading="loading"
             :data="cacheNames"
+            v-table-col-width="'cacheNames'"
             :height="tableHeight"
             highlight-current-row
             @row-click="getCacheKeys"
@@ -73,6 +74,7 @@
           <el-table
             v-loading="subLoading"
             :data="cacheKeys"
+            v-table-col-width="'cacheKeys'"
             :height="tableHeight"
             highlight-current-row
             @row-click="handleCacheValue"

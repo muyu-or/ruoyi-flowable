@@ -52,11 +52,12 @@
       v-if="refreshTable"
       v-loading="loading"
       :data="menuList"
+      v-table-col-width="'main'"
       row-key="menuId"
       :default-expand-all="isExpandAll"
       :tree-props="{children: 'children', hasChildren: 'hasChildren'}"
     >
-      <el-table-column prop="menuName" label="菜单名称" :show-overflow-tooltip="true" width="160"></el-table-column>
+      <el-table-column prop="menuName" label="菜单名称" :show-overflow-tooltip="true" min-width="160"></el-table-column>
       <el-table-column prop="icon" label="图标" align="center" width="100">
         <template slot-scope="scope">
           <svg-icon :icon-class="scope.row.icon" />

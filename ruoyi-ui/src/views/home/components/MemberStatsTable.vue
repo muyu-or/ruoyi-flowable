@@ -7,6 +7,7 @@
     <el-table
       :data="memberStatsList"
       stripe
+      v-table-col-width="'memberStats'"
       :header-cell-style="{ background: '#fafafa', color: '#606266', fontWeight: '600' }"
       style="width: 100%"
     >

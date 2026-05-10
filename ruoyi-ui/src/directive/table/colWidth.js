@@ -6,6 +6,7 @@
  */
 
 import { getColumnsWidth, saveColumnsWidth, isAdmin } from '@/utils/tableColWidth'
+import { register, unregister } from '@/utils/tableLayout'
 
 export default {
   name: 'table-col-width',
@@ -21,6 +22,12 @@ export default {
       return
     }
 
+    // 保存引用用于 unbind 清理
+    el._tableComponent = tableComponent
+
+    // 注册到全局自适应布局（resize/zoom/侧边栏变化时自动 doLayout）
+    register(tableComponent)
+
     // admin 监听拖拽并保存到后端
     if (isAdmin()) {
       tableComponent.$on('header-dragend', (newWidth, oldWidth, column, event) => {
@@ -30,12 +37,35 @@ export default {
 
     // 所有用户加载后端配置
     loadAndApplyWidth(el, context, tableId, tableComponent)
+
+    // 监听表格数据变化，数据加载完成后重新触发布局
+    const unwatchData = context.$watch(
+      function() { return tableComponent.data },
+      function(newVal) {
+        if (newVal && newVal.length > 0) {
+          tableComponent.$nextTick(() => {
+            if (tableComponent.doLayout) tableComponent.doLayout()
+          })
+        }
+      }
+    )
+    el._unwatchData = unwatchData
   },
 
   unbind(el) {
+    // 清理数据监听
+    if (el._unwatchData) {
+      el._unwatchData()
+      el._unwatchData = null
+    }
     // 清理定时器
     if (el._saveWidthTimer) {
       clearTimeout(el._saveWidthTimer)
+    }
+    // 从全局自适应布局中注销
+    if (el._tableComponent) {
+      unregister(el._tableComponent)
+      el._tableComponent = null
     }
   }
 }
@@ -106,14 +136,15 @@ function collectColumnsWidth(tableComponent) {
   const tableColumns = tableComponent.columns || []
 
   tableColumns.forEach(col => {
-    // 获取列的 label（跳过无 label 的特殊列）
     const label = col.label || col.property
     if (!label) return
 
-    // 获取当前宽度
-    const width = col.realWidth || col.width
-    if (width && width > 0) {
-      columns[label] = Math.round(width)
+    // 只收集原本就设了固定 width 的列，min-width/无width 的列保持弹性不保存
+    if (col.width !== undefined) {
+      const width = col.realWidth || col.width
+      if (width && width > 0) {
+        columns[label] = Math.round(width)
+      }
     }
   })
 
@@ -134,22 +165,13 @@ function applyWidthToColumns(tableComponent, storedWidths) {
     const storedWidth = storedWidths[label]
     if (!storedWidth) return
 
-    // 尝试修改列宽
     try {
-      // 如果列原本有 width 属性
+      // 只对原本就有 width 的列应用缓存宽度（min-width 列保持弹性）
       if (col.width !== undefined) {
         col.width = storedWidth
         applied = true
       }
-
-      // 如果列只有 min-width，转换为 width
-      if (col.minWidth !== undefined && col.width === undefined) {
-        col.width = storedWidth
-        applied = true
-      }
-
-      // 设置 realWidth（Element-UI 内部使用）
-      col.realWidth = storedWidth
+      // 不再直接改写 col.realWidth，让 Element-UI 的布局引擎自行计算
     } catch (e) {
       console.warn('应用列宽失败:', label, e)
     }

@@ -9,7 +9,14 @@
             <header class="header">
               <div class="line" />
               <div class="title-shell"><h1>数据统计中心</h1></div>
-              <div class="line" />
+              <div class="header-right">
+                <div class="period-selector">
+                  <span v-for="p in periods" :key="p.value"
+                    :class="['period-btn', { active: currentPeriod === p.value }]"
+                    @click="switchPeriod(p.value)">{{ p.label }}</span>
+                </div>
+                <div class="line" />
+              </div>
             </header>
 
             <!-- Left Top: 2 stacked panels -->
@@ -205,7 +212,7 @@
               <div class="inner">
                 <h3 class="panel-title">出入库趋势与相关性</h3>
                 <div class="bottom-shell">
-                  <div id="stockTrendChart" ref="stockTrendChartDom" class="chart" style="height:160px;" />
+                  <div id="stockTrendChart" ref="stockTrendChartDom" class="chart" style="height:140px;" />
                   <div id="timeBoard" class="time-board">--</div>
                 </div>
               </div>
@@ -226,7 +233,7 @@
               <div :class="['carousel-page', carouselPage === 1 ? 'active' : '']">
                 <div class="inner">
                   <h3 class="panel-title">预警响应明细</h3>
-                  <div id="warningTable2" class="grid-table" />
+                  <div id="warningTable2" class="grid-table" style="max-height:200px;overflow-y:auto;" />
                 </div>
               </div>
             </section>
@@ -262,7 +269,12 @@ export default {
   dicts: ['material_category', 'monitor_area_type', 'monitor_device_status'],
   data: function() {
     return {
-      currentPeriod: 'all',
+      currentPeriod: 'month',
+      periods: [
+        { label: '本月', value: 'month' },
+        { label: '本季度', value: 'quarter' },
+        { label: '本年', value: 'year' }
+      ],
       statsData: {},
       carouselPage: 0,
       carouselTimer: null,
@@ -278,7 +290,11 @@ export default {
       deviceList: [],
       monitorTime: '',
       noiseTimer: null,
-      monitorTimeTimer: null
+      monitorTimeTimer: null,
+      statusTickTimer: null,
+      serverTimeAtFetch: null,
+      fetchClientTime: null,
+      lastRefreshTime: null
     }
   },
   computed: {
@@ -320,7 +336,7 @@ export default {
       }
       window.addEventListener('resize', self._onResize)
       self.loadData()
-      self.clockTimer = setInterval(function() { self.updateClock() }, 1000)
+      self.statusTickTimer = setInterval(function() { self.updateStatusBar() }, 1000)
       self.refreshTimer = setInterval(function() { self.loadData() }, 30000)
       self.updateMonitorTime()
       self.monitorTimeTimer = setInterval(function() { self.updateMonitorTime() }, 1000)
@@ -332,6 +348,7 @@ export default {
   },
   beforeDestroy: function() {
     if (this.clockTimer) clearInterval(this.clockTimer)
+    if (this.statusTickTimer) clearInterval(this.statusTickTimer)
     if (this.refreshTimer) clearInterval(this.refreshTimer)
     if (this.carouselTimer) clearInterval(this.carouselTimer)
     if (this.noiseTimer) clearInterval(this.noiseTimer)
@@ -362,11 +379,22 @@ export default {
       this.scaleY = frameH / this.designH
     },
     onPeriodChange: function() { this.loadData() },
+    switchPeriod: function(period) {
+      if (this.currentPeriod === period) return
+      this.currentPeriod = period
+      this.loadData()
+    },
     loadData: function() {
       var self = this
       // 获取统计数据
       getHomeStats({ period: this.currentPeriod }).then(function(res) {
         self.statsData = (res && res.data) || {}
+        var rs = self.statsData.realtimeStatus
+        if (rs) {
+          self.serverTimeAtFetch = new Date(rs.serverTime)
+          self.fetchClientTime = Date.now()
+        }
+        self.lastRefreshTime = new Date()
         self.$nextTick(function() { self.renderAll() })
       }).catch(function(err) { console.error('BI loadData error:', err) })
       // 获取监控设备
@@ -397,8 +425,25 @@ export default {
       }
       var onTimeRate = (finished + unresolvedTotal) > 0 ? Math.round(finished / (finished + unresolvedTotal) * 100) : 0
 
-      // 日均产出（按数据跨度天数计算）
-      var periodDays = Math.max(1, st.length > 0 ? st.length : 30)
+      // 日均产出：finished / 所选周期的实际天数
+      var now = new Date()
+      var periodDays
+      switch (this.currentPeriod) {
+        case 'week': periodDays = 7; break
+        case 'month': periodDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(); break
+        case 'quarter':
+          var qm = Math.floor(now.getMonth() / 3) * 3
+          periodDays = Math.round((now - new Date(now.getFullYear(), qm, 1)) / 86400000) + 1
+          break
+        case 'year':
+          periodDays = (now.getFullYear() % 4 === 0 && now.getFullYear() % 100 !== 0) || now.getFullYear() % 400 === 0 ? 366 : 365
+          break
+        case 'all':
+          periodDays = Math.round((now - new Date(2020, 0, 1)) / 86400000)
+          break
+        default: periodDays = 30
+      }
+      periodDays = Math.max(1, periodDays)
       var dailyOutput = (finished / periodDays).toFixed(1)
 
       // 库存周转率
@@ -736,11 +781,11 @@ export default {
       var el = document.getElementById('nodeProgressTableTop')
       if (!el) return
       var html = '<div class="head"><span>\u8282\u70b9</span><span>\u6d3b\u8dc3</span><span>\u5b8c\u6210</span></div>'
-      for (var i = 0; i < Math.min(ns.length, 8); i++) {
+      for (var i = 0; i < ns.length; i++) {
         var n = ns[i]
         var active = n.activeCount || 0
         var completed = n.completedCount || 0
-        var highlight = active > 3 ? ' style="color:#ff9b61;font-weight:700;"' : ''
+        var highlight = active > 5 ? ' style="color:#ff9b61;font-weight:700;"' : ''
         html += '<div class="item"' + highlight + '><span>' + (n.nodeName || '--') + '</span><span>' + active + '</span><span>' + completed + '</span></div>'
       }
       el.innerHTML = html
@@ -750,7 +795,7 @@ export default {
       if (!el) return
       el.className = 'grid-table four-cols'
       var html = '<div class="head"><span>\u73ed\u7ec4</span><span>\u5f85\u5b8c</span><span>\u8fdb\u884c</span><span>\u5b8c\u6210</span></div>'
-      for (var i = 0; i < Math.min(tp.length, 6); i++) {
+      for (var i = 0; i < tp.length; i++) {
         var t = tp[i]
         var pending = t.pending || 0
         var running = t.running || 0
@@ -837,14 +882,25 @@ export default {
         svg.insertAdjacentHTML('beforeend', '<text x="' + (w / 2) + '" y="10" fill="#8ffcff" font-size="11" font-weight="700" text-anchor="middle">' + title + '</text>')
       }
     },
-    updateClock: function() {
-      var d = new Date()
-      var week = ['\u661f\u671f\u65e5', '\u661f\u671f\u4e00', '\u661f\u671f\u4e8c', '\u661f\u671f\u4e09', '\u661f\u671f\u56db', '\u661f\u671f\u4e94', '\u661f\u671f\u516d']
-      var pad = function(n) { return String(n).padStart(2, '0') }
+    updateStatusBar: function() {
       var el = document.getElementById('timeBoard')
-      if (el) {
-        el.innerHTML = d.getFullYear() + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate()) + ' ' + week[d.getDay()] + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds())
+      if (!el) return
+      var rs = this.statsData.realtimeStatus || {}
+      var serverTimeStr = '--'
+      if (this.serverTimeAtFetch) {
+        var elapsed = Date.now() - this.fetchClientTime
+        var now = new Date(this.serverTimeAtFetch.getTime() + elapsed)
+        var pad = function(n) { return String(n).padStart(2, '0') }
+        serverTimeStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds())
       }
+      var interval = rs.refreshIntervalSeconds || 30
+      var scope = rs.dataScope || 'all'
+      var scopeMap = { all: '全部', week: '本周', month: '本月', quarter: '本季', year: '本年' }
+      var scopeLabel = scopeMap[scope] || scope
+      el.innerHTML = '<span>服务器 ' + serverTimeStr + '</span><span class="sep">|</span><span>每' + interval + 's刷新页面</span><span class="sep">|</span><span>' + scopeLabel + '</span>'
+    },
+    updateClock: function() {
+      this.updateStatusBar()
     },
 
     // ============ Helpers ============
@@ -973,14 +1029,24 @@ export default {
 .panel::after { content: ""; position: absolute; inset: 8px; border: 1px solid rgba(89,245,255,0.06); pointer-events: none; }
 .cut-corner { position: absolute; width: 14px; height: 14px; border-color: rgba(82,244,255,0.75); border-style: solid; pointer-events: none; filter: drop-shadow(0 0 4px rgba(82,244,255,.35)); }
 .lt { top: 6px; left: 6px; border-width: 2px 0 0 2px; } .rt { top: 6px; right: 6px; border-width: 2px 2px 0 0; } .lb { bottom: 6px; left: 6px; border-width: 0 0 2px 2px; } .rb { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; }
-.header { grid-column: 1 / 4; position: relative; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+.header { grid-column: 1 / 4; position: relative; display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; }
 .header .line { height: 2px; position: relative; background: linear-gradient(90deg, transparent, rgba(82,244,255,.9), transparent); filter: drop-shadow(0 0 6px rgba(82,244,255,.35)); }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.header-right .line { flex: 1; min-width: 120px; }
+.period-selector { display: flex; gap: 0; }
+.period-btn { padding: 5px 18px; font-size: 13px; color: #7eb9c8; border: 1px solid rgba(82,244,255,.25); cursor: pointer; background: rgba(8,24,44,0.6); transition: all .25s; user-select: none; white-space: nowrap; }
+.period-btn:first-child { border-radius: 3px 0 0 3px; }
+.period-btn:last-child { border-radius: 0 3px 3px 0; }
+.period-btn + .period-btn { border-left: none; }
+.period-btn:hover { color: #8ffcff; border-color: rgba(82,244,255,.45); background: rgba(82,244,255,.08); }
+.period-btn.active { color: #fff; border-color: rgba(82,244,255,.75); background: rgba(82,244,255,.2); box-shadow: 0 0 12px rgba(82,244,255,.2); }
 .title-shell { margin: 0 16px; min-width: 520px; height: 68px; display: grid; place-items: center; position: relative; clip-path: polygon(5% 0, 95% 0, 100% 35%, 96% 100%, 4% 100%, 0 35%); background: linear-gradient(180deg, rgba(6,42,68,0.95), rgba(6,24,44,0.88)); border: 1px solid rgba(82,244,255,.32); box-shadow: 0 0 24px rgba(82,244,255,.12), inset 0 0 22px rgba(82,244,255,.08); }
 .title-shell::before, .title-shell::after { content: ""; position: absolute; top: 14px; width: 86px; height: 18px; background-image: radial-gradient(circle, rgba(82,244,255,.85) 1.2px, transparent 1.5px); background-size: 10px 10px; opacity: .55; }
 .title-shell::before { left: 34px; } .title-shell::after { right: 34px; }
 .title-shell h1 { margin: 0; font-size: 32px; letter-spacing: 3px; font-weight: 800; color: #b3ffff; text-shadow: 0 0 16px rgba(82,244,255,.45), 0 0 26px rgba(82,244,255,.22); }
 .left-top { grid-column: 1; grid-row: 2 / 4; display: grid; grid-template-rows: 210px 1fr; gap: 8px; } .right-top { grid-column: 3; grid-row: 2 / 4; display: grid; grid-template-rows: 210px 1fr; gap: 8px; } .top-strip { grid-column: 2; grid-row: 2; } .center-main { grid-column: 2; grid-row: 3; } .left-bottom { grid-column: 1; grid-row: 4; } .center-bottom { grid-column: 2; grid-row: 4; } .right-bottom { grid-column: 3; grid-row: 4; }
 .inner { padding: 8px 10px 6px; height: 100%; position: relative; }
+.center-bottom .inner { display: flex; flex-direction: column; }
 .panel-title { margin: 0 0 5px; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--cyan-2); }
 .panel-title::before, .panel-title::after { content: ""; width: 14px; height: 2px; background: linear-gradient(90deg, transparent, var(--cyan)); box-shadow: 0 0 8px rgba(82,244,255,.35); }
 .counter-label { font-size: 11px; color: #a7f8ff; margin-bottom: 4px; }
@@ -1029,12 +1095,12 @@ export default {
 .energy-metrics { margin-top: 8px; margin-bottom: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .energy-card { text-align: center; padding: 5px 0; }
 .energy-card strong { display: block; font-size: 18px; color: #8ffcff; margin-bottom: 3px; } .energy-card span { color: #93cddb; font-size: 11px; }
-.bottom-shell { height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+.bottom-shell { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; }
 .legend { display: flex; justify-content: flex-start; gap: 18px; font-size: 12px; color: #89c4cf; padding-left: 2px; }
 .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
 .legend .people::before { background: #54f7ff; } .legend .car::before { background: #6dffcf; }
-.time-board { text-align: center; color: #35f2ff; font-size: 20px; font-weight: 700; text-shadow: 0 0 10px rgba(82,244,255,.18); margin-top: 4px; padding: 6px 0; }
-.time-board small { display: block; color: #86d9e3; font-size: 11px; margin-top: 3px; }
+.time-board { text-align: center; color: #35f2ff; font-size: 13px; font-weight: 700; text-shadow: 0 0 10px rgba(82,244,255,.18); margin-top: 4px; padding: 6px 0; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.time-board .sep { color: rgba(82,244,255,.3); font-weight: 400; }
 
 /* Monitor grid styles */
 .monitor-shell .monitor-grid-wrap { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; height: calc(100% - 50px); margin-top: 30px; }

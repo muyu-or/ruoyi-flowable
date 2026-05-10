@@ -106,6 +106,19 @@
   }
 }
 
+/* 表格容器自适应布局：确保表格填满父容器，空间不足时横向滚动 */
+.el-table {
+  width: 100% !important;
+}
+.el-table .el-table__body-wrapper,
+.el-table .el-table__header-wrapper {
+  width: 100% !important;
+}
+/* 操作列内容不挤压按钮 */
+.el-table .fixed-width .cell {
+  min-width: fit-content;
+}
+
 /** 表单布局 **/
 .form-header {
   font-size: 14px;

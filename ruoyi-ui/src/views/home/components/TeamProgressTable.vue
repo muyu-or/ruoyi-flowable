@@ -6,6 +6,7 @@
     <el-table
       :data="teamProgressList"
       stripe
+      v-table-col-width="'teamProgress'"
       :header-cell-style="{ background: '#fafafa', color: '#606266', fontWeight: '600' }"
       style="width: 100%"
     >

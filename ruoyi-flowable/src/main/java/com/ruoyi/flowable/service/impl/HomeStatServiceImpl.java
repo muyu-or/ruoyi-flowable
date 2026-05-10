@@ -92,24 +92,24 @@ public class HomeStatServiceImpl implements IHomeStatService {
             result.setTeamProgress(teamProgressList);
 
             // 3.2 全员任务汇总统计（admin 专属，展示给 BI 大屏指标卡片）
-            List<Map<String, Object>> allRows = taskNodeExecutionMapper.countAllStats();
+            List<Map<String, Object>> allRows = taskNodeExecutionMapper.countAllStats(dateRange.startDate, dateRange.endDate);
             result.setCompanyStats(buildMyStats(allRows));
 
             // 3.3 admin 也需要最近完成任务（全公司范围，供 BI 大屏展示）
             List<Map<String, Object>> adminRecentRows = taskNodeExecutionMapper
-                .selectRecentCompleted(null, null, 20);
+                .selectRecentCompleted(null, null, 20, dateRange.startDate, dateRange.endDate);
             result.setRecentTasks(buildRecentTasks(adminRecentRows));
 
             // 3.4 个人完成数量 Top5（admin 专属，供 BI 大屏展示）
-            List<Map<String, Object>> topRows = taskNodeExecutionMapper.countUserFinishedTop(5);
+            List<Map<String, Object>> topRows = taskNodeExecutionMapper.countUserFinishedTop(5, dateRange.startDate, dateRange.endDate);
             result.setUserTop5(buildUserTop5(topRows));
 
             // 3.5 BI大屏新增指标
             result.setWarningStats(buildWarningStats());
             result.setCostSummary(buildCostSummary());
-            result.setNodeBottleneck(buildNodeBottleneck());
-            result.setTeamStability(buildTeamStability());
-            result.setNodeStatusSummary(buildNodeStatusSummary());
+            result.setNodeBottleneck(buildNodeBottleneck(dateRange));
+            result.setTeamStability(buildTeamStability(dateRange));
+            result.setNodeStatusSummary(buildNodeStatusSummary(dateRange));
             result.setSubcategoryCount(inventoryMapper.countDistinctSubcategory());
             result.setMaterialConversion(buildMaterialConversion(dateRange));
             result.setMaterialConversionTrend(buildMaterialConversionTrend(dateRange));
@@ -139,7 +139,7 @@ public class HomeStatServiceImpl implements IHomeStatService {
                 queryTeamId = leaderTeamIds.isEmpty() ? null : leaderTeamIds.get(0);
             }
             List<Map<String, Object>> recentRows = taskNodeExecutionMapper
-                .selectRecentCompleted(queryUserId, queryTeamId, 8);
+                .selectRecentCompleted(queryUserId, queryTeamId, 8, dateRange.startDate, dateRange.endDate);
             result.setRecentTasks(buildRecentTasks(recentRows));
         }
 
@@ -347,7 +347,7 @@ public class HomeStatServiceImpl implements IHomeStatService {
         switch (period) {
             case "week": return "%m-%d";
             case "month": return "%m-%d";
-            case "quarter": return "%Y第%u周";
+            case "quarter": return "第%u周";
             case "year": return "%Y-%m";
             case "all": return "%Y-%m";
             default: return "%Y-%m";
@@ -621,8 +621,8 @@ public class HomeStatServiceImpl implements IHomeStatService {
     /**
      * 节点瓶颈 P50/P90（Java 端计算分位数）
      */
-    private List<HomeStatDto.NodeBottleneckDto> buildNodeBottleneck() {
-        List<Map<String, Object>> rows = taskNodeExecutionMapper.selectCompletedDurationsByNode();
+    private List<HomeStatDto.NodeBottleneckDto> buildNodeBottleneck(DateRange dateRange) {
+        List<Map<String, Object>> rows = taskNodeExecutionMapper.selectCompletedDurationsByNode(dateRange.startDate, dateRange.endDate);
         // 按节点分组
         Map<String, List<Long>> grouped = new LinkedHashMap<>();
         for (Map<String, Object> row : rows) {
@@ -647,13 +647,13 @@ public class HomeStatServiceImpl implements IHomeStatService {
     /**
      * 班组效率稳定性（均值/标准差/变异系数）
      */
-    private List<HomeStatDto.TeamStabilityDto> buildTeamStability() {
+    private List<HomeStatDto.TeamStabilityDto> buildTeamStability(DateRange dateRange) {
         // 按班组统计准时完成率
-        List<Map<String, Object>> onTimeRows = taskNodeExecutionMapper.selectTeamOnTimeStats();
+        List<Map<String, Object>> onTimeRows = taskNodeExecutionMapper.selectTeamOnTimeStats(dateRange.startDate, dateRange.endDate);
         // 按班组统计均值耗时
-        List<Map<String, Object>> durationRows = taskNodeExecutionMapper.selectCompletedDurationsByTeam();
+        List<Map<String, Object>> durationRows = taskNodeExecutionMapper.selectCompletedDurationsByTeam(dateRange.startDate, dateRange.endDate);
         // 按班组统计当前超时未解决任务数
-        List<Map<String, Object>> unresolvedRows = taskNodeExecutionMapper.selectTeamUnresolvedOverdue();
+        List<Map<String, Object>> unresolvedRows = taskNodeExecutionMapper.selectTeamUnresolvedOverdue(dateRange.startDate, dateRange.endDate);
         Map<String, Long> unresolvedMap = new LinkedHashMap<>();
         for (Map<String, Object> row : unresolvedRows) {
             String teamName = (String) row.get("teamName");
@@ -697,8 +697,8 @@ public class HomeStatServiceImpl implements IHomeStatService {
     /**
      * 节点活跃/已完成状态汇总
      */
-    private List<HomeStatDto.NodeStatusSummaryDto> buildNodeStatusSummary() {
-        List<Map<String, Object>> rows = taskNodeExecutionMapper.selectNodeStatusSummary();
+    private List<HomeStatDto.NodeStatusSummaryDto> buildNodeStatusSummary(DateRange dateRange) {
+        List<Map<String, Object>> rows = taskNodeExecutionMapper.selectNodeStatusSummary(dateRange.startDate, dateRange.endDate);
         List<HomeStatDto.NodeStatusSummaryDto> list = new ArrayList<>();
         for (Map<String, Object> row : rows) {
             HomeStatDto.NodeStatusSummaryDto dto = new HomeStatDto.NodeStatusSummaryDto();
@@ -749,7 +749,7 @@ public class HomeStatServiceImpl implements IHomeStatService {
     private HomeStatDto.RealtimeStatusDto buildRealtimeStatus(String period) {
         HomeStatDto.RealtimeStatusDto dto = new HomeStatDto.RealtimeStatusDto();
         dto.setServerTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-        dto.setRefreshIntervalSeconds(60);
+        dto.setRefreshIntervalSeconds(30);
         dto.setDataScope(period == null ? "all" : period);
         return dto;
     }
