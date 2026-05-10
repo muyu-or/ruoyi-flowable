@@ -111,7 +111,23 @@ export default {
         reportIds: [],
         reports: []
       },
-      rules: {}
+      rules: {
+        surfaceDots: [
+          { required: true, message: '请选择表面打点情况', trigger: 'change' }
+        ],
+        adhesion: [
+          { required: true, message: '请选择附着力', trigger: 'change' }
+        ],
+        coatingRoughness: [
+          { required: true, message: '请选择膜层表面粗糙度', trigger: 'change' }
+        ],
+        spectrumTest: [
+          { required: true, message: '请选择光谱测试', trigger: 'change' }
+        ],
+        surfaceShapeTest: [
+          { required: true, message: '请选择面形测试', trigger: 'change' }
+        ]
+      }
     }
   },
   created() {

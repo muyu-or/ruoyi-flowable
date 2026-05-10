@@ -72,7 +72,11 @@ export default {
         reportIds: [],
         reports: []
       },
-      rules: {}
+      rules: {
+        drawingName: [
+          { required: true, message: '请输入图纸名称', trigger: 'blur' }
+        ]
+      }
     }
   },
   methods: {
