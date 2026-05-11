@@ -67,6 +67,11 @@ spring:
     restart:
       # 热部署开关
       enabled: true
+  # Liquibase 数据库版本管理
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    # 首次运行时若表已存在（非空库），Liquibase 会跳过 changelog
+    drop-first: false
   # redis 配置
   redis:
     # 地址
@@ -134,7 +139,7 @@ xss:
 
 # flowable相关表
 flowable:
-  # true 会对数据库中所有表进行更新操作。如果表不存在，则自动创建(建议开发时使用)
-  database-schema-update: true
+  # Liquibase 统一管理建表，Flowable 不再自动更新
+  database-schema-update: false
   # 关闭定时任务JOB
   async-executor-activate: false
