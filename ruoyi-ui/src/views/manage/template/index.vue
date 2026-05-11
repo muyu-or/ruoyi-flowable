@@ -75,6 +75,7 @@
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
+    <div class="table-wrapper">
     <el-table v-loading="loading" :data="templateList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" width="60" />
@@ -128,6 +129,7 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
 
     <!-- 添加或修改测试报告模板配置对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body>

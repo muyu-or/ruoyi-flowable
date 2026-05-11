@@ -91,6 +91,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <div class="table-wrapper">
     <el-table v-loading="loading" :data="jobList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="任务编号" width="100" align="center" prop="jobId" />
@@ -130,6 +131,7 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
 
     <!-- 添加或修改定时任务对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="800px" append-to-body>

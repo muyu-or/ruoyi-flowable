@@ -111,6 +111,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <div class="table-wrapper">
     <el-table ref="tables" v-loading="loading" :data="list" border v-table-col-width="'main'" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="日志编号" align="center" prop="operId" />
@@ -159,6 +160,7 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
 
     <!-- 操作日志详细 -->
     <el-dialog title="操作日志详细" :visible.sync="open" width="800px" append-to-body>

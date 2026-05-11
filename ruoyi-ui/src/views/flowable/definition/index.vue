@@ -50,6 +50,7 @@
       </el-col>
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
+    <div class="table-wrapper">
     <el-table v-loading="loading" fit :data="definitionList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="流程编号" align="center" prop="deploymentId" width="140" :show-overflow-tooltip="true" />
@@ -97,6 +98,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <pagination
       v-show="total>0"

@@ -122,6 +122,9 @@ aside {
 //main-container全局样式
 .app-container {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 // 表格全局自适应样式

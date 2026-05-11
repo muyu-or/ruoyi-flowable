@@ -458,7 +458,10 @@ export default {
         }
 
         // 读取当前节点的计划时间范围（从流程变量 nodeTimeMap 提取）
-        const nodeTimeMap = res.data.nodeTimeMap
+        let nodeTimeMap = res.data.nodeTimeMap
+        if (typeof nodeTimeMap === 'string') {
+          try { nodeTimeMap = JSON.parse(nodeTimeMap) } catch (e) { nodeTimeMap = null }
+        }
         if (nodeTimeMap && this.taskDefinitionKey) {
           const nodeTime = nodeTimeMap[this.taskDefinitionKey]
           if (nodeTime) {

@@ -106,6 +106,13 @@
   }
 }
 
+/* 表格外层滚动容器：flex 布局中用 min-width:0 防止表格撑开父容器，overflow-x:auto 提供横向滚动 */
+.table-wrapper {
+  min-width: 0;
+  width: 100%;
+  overflow-x: auto;
+}
+
 /* 表格容器自适应布局：确保表格填满父容器，空间不足时横向滚动 */
 .el-table {
   width: 100% !important;

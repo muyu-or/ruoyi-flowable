@@ -56,6 +56,7 @@
               <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
             </el-row>
 
+            <div class="table-wrapper">
             <el-table v-loading="loading" :data="userList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
               <el-table-column type="selection" width="50" align="center" />
               <el-table-column label="用户编号" align="center" key="userId" prop="userId" v-if="columns[0].visible" />
@@ -84,6 +85,7 @@
             </el-table>
 
             <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
+            </div>
           </el-col>
         </pane>
       </splitpanes>

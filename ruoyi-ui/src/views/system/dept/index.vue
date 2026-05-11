@@ -48,6 +48,7 @@
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
+    <div class="table-wrapper">
     <el-table
       v-if="refreshTable"
       v-loading="loading"
@@ -100,6 +101,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <!-- 添加或修改部门对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body>

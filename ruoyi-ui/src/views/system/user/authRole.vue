@@ -17,6 +17,7 @@
     </el-form>
 
     <h4 class="form-header h4">角色信息</h4>
+    <div class="table-wrapper">
     <el-table v-loading="loading" :row-key="getRowKey" @row-click="clickRow" ref="table" v-table-col-width="'authRole'" @selection-change="handleSelectionChange" :data="roles.slice((pageNum-1)*pageSize,pageNum*pageSize)">
       <el-table-column label="序号" type="index" align="center">
         <template slot-scope="scope">
@@ -35,6 +36,7 @@
     </el-table>
 
     <pagination v-show="total>0" :total="total" :page.sync="pageNum" :limit.sync="pageSize" />
+    </div>
 
     <el-form label-width="100px">
       <el-form-item style="text-align: center;margin-left:-120px;margin-top:30px;">

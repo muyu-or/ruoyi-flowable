@@ -51,6 +51,7 @@
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
+    <div class="table-wrapper">
     <el-table v-loading="loading" :data="myProcessList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="流程编号" align="center" prop="procInsId" min-width="120" :show-overflow-tooltip="true" />
@@ -91,6 +92,8 @@
       @pagination="getList"
     />
 
+    </div>
+
     <!-- 发起流程 -->
     <el-dialog :title="title" :visible.sync="open" width="60%" append-to-body>
       <el-form v-show="showSearch" ref="queryProcessForm" :model="queryProcessParams" :inline="true" label-width="68px">
@@ -108,6 +111,7 @@
           <el-button icon="el-icon-refresh" size="mini" @click="resetProcessQuery">重置</el-button>
         </el-form-item>
       </el-form>
+        <div class="table-wrapper">
       <el-table v-loading="processLoading" fit :data="definitionList" border v-table-col-width="'dialog'">
         <el-table-column label="流程名称" align="center" prop="name" />
         <el-table-column label="流程版本" align="center">
@@ -134,6 +138,7 @@
         :limit.sync="queryProcessParams.pageSize"
         @pagination="listDefinition"
       />
+        </div>
     </el-dialog>
 
   </div>

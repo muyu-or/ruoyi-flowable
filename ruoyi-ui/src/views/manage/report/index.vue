@@ -26,6 +26,7 @@
     </el-row>
 
     <!-- 表格 -->
+    <div class="table-wrapper">
     <el-table v-loading="loading" :data="reportList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="报告编码" align="center" prop="reportCode" width="180" />
@@ -46,6 +47,7 @@
     </el-table>
 
     <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>

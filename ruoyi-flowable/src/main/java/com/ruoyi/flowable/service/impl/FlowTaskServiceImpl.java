@@ -1714,10 +1714,14 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
         // - 已完成流程：用 historicVariableInstance 查整个流程的最终变量（更完整）
         // - 活跃任务：从运行时 taskService 取变量
         Map<String, Object> parameters = new HashMap<>();
-        if (Objects.nonNull(historicTaskInstance) && Objects.nonNull(historicTaskInstance.getProcessVariables())) {
-            parameters = new HashMap<>(historicTaskInstance.getProcessVariables());
-        } else if (Objects.nonNull(task)) {
-            parameters = new HashMap<>(taskService.getVariables(taskId));
+        try {
+            if (Objects.nonNull(historicTaskInstance) && Objects.nonNull(historicTaskInstance.getProcessVariables())) {
+                parameters = new HashMap<>(historicTaskInstance.getProcessVariables());
+            } else if (Objects.nonNull(task)) {
+                parameters = new HashMap<>(taskService.getVariables(taskId));
+            }
+        } catch (Exception e) {
+            log.warn("flowTaskForm: 读取流程变量失败 (taskId={}), 继续使用空变量", taskId, e);
         }
 
         // 构建返回给前端的 formJson（表单结构定义）
@@ -1752,7 +1756,13 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             historyService.createHistoricVariableInstanceQuery()
                     .processInstanceId(procInsId)
                     .list()
-                    .forEach(v -> paramsFinal.put(v.getVariableName(), v.getValue()));
+                    .forEach(v -> {
+                        try {
+                            paramsFinal.put(v.getVariableName(), v.getValue());
+                        } catch (Exception e) {
+                            log.warn("跳过无法反序列化的变量: {} (实例: {})", v.getVariableName(), procInsId);
+                        }
+                    });
 
             // 从 BPMN 模型中建立 taskDefinitionKey → formKey 的映射
             // HistoricTaskInstance.getFormKey() 在历史查询中通常返回 null，
@@ -2008,7 +2018,13 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
         historyService.createHistoricVariableInstanceQuery()
                 .processInstanceId(procInsId)
                 .list()
-                .forEach(v -> parameters.put(v.getVariableName(), v.getValue()));
+                .forEach(v -> {
+                    try {
+                        parameters.put(v.getVariableName(), v.getValue());
+                    } catch (Exception e) {
+                        log.warn("跳过无法反序列化的变量: {} (实例: {})", v.getVariableName(), procInsId);
+                    }
+                });
 
         // 从 BPMN 模型建立 taskDefinitionKey → formKey / formComponent / nodeName 映射
         Map<String, String> nodeFormKeyMap = new HashMap<>();

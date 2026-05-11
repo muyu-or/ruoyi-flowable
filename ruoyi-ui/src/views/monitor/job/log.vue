@@ -101,6 +101,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <div class="table-wrapper">
     <el-table v-loading="loading" :data="jobLogList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="日志编号" width="80" align="center" prop="jobLogId" />
@@ -142,6 +143,7 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
 
     <!-- 调度日志详细 -->
     <el-dialog title="调度日志详细" :visible.sync="open" width="700px" append-to-body>

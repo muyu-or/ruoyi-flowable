@@ -65,6 +65,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <div class="table-wrapper">
     <el-table v-loading="loading" :data="teamList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" width="60" />
@@ -130,6 +131,7 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
 
     <!-- 添加或修改产线班组对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body>
@@ -153,6 +155,7 @@
         </el-form-item>
         <el-form-item label="班组成员">
           <el-button type="primary" size="mini" icon="el-icon-plus" @click="handleSelectUser('member')" style="margin-bottom: 10px;">添加成员</el-button>
+          <div class="table-wrapper">
           <el-table :data="selectedMembers" border v-table-col-width="'members'" style="width: 100%">
             <el-table-column label="用户名称" align="center">
               <template slot-scope="scope">
@@ -179,6 +182,7 @@
               </template>
             </el-table-column>
           </el-table>
+          </div>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
@@ -212,6 +216,7 @@
 
         <el-divider content-position="center">班组成员信息</el-divider>
         
+        <div class="table-wrapper">
         <el-table :data="viewForm.userList" border v-table-col-width="'viewMembers'" style="width: 100%">
           <el-table-column prop="nickName" label="用户名称" align="center">
              <template slot-scope="scope">
@@ -226,6 +231,7 @@
           </el-table-column>
           <el-table-column prop="dept.deptName" label="部门" align="center"/>
         </el-table>
+        </div>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="openView = false">关 闭</el-button>
@@ -258,6 +264,7 @@
         </el-form-item>
       </el-form>
       
+      <div class="table-wrapper">
       <el-table :data="userList" :row-class-name="tableRowClassName">
         <el-table-column label="用户姓名" align="center" prop="nickName" />
         <el-table-column label="角色" align="center" prop="roleNames" :show-overflow-tooltip="true" />
@@ -293,6 +300,7 @@
         :limit.sync="userQueryParams.pageSize"
         @pagination="getUserList"
       />
+      </div>
     </el-dialog>
   </div>
 </template>

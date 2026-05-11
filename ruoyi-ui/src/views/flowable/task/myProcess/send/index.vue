@@ -392,7 +392,7 @@ export default {
               nodeTimeMap[node.id] = { startDate: d.startDate, endDate: d.endDate }
             }
           })
-          vars.nodeTimeMap = nodeTimeMap
+          vars.nodeTimeMap = JSON.stringify(nodeTimeMap)
           return vars
         })()
       }

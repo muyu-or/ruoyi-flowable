@@ -89,6 +89,7 @@
       <right-toolbar :show-search.sync="showSearch" @queryTable="getList" />
     </el-row>
 
+    <div class="table-wrapper">
     <el-table v-loading="loading" :data="deviceList" border v-table-col-width="'main'" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="设备编号" align="center" prop="deviceNo" width="120" />
@@ -139,6 +140,7 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
 
     <!-- 添加或修改监控设备对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="680px" append-to-body>

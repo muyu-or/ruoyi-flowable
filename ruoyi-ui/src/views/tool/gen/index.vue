@@ -91,6 +91,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <div class="table-wrapper">
     <el-table ref="tables" v-loading="loading" :data="tableList" border v-table-col-width="'main'" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
       <el-table-column type="selection" align="center" width="55"></el-table-column>
       <el-table-column label="序号" type="index" width="50" align="center">
@@ -120,6 +121,7 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
     <!-- 预览界面 -->
     <el-dialog :title="preview.title" :visible.sync="preview.open" width="80%" top="5vh" append-to-body class="scrollbar">
       <el-tabs v-model="preview.activeName">
