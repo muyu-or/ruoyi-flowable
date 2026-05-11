@@ -388,7 +388,6 @@
         :limit.sync="flowQueryParams.pageSize"
         @pagination="loadFlowDefinitions"
       />
-    </div>
     </el-dialog>
 
     <!-- 批量发起流程弹窗 -->

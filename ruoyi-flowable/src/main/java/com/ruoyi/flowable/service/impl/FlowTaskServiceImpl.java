@@ -147,11 +147,13 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
         }
 
         // 获取所有现有的流程变量(来自前置节点)
-        Map<String, Object> allVariables = taskService.getVariables(task.getId());
+        Map<String, Object> allVariables = getRuntimeVariablesSafely(task);
 
         // 合并新提交的变量(当前节点的新数据，如审批状态、审批意见等)
         if (taskVo.getVariables() != null && !taskVo.getVariables().isEmpty()) {
-            allVariables.putAll(taskVo.getVariables());
+            Map<String, Object> submittedVariables = normalizeVariablesForStorage(taskVo.getVariables());
+            removeVariablesBeforeOverwrite(task, submittedVariables.keySet());
+            allVariables.putAll(submittedVariables);
         }
 
         // 添加任务完成的元数据
@@ -765,14 +767,7 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             }
             flowTask.setProcStatus(procStatus);
             // 业务任务名称（发起流程时填写的 taskName 流程变量）
-            List<org.flowable.variable.api.history.HistoricVariableInstance> taskNameVars = historyService
-                    .createHistoricVariableInstanceQuery()
-                    .processInstanceId(hisIns.getId())
-                    .variableName("taskName")
-                    .list();
-            if (CollectionUtils.isNotEmpty(taskNameVars) && taskNameVars.get(0).getValue() != null) {
-                flowTask.setBusinessTaskName(taskNameVars.get(0).getValue().toString());
-            }
+            flowTask.setBusinessTaskName(getBusinessTaskNameSafely(hisIns.getId()));
             // 当前所处流程
             List<Task> taskList = taskService.createTaskQuery().processInstanceId(hisIns.getId()).list();
             if (CollectionUtils.isNotEmpty(taskList)) {
@@ -922,7 +917,6 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
         TaskQuery taskQuery = taskService.createTaskQuery()
                 .active()
-                .includeProcessVariables()
                 .or()
                     .taskCandidateUser(sysUser.getUserId().toString())
                     .taskAssignee(sysUser.getUserId().toString())
@@ -965,10 +959,7 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             flowTask.setProcInsId(task.getProcessInstanceId());
 
             // 业务任务名称（发起流程时填写的 taskName 流程变量）
-            Map<String, Object> procVars = task.getProcessVariables();
-            if (procVars != null && procVars.get("taskName") != null) {
-                flowTask.setBusinessTaskName(procVars.get("taskName").toString());
-            }
+            flowTask.setBusinessTaskName(getBusinessTaskNameSafely(task));
 
             // 流程发起人信息
             HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
@@ -1021,7 +1012,6 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
         if (viewAll) {
             // ---- 管理角色：查所有人已完成的任务 ----
             mergedList = historyService.createHistoricTaskInstanceQuery()
-                    .includeProcessVariables()
                     .finished()
                     .orderByHistoricTaskInstanceEndTime()
                     .desc()
@@ -1041,7 +1031,6 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                 mergedList = new ArrayList<>();
                 for (String memberId : memberIdStrings) {
                     List<HistoricTaskInstance> memberTasks = historyService.createHistoricTaskInstanceQuery()
-                            .includeProcessVariables()
                             .finished()
                             .taskAssignee(memberId)
                             .orderByHistoricTaskInstanceEndTime()
@@ -1061,7 +1050,6 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                                 .collect(Collectors.toList());
                         if (!newIds.isEmpty()) {
                             List<HistoricTaskInstance> extra = historyService.createHistoricTaskInstanceQuery()
-                                    .includeProcessVariables()
                                     .finished()
                                     .taskIds(newIds)
                                     .list();
@@ -1079,7 +1067,6 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                 // ---- 普通成员：只看自己的（保持原有逻辑） ----
                 // 1. 从 Flowable 查 assignee 为当前用户的已完成任务
                 List<HistoricTaskInstance> allAssigneeList = historyService.createHistoricTaskInstanceQuery()
-                        .includeProcessVariables()
                         .finished()
                         .taskAssignee(userId.toString())
                         .orderByHistoricTaskInstanceEndTime()
@@ -1105,7 +1092,6 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                 mergedList = new ArrayList<>(allAssigneeList);
                 if (!extraTaskIds.isEmpty()) {
                     List<HistoricTaskInstance> extraList = historyService.createHistoricTaskInstanceQuery()
-                            .includeProcessVariables()
                             .finished()
                             .taskIds(extraTaskIds)
                             .orderByHistoricTaskInstanceEndTime()
@@ -1145,10 +1131,7 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             flowTask.setTaskName(histTask.getName());
 
             // 业务任务名称（发起流程时填写的 taskName 流程变量）
-            Map<String, Object> histProcVars = histTask.getProcessVariables();
-            if (histProcVars != null && histProcVars.get("taskName") != null) {
-                flowTask.setBusinessTaskName(histProcVars.get("taskName").toString());
-            }
+            flowTask.setBusinessTaskName(getBusinessTaskNameSafely(histTask.getProcessInstanceId()));
 
             // 流程定义信息
             ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
@@ -1215,21 +1198,8 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                     .desc().list();
             List<FlowTaskDto> hisFlowList = new ArrayList<>();
 
-            // 一次性加载所有历史流程变量
-            Map<String, Object> allProcVars = new HashMap<>();
-            try {
-                List<org.flowable.variable.api.history.HistoricVariableInstance> allVarList =
-                    historyService.createHistoricVariableInstanceQuery()
-                        .processInstanceId(procInsId)
-                        .list();
-                for (org.flowable.variable.api.history.HistoricVariableInstance hv : allVarList) {
-                    if (hv.getValue() != null) {
-                        allProcVars.put(hv.getVariableName(), hv.getValue());
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("flowRecord: 批量读取流程变量失败, procInsId={}", procInsId, e);
-            }
+            // 一次性加载所有历史流程变量，跳过无法反序列化的坏变量
+            Map<String, Object> allProcVars = getHistoricProcessVariablesSafely(procInsId);
 
             // 读取 nodeTimeMap（节点计划时间范围），用于在流转记录中显示
             Map<String, Object> nodeTimeMap = null;
@@ -1518,13 +1488,20 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
      */
     @Override
     public AjaxResult processVariables(String taskId) {
-        Map<String, Object> variables;
-        HistoricTaskInstance historicTaskInstance = historyService.createHistoricTaskInstanceQuery()
-                .includeProcessVariables().finished().taskId(taskId).singleResult();
-        if (Objects.nonNull(historicTaskInstance)) {
-            variables = new HashMap<>(historicTaskInstance.getProcessVariables());
-        } else {
-            variables = new HashMap<>(taskService.getVariables(taskId));
+        Map<String, Object> variables = new HashMap<>();
+        try {
+            HistoricTaskInstance historicTaskInstance = historyService.createHistoricTaskInstanceQuery()
+                    .finished().taskId(taskId).singleResult();
+            if (Objects.nonNull(historicTaskInstance)) {
+                variables = getHistoricProcessVariablesSafely(historicTaskInstance.getProcessInstanceId());
+            } else {
+                Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+                if (Objects.nonNull(task)) {
+                    variables = getRuntimeVariablesSafely(task);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("processVariables: 读取流程变量失败 (taskId={})", taskId, e);
         }
 
         // 将所有 {taskDefKey}__formData 命名空间下的字段值平铺到顶层
@@ -1557,7 +1534,7 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             return AjaxResult.error("任务不存在或已被审批!");
         }
         // Step 2. 获取当前流程所有流程变量(网关节点时需要校验表达式)
-        Map<String, Object> variables = taskService.getVariables(task.getId());
+        Map<String, Object> variables = getRuntimeVariablesSafely(task);
         List<UserTask> nextUserTask = FindNextNodeUtil.getNextUserTasks(repositoryService, task, variables);
         if (CollectionUtils.isEmpty(nextUserTask)) {
             return AjaxResult.success("流程已完结!", null);
@@ -1701,7 +1678,6 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
         // 查历史任务（无论是否已完成都需要，用于获取流程变量和判断完成状态）
         HistoricTaskInstance historicTaskInstance = historyService.createHistoricTaskInstanceQuery()
-                .includeProcessVariables()
                 .taskId(taskId)
                 .singleResult();
 
@@ -1715,10 +1691,10 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
         // - 活跃任务：从运行时 taskService 取变量
         Map<String, Object> parameters = new HashMap<>();
         try {
-            if (Objects.nonNull(historicTaskInstance) && Objects.nonNull(historicTaskInstance.getProcessVariables())) {
-                parameters = new HashMap<>(historicTaskInstance.getProcessVariables());
+            if (Objects.nonNull(historicTaskInstance) && Objects.isNull(task)) {
+                parameters = getHistoricProcessVariablesSafely(historicTaskInstance.getProcessInstanceId());
             } else if (Objects.nonNull(task)) {
-                parameters = new HashMap<>(taskService.getVariables(taskId));
+                parameters = getRuntimeVariablesSafely(task);
             }
         } catch (Exception e) {
             log.warn("flowTaskForm: 读取流程变量失败 (taskId={}), 继续使用空变量", taskId, e);
@@ -1752,17 +1728,7 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
 
             // 重新加载整个流程实例的最终变量（historicTaskInstance 的变量快照只含该任务完成时的变量，
             // 后续节点设置的变量不会包含在其中，因此需要用流程级别的历史变量查询）
-            final Map<String, Object> paramsFinal = parameters;
-            historyService.createHistoricVariableInstanceQuery()
-                    .processInstanceId(procInsId)
-                    .list()
-                    .forEach(v -> {
-                        try {
-                            paramsFinal.put(v.getVariableName(), v.getValue());
-                        } catch (Exception e) {
-                            log.warn("跳过无法反序列化的变量: {} (实例: {})", v.getVariableName(), procInsId);
-                        }
-                    });
+            parameters.putAll(getHistoricProcessVariablesSafely(procInsId));
 
             // 从 BPMN 模型中建立 taskDefinitionKey → formKey 的映射
             // HistoricTaskInstance.getFormKey() 在历史查询中通常返回 null，
@@ -2013,18 +1979,8 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             return AjaxResult.error("流程实例不存在");
         }
 
-        // 加载整个流程实例的最终变量快照
-        Map<String, Object> parameters = new HashMap<>();
-        historyService.createHistoricVariableInstanceQuery()
-                .processInstanceId(procInsId)
-                .list()
-                .forEach(v -> {
-                    try {
-                        parameters.put(v.getVariableName(), v.getValue());
-                    } catch (Exception e) {
-                        log.warn("跳过无法反序列化的变量: {} (实例: {})", v.getVariableName(), procInsId);
-                    }
-                });
+        // 加载整个流程实例的最终变量快照，跳过无法反序列化的坏变量
+        Map<String, Object> parameters = getHistoricProcessVariablesSafely(procInsId);
 
         // 从 BPMN 模型建立 taskDefinitionKey → formKey / formComponent / nodeName 映射
         Map<String, String> nodeFormKeyMap = new HashMap<>();
@@ -2261,7 +2217,7 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             }
 
             // 2. 获取流程变量（最新班组配置）
-            Map<String, Object> vars = taskService.getVariables(taskId);
+            Map<String, Object> vars = getRuntimeVariablesSafely(task);
             Long currentTeamId = resolveTeamId(vars, task.getTaskDefinitionKey());
 
             if (currentTeamId == null) {
@@ -2485,7 +2441,7 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
                 log.warn("isLeaderOfTask: 任务 {} 不存在", taskId);
                 return false;
             }
-            Map<String, Object> vars = taskService.getVariables(taskId);
+            Map<String, Object> vars = getRuntimeVariablesSafely(task);
             Long teamId = resolveTeamId(vars, task.getTaskDefinitionKey());
             if (teamId == null) {
                 log.warn("isLeaderOfTask: 任务 {} 无班组配置，默认允许审批", taskId);
@@ -2509,6 +2465,186 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
     }
 
     /**
+     * 安全读取运行时流程变量。
+     *
+     * Flowable 的 getVariables 会一次性反序列化所有变量，只要其中一个历史表单变量损坏，
+     * 整个接口都会失败。这里先排除初始化拿变量元数据，再逐个读取值，坏变量只跳过。
+     */
+    private String getBusinessTaskNameSafely(Task task) {
+        if (task == null) {
+            return null;
+        }
+        Object value = getRuntimeVariableValueSafely(task, "taskName");
+        if (value == null) {
+            value = getHistoricVariableValueSafely(task.getProcessInstanceId(), "taskName");
+        }
+        return value == null ? null : value.toString();
+    }
+
+    private String getBusinessTaskNameSafely(String procInsId) {
+        Object value = getHistoricVariableValueSafely(procInsId, "taskName");
+        return value == null ? null : value.toString();
+    }
+
+    private Object getRuntimeVariableValueSafely(Task task, String variableName) {
+        if (task == null || StringUtils.isBlank(task.getProcessInstanceId()) || StringUtils.isBlank(variableName)) {
+            return null;
+        }
+        try {
+            List<org.flowable.variable.api.persistence.entity.VariableInstance> variableInstances =
+                    runtimeService.createVariableInstanceQuery()
+                            .processInstanceId(task.getProcessInstanceId())
+                            .variableName(variableName)
+                            .excludeVariableInitialization()
+                            .list();
+            if (CollectionUtils.isEmpty(variableInstances)) {
+                return null;
+            }
+            return variableInstances.get(0).getValue();
+        } catch (Exception e) {
+            log.warn("读取运行时流程变量失败，procInsId={}, taskId={}, variable={}",
+                    task.getProcessInstanceId(), task.getId(), variableName, e);
+            return null;
+        }
+    }
+
+    private Object getHistoricVariableValueSafely(String procInsId, String variableName) {
+        if (StringUtils.isBlank(procInsId) || StringUtils.isBlank(variableName)) {
+            return null;
+        }
+        try {
+            List<org.flowable.variable.api.history.HistoricVariableInstance> variableInstances =
+                    historyService.createHistoricVariableInstanceQuery()
+                            .processInstanceId(procInsId)
+                            .variableName(variableName)
+                            .excludeVariableInitialization()
+                            .list();
+            if (CollectionUtils.isEmpty(variableInstances)) {
+                return null;
+            }
+            return variableInstances.get(0).getValue();
+        } catch (Exception e) {
+            log.warn("读取历史流程变量失败，procInsId={}, variable={}", procInsId, variableName, e);
+            return null;
+        }
+    }
+
+    private Map<String, Object> getRuntimeVariablesSafely(Task task) {
+        Map<String, Object> variables = new HashMap<>();
+        if (task == null || StringUtils.isBlank(task.getProcessInstanceId())) {
+            return variables;
+        }
+        try {
+            List<org.flowable.variable.api.persistence.entity.VariableInstance> variableInstances =
+                    runtimeService.createVariableInstanceQuery()
+                            .processInstanceId(task.getProcessInstanceId())
+                            .excludeVariableInitialization()
+                            .list();
+            for (org.flowable.variable.api.persistence.entity.VariableInstance variableInstance : variableInstances) {
+                putVariableValueSafely(variables, variableInstance.getName(), variableInstance.getTypeName(),
+                        () -> variableInstance.getValue(), task.getProcessInstanceId());
+            }
+        } catch (Exception e) {
+            log.warn("安全读取运行时变量失败，procInsId={}, taskId={}", task.getProcessInstanceId(), task.getId(), e);
+        }
+        return variables;
+    }
+
+    /**
+     * 安全读取历史流程变量，跳过无法反序列化的变量。
+     */
+    private Map<String, Object> getHistoricProcessVariablesSafely(String procInsId) {
+        Map<String, Object> variables = new HashMap<>();
+        if (StringUtils.isBlank(procInsId)) {
+            return variables;
+        }
+        try {
+            List<org.flowable.variable.api.history.HistoricVariableInstance> variableInstances =
+                    historyService.createHistoricVariableInstanceQuery()
+                            .processInstanceId(procInsId)
+                            .excludeVariableInitialization()
+                            .list();
+            for (org.flowable.variable.api.history.HistoricVariableInstance variableInstance : variableInstances) {
+                putVariableValueSafely(variables, variableInstance.getVariableName(), variableInstance.getVariableTypeName(),
+                        () -> variableInstance.getValue(), procInsId);
+            }
+        } catch (Exception e) {
+            log.warn("安全读取历史变量失败，procInsId={}", procInsId, e);
+        }
+        return variables;
+    }
+
+    private void putVariableValueSafely(Map<String, Object> variables, String variableName, String typeName,
+                                        VariableValueSupplier valueSupplier, String procInsId) {
+        try {
+            Object value = valueSupplier.get();
+            if (value != null) {
+                variables.put(variableName, value);
+            }
+        } catch (Exception e) {
+            log.warn("跳过无法反序列化的变量: {} (type={}, procInsId={})", variableName, typeName, procInsId, e);
+        }
+    }
+
+    /**
+     * 节点表单数据统一以 JSON 字符串保存，避免 Map/JSONObject 被 Flowable 存成 Java Serializable。
+     */
+    private Map<String, Object> normalizeVariablesForStorage(Map<String, Object> variables) {
+        Map<String, Object> normalized = new HashMap<>();
+        if (variables == null || variables.isEmpty()) {
+            return normalized;
+        }
+        for (Map.Entry<String, Object> entry : variables.entrySet()) {
+            if ("formJson".equals(entry.getKey())) {
+                continue;
+            }
+            Object value = entry.getValue();
+            if (entry.getKey() != null && entry.getKey().endsWith("__formData")
+                    && value != null && !(value instanceof String)) {
+                value = JSON.toJSONString(value);
+            }
+            normalized.put(entry.getKey(), value);
+        }
+        return normalized;
+    }
+
+    /**
+     * Flowable 更新已存在的 Serializable 变量时会先反序列化旧值。
+     * 对表单数据这类可能遗留坏序列化内容的变量，覆盖前先删除旧变量，让后续 setVariables 创建新值。
+     */
+    private void removeVariablesBeforeOverwrite(Task task, Set<String> variableNames) {
+        if (task == null || CollectionUtils.isEmpty(variableNames)) {
+            return;
+        }
+        for (String variableName : variableNames) {
+            if (StringUtils.isBlank(variableName) || !shouldRecreateVariableBeforeOverwrite(variableName)) {
+                continue;
+            }
+            try {
+                taskService.removeVariable(task.getId(), variableName);
+            } catch (Exception e) {
+                try {
+                    if (StringUtils.isNotBlank(task.getExecutionId())) {
+                        runtimeService.removeVariable(task.getExecutionId(), variableName);
+                    }
+                } catch (Exception ex) {
+                    log.warn("覆盖前删除流程变量失败，taskId={}, executionId={}, variable={}",
+                            task.getId(), task.getExecutionId(), variableName, ex);
+                }
+            }
+        }
+    }
+
+    private boolean shouldRecreateVariableBeforeOverwrite(String variableName) {
+        return "formJson".equals(variableName) || variableName.endsWith("__formData");
+    }
+
+    @FunctionalInterface
+    private interface VariableValueSupplier {
+        Object get();
+    }
+
+    /**
      * 仅保存表单数据到流程变量（不推进流程），供班组成员提交表单使用
      *
      * @param taskVo 包含 taskId、variables（含命名空间表单数据）
@@ -2521,9 +2657,11 @@ public class FlowTaskServiceImpl extends FlowServiceFactory implements IFlowTask
             throw new CustomException("任务不存在，taskId=" + taskVo.getTaskId());
         }
         if (taskVo.getVariables() != null && !taskVo.getVariables().isEmpty()) {
-            taskService.setVariables(taskVo.getTaskId(), taskVo.getVariables());
+            Map<String, Object> variables = normalizeVariablesForStorage(taskVo.getVariables());
+            removeVariablesBeforeOverwrite(task, variables.keySet());
+            taskService.setVariables(taskVo.getTaskId(), variables);
             log.info("班组成员提交表单数据，taskId={}, variables keys={}", taskVo.getTaskId(),
-                    taskVo.getVariables().keySet());
+                    variables.keySet());
         }
         // 标记节点为"已提交待审批"
         flowTeamService.onTaskSubmitted(taskVo.getTaskId());

@@ -837,7 +837,6 @@ export default {
           } else {
             Object.assign(this.taskForm.variables, formData)
           }
-          this.taskForm.variables.formJson = this.formJson
           const data = res.data
           if (data) {
             if (data.dataType === 'dynamic') {
