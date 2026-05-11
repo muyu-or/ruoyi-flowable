@@ -1,0 +1,33 @@
+ruoyi:
+  profile: ${RUOYI_PROFILE:/data/ruoyi/uploadPath}
+  addressEnabled: false
+  captchaEnabled: false
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    com.ruoyi: info
+    org.springframework: warn
+
+spring:
+  devtools:
+    restart:
+      enabled: false
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    database: ${REDIS_DATABASE:0}
+    password: ${REDIS_PASSWORD:123456}
+    timeout: 10s
+  datasource:
+    druid:
+      master:
+        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:flowable}?useUnicode=true&characterEncoding=UTF-8&createDatabaseIfNotExist=true&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true
+        username: ${MYSQL_USERNAME:root}
+        password: ${MYSQL_PASSWORD:123456}
+
+swagger:
+  enabled: false
+  pathMapping: /prod-api

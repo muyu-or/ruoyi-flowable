@@ -71,11 +71,9 @@ spring:
     restart:
       # 热部署开关
       enabled: true
-  # Liquibase 数据库版本管理
+  # Liquibase 已禁用 — 首次部署请手动导入 SQL（见 docs/deploy.md）
   liquibase:
-    change-log: classpath:db/changelog/db.changelog-master.xml
-    # 首次运行时若表已存在（非空库），Liquibase 会跳过 changelog
-    drop-first: false
+    enabled: false
   # redis 配置
   redis:
     # 地址
