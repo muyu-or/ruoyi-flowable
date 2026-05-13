@@ -9,8 +9,10 @@
 - 前端镜像：`docker/frontend/Dockerfile`
 - Nginx 反向代理：`docker/nginx/default.conf`
 - Docker Compose：`docker-compose.prod.yml`
+- MySQL 固定配置：`docker/mysql/conf.d/flowable.cnf`
 - 本地打包脚本：`bin/build-prod.sh`
 - 上传脚本：`bin/deploy-prod.sh`
+- 数据恢复脚本：`bin/restore-flowable-db.sh`
 
 ## 生产配置说明
 
@@ -90,6 +92,14 @@ cd /data/ruoyi-flowable
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+如果需要导入完整业务库备份，不要让应用启动时自动补 Flowable 表结构，项目已经固定为：
+
+- `flowable.database-schema-update: false`
+
+恢复前请先确认 MySQL 数据目录是按 `lower_case_table_names=1` 初始化的。详细流程见：
+
+- `docs/restore-flowable-db.md`
+
 ## 访问方式
 
 - 前端首页：`http://8.136.186.107/`
@@ -101,4 +111,5 @@ docker compose -f docker-compose.prod.yml up -d --build
 1. 服务器需要已安装 Docker 和 Docker Compose。
 2. 宿主机的 `80` 端口不能被其他服务占用。
 3. Compose 会自动拉起 MySQL 8 和 Redis 7，并使用密码 `123456`。
-4. Liquibase 首次启动会执行 `flowable_full.sql` 初始化表和数据，首次启动时间会更长。
+4. `flowable_full.sql` 是手工恢复用的完整备份，不会在应用启动时自动执行。
+5. 如果 MySQL 数据目录最初不是按 `lower_case_table_names=1` 初始化的，必须先清空数据目录再重建容器，否则导入 Flowable 备份后可能出现表名大小写问题。
